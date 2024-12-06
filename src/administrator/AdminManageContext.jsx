@@ -14,10 +14,19 @@ export function AdminManageContextProvider(props){
     const [allAmenities , setAllAmenities] = useState([])
     const [allPosts , setAllPosts] = useState([])
     const [allMaintenanceFees , setAllMaintenanceFees] = useState([])
+    const [period , setPeriod] = useState(null)
+    const [allMaintenanceFeesPayment , setAllMaintenanceFeesPayment] = useState([])
+    const statusMapping = {
+        PENDING: "Pendiente",
+        PAID: "Pagado"
+    };
 
 
     function formatDate(dateString) {
-        return format(new Date(dateString), "dd/MM/yyyy HH:mm");
+        if (!dateString) {
+            return ''; // Si la fecha es null o undefined, retorna una cadena vacía
+        }
+        return format(new Date(dateString), "dd/MM/yyyy HH:mm"); // Formato de fecha legible
     }
 
     const getAllPersons = async () => {
@@ -264,6 +273,52 @@ export function AdminManageContextProvider(props){
         }))
     }
 
+    const getAllMaintenanceFeesPaymentByIdConsortium = async () => {
+        try {
+            // Obtén el token
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("No tienes acceso. Por favor, inicia sesión.");
+                return;
+            }
+
+            // Decodifica el token
+            const decodedToken = jwtDecode(token);
+            const roles = decodedToken.role || [];
+
+            // Verifica el rol
+            if (!roles.includes('ROLE_ADMIN')) {
+                alert("No tienes permisos para acceder a esta información.");
+                return;
+            }
+
+            // Realiza la solicitud
+            const res = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment/consortium/${consortiumIdState}`, // consortiumId en la URL
+                {
+                    params: { period }, // period como query param
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const maintenanceFeesPayment = res.data.content;
+            setAllMaintenanceFeesPayment(
+                maintenanceFeesPayment.map((maintenanceFeePayment) => ({
+                    maintenanceFeePaymentId: maintenanceFeePayment.maintenanceFeePaymentId,
+                    maintenanceFeeId: maintenanceFeePayment.maintenanceFee.maintenanceFeeId,
+                    period: maintenanceFeePayment.maintenanceFee.period,
+                    code: maintenanceFeePayment.department.code,
+                    status: statusMapping[maintenanceFeePayment.status] || maintenanceFeePayment.status,
+                    paymentDate: formatDate(maintenanceFeePayment.paymentDate)
+                }))
+            );
+        } catch (error) {
+            console.error("Error al obtener las expensas: ", error);
+            alert("Hubo un error al obtener los datos.");
+        }
+    };
 
  return(
      <AdminManageContext.Provider value={{
@@ -283,12 +338,16 @@ export function AdminManageContextProvider(props){
          setAllPosts,
          allMaintenanceFees ,
          setAllMaintenanceFees,
+         period ,
+         setPeriod,
+         allMaintenanceFeesPayment , setAllMaintenanceFeesPayment,
          getAllPersons,
          getAllDepartmentsByConsortium,
          getAConsortiumByIdConsortium,
          getAllAmenitiesByIdConsortium,
          getAllPostsByIdConsortium,
-         getAllMaintenanceFeesByIdConsortium
+         getAllMaintenanceFeesByIdConsortium,
+         getAllMaintenanceFeesPaymentByIdConsortium
 
      }}>
          {props.children}

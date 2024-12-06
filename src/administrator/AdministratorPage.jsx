@@ -10,6 +10,7 @@ import AdminBulletinBoard from "./AdminPostAdministrator/AdminBulletinBoard.jsx"
 import AdminClaimManagement from "./AdminClaimAdministrator/AdminClaimManagement.jsx";
 import Expensas from "./AdminMaintenanceFees/AdminMaintenanceFeesManagement.jsx";
 import AdminMaintenanceFeesAdministrator from "./AdminMaintenanceFees/AdminMaintenanceFeesManagement.jsx";
+import AdminMaintenanceFeePayments from "./AdminMaintenanceFees/AdminMaintenanceFeePayments.jsx";
 
 
 function AdministratorPage(){
@@ -35,6 +36,8 @@ function AdministratorPage(){
         <Route path="/reclamos" element={<AdminClaimManagement />} />
 
         <Route path="/expensas" element={<AdminMaintenanceFeesAdministrator/>} />
+
+        <Route path="/expensas/pago" element={<AdminMaintenanceFeePayments/>} />
 
 
     </Routes>

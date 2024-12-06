@@ -1,25 +1,16 @@
 import React, {useState, useEffect, useContext} from 'react';
 import axios from 'axios';
 import {Paper, Box, Typography, List, ListItem, ListItemText, Divider, Button} from '@mui/material';
-import {AdminManageContext} from "../AdminManageContext.jsx";
 import {jwtDecode} from "jwt-decode";
 import { useNavigate } from 'react-router-dom'
 import {ArrowBack} from "@mui/icons-material";
+import {ResidentManageContext} from "../ResidentManageContext.jsx";
 
 const AdminBulletinBoard = () => {
-    const {consortiumName, consortiumIdState} = useContext(AdminManageContext)
+    const {consortiumName, consortiumIdState} = useContext(ResidentManageContext)
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate()
-    const settings = {
-        dots: true, // Activa los puntos de navegación
-        infinite: true, // El carrusel no se detiene al final
-        speed: 500, // Velocidad de transición
-        slidesToShow: 1, // Muestra un solo anuncio a la vez
-        slidesToScroll: 1, // Desplaza un anuncio por vez
-        autoplay: true, // Activar reproducción automática
-        autoplaySpeed: 3000, // Intervalo entre anuncios
-    };
 
     // Función para cargar los posts
     useEffect(() => {
@@ -33,7 +24,7 @@ const AdminBulletinBoard = () => {
 
             // Decodificar el token para verificar el rol
             const decodedToken = jwtDecode(token);
-            const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
+            const isAdmin = decodedToken?.role?.includes('ROLE_RESIDENT');
             if (!isAdmin) {
                 setError('No tienes permisos para ver los posts.');
                 setLoading(false);
@@ -90,14 +81,15 @@ const AdminBulletinBoard = () => {
                     Atrás
                 </Button>
             </Box>
+            {/* Título fuera del recuadro y alineado correctamente */}
             <Box
                 sx={{
                     padding: '20px',
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
+                    justifyContent: 'center',
                     textAlign: 'center',
-                    marginTop: '20px',
+                    paddingX: { xs: '10px', sm: '20px', md: '40px' }, // Ajusta el padding horizontal según el tamaño de la pantalla
+                    marginTop: '20px', // Ajusta el margen superior para separarlo de otros componentes si es necesario
                 }}
             >
                 <Typography
@@ -105,22 +97,22 @@ const AdminBulletinBoard = () => {
                     component="h1"
                     sx={{
                         fontWeight: 'bold',
-                        color: '#002776',
-                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+                        color: '#002776', // El color del texto
+                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' }, // Ajusta el tamaño del texto
                     }}
                 >
                     Tablón de Anuncios de {consortiumName}
                 </Typography>
             </Box>
 
-            {/* Contenedor de los post-its */}
-            <Box
+            {/* Contenedor de los posts */}
+            <Paper
+                elevation={2}
                 sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 3,
-                    alignItems: 'center',
+                    padding: 3,
+                    margin: 'auto',
                     marginTop: '20px',
+                    width: { xs: '95%', sm: '85%', md: '70%', lg: '60%' },
                 }}
             >
                 {loading ? (
@@ -132,64 +124,65 @@ const AdminBulletinBoard = () => {
                         No hay anuncios publicados.
                     </Typography>
                 ) : (
-                    posts.map((post) => (
-                        <Box key={post.postId} sx={{ position: 'relative', width: '90%', maxWidth: 600 }}>
-                            {/* Pin arriba del post-it */}
-                            <Box
-                                sx={{
-                                    position: 'absolute',
-                                    top: '-10px',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    width: '20px',
-                                    height: '20px',
-                                    borderRadius: '50%',
-                                    backgroundColor: '#D32F2F', // Rojo para el pin
-                                    border: '2px solid #B71C1C', // Borde más oscuro
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                                }}
-                            />
-
-                            {/* Post-it */}
-                            <Paper
-                                elevation={3}
-                                sx={{
-                                    padding: 2,
-                                    borderRadius: '8px',
-                                    backgroundColor: '#FFF9C4',
-                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                                    border: '1px solid #FDD835',
-                                    textAlign: 'center',
-                                }}
-                            >
-                                <Typography
-                                    variant="h6"
+                    <List sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        {posts.map((post) => (
+                            <React.Fragment key={post.postId}>
+                                <ListItem
+                                    alignItems="flex-start"
                                     sx={{
-                                        color: '#002776',
-                                        fontWeight: 'bold',
-                                        marginBottom: 1,
+                                        width: '100%',
+                                        maxWidth: 600, // Limita el ancho máximo del post
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
                                     }}
                                 >
-                                    {post.title}
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: '#B2675E',
-                                        fontWeight: 'bold',
-                                        marginBottom: 1,
-                                    }}
-                                >
-                                    {`Publicado el: ${new Date(post.creationPostDate).toLocaleString()}`}
-                                </Typography>
-                                <Typography variant="body1" sx={{ color: '#000' }}>
-                                    {post.content}
-                                </Typography>
-                            </Paper>
-                        </Box>
-                    ))
+                                    <ListItemText
+                                        primary={
+                                            <Typography
+                                                variant="h6"
+                                                style={{
+                                                    color: '#002776',
+                                                    textAlign: 'center', // Centra el título
+                                                }}
+                                            >
+                                                {post.title}
+                                            </Typography>
+                                        }
+                                        secondary={
+                                            <>
+                                                <Typography
+                                                    variant="body2"
+                                                    style={{
+                                                        marginBottom: '8px',
+                                                        textAlign: 'center', // Centra la fecha
+                                                        color: '#B2675E',
+                                                        fontWeight: 'bold',// Aplica el color a la fecha
+                                                    }}
+                                                >
+                                                    {`Publicado el: ${new Date(
+                                                        post.creationPostDate
+                                                    ).toLocaleString()}`}
+                                                </Typography>
+                                                <Typography
+                                                    variant="body1"
+                                                    style={{
+                                                        color: 'black',
+                                                        textAlign: 'center', // Centra el contenido
+                                                    }}
+                                                >
+                                                    {post.content}
+                                                </Typography>
+                                            </>
+                                        }
+                                    />
+                                </ListItem>
+                                <Divider style={{ width: '100%' }} />
+                            </React.Fragment>
+                        ))}
+                    </List>
                 )}
-            </Box>
+            </Paper>
         </>
     );
 };

@@ -28,6 +28,8 @@ import {SuperAdminManageConsortiumContext} from "./SuperAdminManageConsortiumCon
 import SuperAdminCreateAdministrator from "../SuperAdminManageAdmin/SuperAdminCreateAdministrator.jsx";
 import Typography from "@mui/material/Typography";
 import {jwtDecode} from "jwt-decode";
+import SearchIcon from '@mui/icons-material/Search';
+import Sidebar from "../../Sidebar.jsx";
 
 
 const columns = [
@@ -352,240 +354,277 @@ function SuperAdminManagesConsortia(){
         }
     };
 
+    const textFieldStyles = {
+        '& .MuiOutlinedInput-root': {
+            '&.Mui-focused fieldset': {
+                borderColor: '#002776',
+            },
+        },
+        '& label.Mui-focused': { color: '#002776' },
+        minWidth: { xs: '100%', sm: 'auto' },
+    };
+
+    const buttonStyles = {
+        backgroundColor: '#002776',
+        '&:hover': { backgroundColor: '#001B5E' },
+    };
+
+    const tableHeadCellStyles = {
+        backgroundColor: '#002776',
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    };
+
+    const tableCellStyles = {
+        color: '#002776',
+        padding: '8px',
+    };
+
     return (
-        <div>
+    <div>
+        <Box
+            sx={{
+                display: 'flex',
+                minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
+            }}
+        >
+        <Sidebar/>
+        <Box
+            component="main"
+            sx={{
+                flexGrow: 1, // Permite que este componente ocupe el espacio restante
+                padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
+                marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al Sidebar
+                transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
+            }}
+        >
             <Box
                 sx={{
-                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                }}
+            >
+            {/* Título */}
+            <Typography
+                variant="h6"
+                component="h1"
+                sx={{
+                    fontWeight: 'bold',
+                    color: '#003366',
+                    fontSize: { xs: '1.5rem', md: '2rem' },
+                    marginBottom: '20px',
+                }}
+            >
+                Consorcios
+            </Typography>
+
+            {/* Filtros */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                    justifyContent: 'center',
+                    marginBottom: '20px',
+                    width: '100%',
+                    maxWidth: '800px',
+                }}
+            >
+                <TextField
+                    label="Nombre"
+                    variant="outlined"
+                    size="small"
+                    value={consortiumName}
+                    onChange={(e) => setConsortiumName(e.target.value)}
+                    sx={{
+                        ...textFieldStyles,
+                        flex: 1, // Esto asegura que los inputs se distribuyan uniformemente en el espacio disponible
+                    }}
+                />
+                <TextField
+                    label="Ciudad"
+                    variant="outlined"
+                    size="small"
+                    value={consortiumCity}
+                    onChange={(e) => setConsortiumCity(e.target.value)}
+                    sx={{
+                        ...textFieldStyles,
+                        flex: 1,
+                    }}
+                />
+                <TextField
+                    label="Provincia"
+                    variant="outlined"
+                    size="small"
+                    value={consortiumProvince}
+                    onChange={(e) => setConsortiumProvince(e.target.value)}
+                    sx={{
+                        ...textFieldStyles,
+                        flex: 1,
+                    }}
+                />
+                <TextField
+                    label="Administrador"
+                    variant="outlined"
+                    size="small"
+                    value={consortiumNameAdmin}
+                    onChange={(e) => setConsortiumNameAdmin(e.target.value)}
+                    sx={{
+                        ...textFieldStyles,
+                        flex: 1,
+                    }}
+                />
+            </Box>
+
+            {/* Botones */}
+            <Box
+                sx={{
                     display: 'flex',
                     justifyContent: 'center',
-                    textAlign: 'center',
-                    paddingX: { xs: '10px', sm: '20px', md: '40px' }
+                    gap: '10px',
+                    marginBottom: '20px',
                 }}
             >
-                <Typography
-                    variant="h6"
-                    component="h1"
+                <Button
+                    variant="contained"
                     sx={{
+                        backgroundColor: '#B2675E', // Color personalizado
+                        color: '#FFFFFF',
                         fontWeight: 'bold',
-                        color: '#003366',
-                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' }
+                        textTransform: 'none',
+                        borderRadius: '30px', // Bordes redondeados
+                        padding: '10px 20px',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para efecto de profundidad
+                        transition: 'all 0.3s ease', // Transición suave
+                        '&:hover': {
+                            backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
+                            boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                        },
+                        '&:active': {
+                            backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                        },
                     }}
+                    onClick={getAllConsortiumByFilter}
+                    startIcon={<SearchIcon />} // Icono dentro del botón
                 >
-                    Consorcios
-                </Typography>
+                    Buscar
+                </Button>
+                <SuperAdminCreateConsortium/>
             </Box>
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 3,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '90%', sm: '80%', md: '60%', lg: '50%' },
-                }}
-            >
-                <Box
-                    mt={3}
+
+            {/* Tabla */}
+            <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
+                <TableContainer
                     sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        flexWrap: 'nowrap', // No permite que los elementos se envuelvan
-                        gap: '16px' // Espacio entre los inputs
+                        maxHeight: 600,
+                        overflowX: 'auto',
+                        borderRadius: '10px', // Redondea solo las esquinas del contenedor
+                        border: '1px solid #002776',
                     }}
                 >
-                            <TextField
-                                id="outlined-basic"
-                                label="Nombre"
-                                variant="outlined"
-                                size="small"
-                                type="text"
-                                focused
-                                value={consortiumName}
-                                onChange={(e) => {
-                                    setConsortiumName(e.target.value);
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: '#002776', // Azul Francia oscuro
-                                        },
-                                    },
-                                    '& label.Mui-focused': {
-                                        color: '#002776', // Cambia el color del label al enfocarse
-                                    },
-                                }}
-                            />
-
-                            <TextField
-                                id="outlined-basic"
-                                label="Ciudad"
-                                variant="outlined"
-                                size="small"
-                                type="text"
-                                focused
-                                // inputRef={textFieldRef}
-                                value={consortiumCity}
-                                onChange={(e) => {
-                                    setConsortiumCity(e.target.value);
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: '#002776', // Azul Francia oscuro
-                                        },
-                                    },
-                                    '& label.Mui-focused': {
-                                        color: '#002776', // Cambia el color del label al enfocarse
-                                    },
-                                }}
-                            />
-
-                            <TextField
-                                id="outlined-basic"
-                                label="Provincia"
-                                variant="outlined"
-                                size="small"
-                                type="text"
-                                focused
-                                // inputRef={textFieldRef}
-                                value={consortiumProvince}
-                                onChange={(e) => {
-                                    setConsortiumProvince(e.target.value);
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: '#002776', // Azul Francia oscuro
-                                        },
-                                    },
-                                    '& label.Mui-focused': {
-                                        color: '#002776', // Cambia el color del label al enfocarse
-                                    },
-                                }}
-                            />
-                    <TextField
-                        id="outlined-basic"
-                        label="Administrador"
-                        variant="outlined"
-                        size="small"
-                        type="text"
-                        focused
-                        value={consortiumNameAdmin}
-                        onChange={(e) => {
-                            setConsortiumNameAdmin(e.target.value);
-                        }}
+                    <Table
+                        stickyHeader
                         sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776', // Azul Francia oscuro
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776', // Cambia el color del label al enfocarse
-                            },
+                            borderCollapse: 'separate',
+                            borderSpacing: '0', // Evita que las celdas se superpongan
                         }}
-                    />
-
-                </Box>
-
-                <Box mt={3} sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Button
-                        variant="contained"
-                        sx={{
-                            backgroundColor: '#002776',
-                            '&:hover': { backgroundColor: '#001B5E' },
-                            marginRight: '10px',
-                        }}
-                        onClick={getAllConsortiumByFilter}
                     >
-                        Buscar
-                    </Button>
-                    <SuperAdminCreateConsortium />
-                </Box>
-            </Paper>
-
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 3,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '95%', sm: '85%', md: '70%', lg: '60%' },
-                }}
-            >
-            <Box display="flex" justifyContent="center" mt={3}>
-                <Paper sx={{ width: '98%', overflow: 'hidden' }}>
-                    <TableContainer sx={{ maxHeight: 600, overflowX: 'auto' }}>
-                        <Table stickyHeader aria-label="sticky table">
-                            <TableHead>
-                                <TableRow sx={{ height: '24px' }}>
-                                    {columns.map((column) => (
-                                        <TableCell
-                                            key={column.id}
-                                            align={column.align}
-                                            style={{ minWidth: column.minWidth, backgroundColor: '#F5F5DC', color:'#002776',  fontWeight: 'bold', padding: '4px'  }}
-                                        >
-                                            {column.label}
-                                        </TableCell>
-                                    ))}
-                                    <TableCell align="center" style={{ minWidth: 60, backgroundColor: '#F5F5DC', fontWeight: 'bold', padding: '4px' }}>
+                        <TableHead>
+                            <TableRow>
+                                {columns.map((column, index) => (
+                                    <TableCell
+                                        key={column.id}
+                                        align={column.align}
+                                        sx={{
+                                            ...tableHeadCellStyles,
+                                            ...(index === 0 && {
+                                                borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
+                                            })
+                                        }}
+                                    >
+                                        {column.label}
                                     </TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {allConsortia
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((consortium) => {
-                                        return (
-                                            <TableRow hover role="checkbox" tabIndex={-1} key={consortium.name} sx={{ height: '24px' }}>
-                                                {columns.map((column) => {
-                                                    const value = consortium[column.id];
-                                                    return (
-                                                        <TableCell key={column.id} align={column.align} style={{
-                                                            padding: '4px',
-                                                            minWidth: column.minWidth
-                                                        }}>
-                                                            {value}
-                                                        </TableCell>
-                                                    );
-                                                })}
-                                                <TableCell align="center" style={{ padding: '4px',  minWidth: 60 }}>
-                                                    <IconButton aria-label="edit"  onClick={() => {
-                                                        handleClickOpenEdit(
-                                                            consortium.consortiumId,
-                                                            consortium.name,
-                                                            consortium.address,
-                                                            consortium.city,
-                                                            consortium.province,
-                                                            consortium.administratorId
-                                                        );
-                                                    }} sx={{ padding: '2px' }} >
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton aria-label="delete" onClick={() => handleClickOpen(consortium.consortiumId)} sx={{ padding: '2px' }}>
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </TableCell>
+                                ))}
+                                {/* Solo redondear la celda "Acciones" */}
+                                <TableCell
+                                    align="center"
+                                    sx={{
+                                        ...tableHeadCellStyles,
+                                        borderTopRightRadius: '10px', // Redondeo solo en la celda "Acciones"
+                                    }}
+                                >
 
-                                            </TableRow>
-                                        );
-                                    })}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                    <TablePagination
-                        rowsPerPageOptions={[10, 20, 50]}
-                        component="div"
-                        count={allConsortia.length}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        labelRowsPerPage="Filas por página"
-                    />
-                </Paper>
+                                </TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {allConsortia
+                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                .map((consortium) => (
+                                    <TableRow
+                                        hover
+                                        key={consortium.name}
+                                        sx={{
+                                            backgroundColor: '#FFFFFF',
+                                            '&:hover': { backgroundColor: '#F6EFE5' },
+                                        }}
+                                    >
+                                        {columns.map((column) => (
+                                            <TableCell
+                                                key={column.id}
+                                                align={column.align}
+                                                sx={{ ...tableCellStyles }} // Las celdas no tienen borderRadius
+                                            >
+                                                {consortium[column.id]}
+                                            </TableCell>
+                                        ))}
+                                        <TableCell align="center" sx={tableCellStyles}>
+                                            <IconButton
+                                                aria-label="edit"
+                                                onClick={() =>
+                                                    handleClickOpenEdit(
+                                                        consortium.consortiumId,
+                                                        consortium.name,
+                                                        consortium.address,
+                                                        consortium.city,
+                                                        consortium.province,
+                                                        consortium.administratorId
+                                                    )
+                                                }
+                                                sx={{ color: '#002776' }}
+                                            >
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                            <IconButton
+                                                aria-label="delete"
+                                                onClick={() => handleClickOpen(consortium.consortiumId)}
+                                                sx={{ color: '#B2675E' }}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <TablePagination
+                    rowsPerPageOptions={[5]}
+                    component="div"
+                    count={allConsortia.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage="Filas por página"
+                    sx={{ backgroundColor: '#FFFFFF', color: '#002776', fontWeight: 'bold' }}
+                />
             </Box>
-            </Paper>
+        </Box>
+        </Box>
+        </Box>
                 <Dialog
                     open={open}
                     onClose={(event, reason) => {

@@ -4,6 +4,10 @@ import AdministratorPage from "./administrator/AdministratorPage.jsx";
 import Autentication from "./Atentication/Autentication.jsx";
 import SuperAdminPage from "./superAdmin/SuperAdminPage.jsx";
 import PrivateRoute from "./superAdmin/PrivateRoute/PrivateRoute.jsx";
+import ResidentPage from "./resident/ResidentPage.jsx";
+import Sidebar from "./Sidebar.jsx";
+import React from "react";
+
 
 
 
@@ -13,7 +17,7 @@ function App() {
     return (
         <div>
             <BrowserRouter>
-                <ResponsiveAppBar />
+
                 <Routes>
                     {/* Redirige a /login si no está autenticado */}
                     {!isAuthenticated && <Route path="*" element={<Navigate to="/login" replace />} />}
@@ -37,6 +41,15 @@ function App() {
                         element={
                             <PrivateRoute requiredRole="ROLE_ADMIN">
                                 <AdministratorPage />
+                            </PrivateRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/resident/management/*"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_RESIDENT">
+                                <ResidentPage />
                             </PrivateRoute>
                         }
                     />

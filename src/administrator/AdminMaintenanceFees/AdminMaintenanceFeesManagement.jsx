@@ -28,6 +28,7 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import {CircularProgress} from '@mui/material';
 import { CloudUpload as CloudUploadIcon } from '@mui/icons-material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SettingsIcon from "@mui/icons-material/Settings";
 
 
 const columns = [
@@ -38,20 +39,25 @@ const columns = [
 
 function AdminMaintenanceFeesManagement(){
     const {consortiumIdState, getAConsortiumByIdConsortium, consortiumName, allMaintenanceFees ,
-        setAllMaintenanceFees, getAllMaintenanceFeesByIdConsortium } = useContext(AdminManageContext)
+        setAllMaintenanceFees, getAllMaintenanceFeesByIdConsortium, setPeriod } = useContext(AdminManageContext)
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [page, setPage] = React.useState(0);
     const [idMaintenanceFeeToDelete, setIdMaintenanceFeeToDelete] = useState(null)
     const [open, setOpen] = useState(false)
     const [openAlert, setOpenAlert] = useState(false)
-    const navigate = useNavigate()
     const [file, setFile] = useState(null);
     const [maintenanceFee, setMaintenanceFee] = useState(null); // Para almacenar el DTO de la expensa
     const [loading, setLoading] = useState(false);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+    const navigate = useNavigate();
 
+    const handleManageClick = (period) => {
+        setPeriod(period)
+        // Redirige a la pantalla deseada con el período como parámetro
+        navigate(`/admin/management/expensas/pago`);
+    };
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -246,18 +252,6 @@ function AdminMaintenanceFeesManagement(){
                         {loading ? <CircularProgress size={24} color="inherit" /> : 'Cargar Expensas'}
                     </Button>
 
-                    {/*/!* Mostrar información de la expensa cargada *!/*/}
-                    {/*{maintenanceFee && (*/}
-                    {/*    <Box mt={3} sx={{ textAlign: 'center' }}>*/}
-                    {/*        <Typography variant="h6">Expensa Cargada</Typography>*/}
-                    {/*        <Typography variant="body1">ID de la Expensa: {maintenanceFee.maintenanceFeeId}</Typography>*/}
-                    {/*        <Typography variant="body1">Periodo: {maintenanceFee.period}</Typography>*/}
-                    {/*        <Typography variant="body1">Nombre de archivo: {maintenanceFee.fileName}</Typography>*/}
-                    {/*        <Typography variant="body1">Fecha de carga: {maintenanceFee.uploadDate}</Typography>*/}
-                    {/*    </Box>*/}
-                    {/*)}*/}
-
-                    {/* Snackbar de éxito o error */}
                     <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseAlert}>
                         <Alert onClose={handleCloseAlert} severity={snackbarSeverity} sx={{ width: '100%' }}>
                             {snackbarMessage}
@@ -293,7 +287,7 @@ function AdminMaintenanceFeesManagement(){
                                             Descargar
                                         </TableCell>
                                         <TableCell align="center" style={{ minWidth: 100, backgroundColor: '#F5F5DC', fontWeight: 'bold', padding: '8px' }}>
-                                            Eliminar
+
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -328,7 +322,20 @@ function AdminMaintenanceFeesManagement(){
                                                         </IconButton>
                                                     </TableCell>
                                                     <TableCell align="center" style={{ padding: '8px', minWidth: 100 }}>
-                                                        <IconButton aria-label="delete" onClick={() => handleClickOpen(maintenanceFee.maintenanceFeeId)} sx={{ padding: '4px' }}>
+                                                        {/* Botón para Gestionar */}
+                                                        <IconButton
+                                                            aria-label="manage"
+                                                            onClick={() => handleManageClick(maintenanceFee.period)}
+                                                            sx={{ padding: '4px', marginRight: '4px' }} // Espaciado entre los botones
+                                                        >
+                                                            <SettingsIcon fontSize="small" />
+                                                        </IconButton>
+                                                        {/* Botón para Eliminar */}
+                                                        <IconButton
+                                                            aria-label="delete"
+                                                            onClick={() => handleClickOpen(maintenanceFee.maintenanceFeeId)}
+                                                            sx={{ padding: '4px' }}
+                                                        >
                                                             <DeleteIcon fontSize="small" />
                                                         </IconButton>
                                                     </TableCell>

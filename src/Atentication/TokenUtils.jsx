@@ -25,4 +25,11 @@ export const isSuperAdmin = () => {
 export const isAdmin = () => {
     const role = getRole();
     return role.includes('ROLE_ADMIN');
+
+}
+
+export const isResident = () => {
+    const role = getRole();
+    return role.includes('ROLE_RESIDENT');
+
 }
