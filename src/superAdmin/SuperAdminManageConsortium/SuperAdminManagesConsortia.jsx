@@ -25,11 +25,10 @@ import Button from "@mui/material/Button";
 import SuperAdminCreateConsortium from "./SuperAdminCreateConsortium.jsx";
 import MenuItem from "@mui/material/MenuItem";
 import {SuperAdminManageConsortiumContext} from "./SuperAdminManageConsortiumContext.jsx";
-import SuperAdminCreateAdministrator from "../SuperAdminManageAdmin/SuperAdminCreateAdministrator.jsx";
 import Typography from "@mui/material/Typography";
 import {jwtDecode} from "jwt-decode";
 import SearchIcon from '@mui/icons-material/Search';
-import Sidebar from "../../Sidebar.jsx";
+import SuperAdminSidebar from "../../SuperAdminSidebar.jsx";
 
 
 const columns = [
@@ -389,13 +388,13 @@ function SuperAdminManagesConsortia(){
                 minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
             }}
         >
-        <Sidebar/>
+        <SuperAdminSidebar/>
         <Box
             component="main"
             sx={{
                 flexGrow: 1, // Permite que este componente ocupe el espacio restante
                 padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
-                marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al Sidebar
+                marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
                 transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
             }}
         >

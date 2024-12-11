@@ -11,7 +11,7 @@ const pages = [
     { name: 'Consorcios', url: '/consortia', icon: <ApartmentIcon /> }
 ];
 
-const Sidebar = () => {
+const SuperAdminSidebar = () => {
     const [isDrawerOpen, setDrawerOpen] = useState(false); // Estado para el Drawer
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -152,4 +152,4 @@ const Sidebar = () => {
     );
 };
 
-export default Sidebar;
+export default SuperAdminSidebar;

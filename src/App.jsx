@@ -5,7 +5,7 @@ import Autentication from "./Atentication/Autentication.jsx";
 import SuperAdminPage from "./superAdmin/SuperAdminPage.jsx";
 import PrivateRoute from "./superAdmin/PrivateRoute/PrivateRoute.jsx";
 import ResidentPage from "./resident/ResidentPage.jsx";
-import Sidebar from "./Sidebar.jsx";
+import SuperAdminSidebar from "./SuperAdminSidebar.jsx";
 import React from "react";
 
 

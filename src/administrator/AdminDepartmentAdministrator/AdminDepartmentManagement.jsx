@@ -27,6 +27,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import MenuItem from "@mui/material/MenuItem";
 import AdminCreateDepartment from "./AdminCreateDepartment.jsx";
 import {jwtDecode} from "jwt-decode";
+import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
+import SearchIcon from "@mui/icons-material/Search.js";
 
 
 const columns = [
@@ -366,158 +368,198 @@ function AdminDepartmentManagement(){
         }
     };
 
+    const textFieldStyles = {
+        '& .MuiOutlinedInput-root': {
+            '&.Mui-focused fieldset': {
+                borderColor: '#002776',
+            },
+        },
+        '& label.Mui-focused': { color: '#002776' },
+        minWidth: { xs: '100%', sm: 'auto' },
+    };
+
+    const buttonStyles = {
+        backgroundColor: '#002776',
+        '&:hover': { backgroundColor: '#001B5E' },
+    };
+
+    const tableHeadCellStyles = {
+        backgroundColor: '#002776',
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    };
+
+    const tableCellStyles = {
+        color: '#002776',
+        padding: '8px',
+    };
+
+
     return (
         <div>
             <Box
                 sx={{
-                    padding: '20px',
                     display: 'flex',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    paddingX: { xs: '10px', sm: '20px', md: '40px' }
+                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
                 }}
             >
+                <AdminGallerySidebar/>
+                <Box
+                    component="main"
+                    sx={{
+                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
+                        padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
+                        marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
+                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
+                    }}
+                >
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                        }}
+                    >
+                        {/* Título */}
+
                 <Typography
                     variant="h6"
                     component="h1"
                     sx={{
                         fontWeight: 'bold',
                         color: '#003366',
-                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' }
+                        fontSize: { xs: '1.5rem', md: '2rem' },
+                        marginBottom: '20px',
                     }}
                 >
                     Departamentos del Consorcio {consortiumName} {/* Aquí mostramos el nombre del consorcio */}
                 </Typography>
-            </Box>
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 3,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '90%', sm: '80%', md: '60%', lg: '50%' },
-                }}
-            >
-                {/* Ajustamos el contenedor de los inputs para que se alineen en una fila */}
-                <Box
-                    mt={3}
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        flexWrap: 'nowrap', // No permite que los elementos se envuelvan
-                        gap: '16px' // Espacio entre los inputs
-                    }}
-                >
-                    <TextField
-                        id="outlined-basic"
-                        label="Identificación"
-                        variant="outlined"
-                        size="small"
-                        type="text"
-                        focused
-                        value={departmentCode}
-                        onChange={(e) => setDepartmentCode(e.target.value)}
-                        fullWidth
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776', // Azul Francia oscuro
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776',
-                            },
-                        }}
-                    />
 
-                    <TextField
-                        id="outlined-basic"
-                        label="Propietario"
-                        variant="outlined"
-                        size="small"
-                        type="text"
-                        focused
-                        value={proprietor}
-                        onChange={(e) => setProprietor(e.target.value)}
-                        fullWidth
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776',
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776',
-                            },
-                        }}
-                    />
+                        {/* Filtros */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: '16px',
+                                justifyContent: 'center',
+                                marginBottom: '20px',
+                                width: '100%',
+                                maxWidth: '800px',
+                            }}
+                        >
 
-                    <TextField
-                        id="outlined-basic"
-                        label="Residente"
-                        variant="outlined"
-                        size="small"
-                        type="text"
-                        focused
-                        value={resident}
-                        onChange={(e) => setResident(e.target.value)}
-                        fullWidth
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776',
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776',
-                            },
-                        }}
-                    />
+                            <TextField
+                                label="Identificación"
+                                variant="outlined"
+                                size="small"
+                                value={departmentCode}
+                                onChange={(e) => setDepartmentCode(e.target.value)}
+                                sx={{
+                                    ...textFieldStyles,
+                                    flex: 1, // Esto asegura que los inputs se distribuyan uniformemente en el espacio disponible
+                                }}
+                            />
 
-                </Box>
+                            <TextField
+                                label="Propietario"
+                                variant="outlined"
+                                size="small"
+                                value={proprietor}
+                                onChange={(e) => setProprietor(e.target.value)}
+                                sx={{
+                                    ...textFieldStyles,
+                                    flex: 1,
+                                }}
+                            />
+
+                            <TextField
+                                label="Residente"
+                                variant="outlined"
+                                size="small"
+                                value={resident}
+                                onChange={(e) => setResident(e.target.value)}
+                                sx={{
+                                    ...textFieldStyles,
+                                    flex: 1,
+                                }}
+                            />
+                        </Box>
 
                 {/* Botones */}
-                <Box mt={3} sx={{ display: 'flex', justifyContent: 'center' }}>
+                <Box
+                    sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    marginBottom: '20px',
+                }}
+                >
                     <Button
                         variant="contained"
                         sx={{
-                            backgroundColor: '#002776',
-                            '&:hover': { backgroundColor: '#001B5E' },
-                            marginRight: '10px',
+                            backgroundColor: '#B2675E', // Color personalizado
+                            color: '#FFFFFF',
+                            fontWeight: 'bold',
+                            textTransform: 'none',
+                            borderRadius: '30px', // Bordes redondeados
+                            padding: '10px 20px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para efecto de profundidad
+                            transition: 'all 0.3s ease', // Transición suave
+                            '&:hover': {
+                                backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
+                                boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                            },
+                            '&:active': {
+                                backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                            },
                         }}
                         onClick={getAllDepartmentsByFilter}
+                        startIcon={<SearchIcon />} // Icono dentro del botón
                     >
                         Buscar
                     </Button>
                     <AdminCreateDepartment/>
                 </Box>
-            </Paper>
-
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 3,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '95%', sm: '85%', md: '70%', lg: '60%' },
-                }}
-            >
-                <Box display="flex" justifyContent="center" mt={3}>
-                    <Paper sx={{ width: '98%', overflow: 'hidden' }}>
-                        <TableContainer sx={{ maxHeight: 600, overflowX: 'auto' }}>
-                            <Table stickyHeader aria-label="sticky table">
+                        {/* Tabla */}
+                <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
+                        <TableContainer  sx={{
+                            maxHeight: 600,
+                            overflowX: 'auto',
+                            borderRadius: '10px', // Redondea solo las esquinas del contenedor
+                            border: '1px solid #002776',
+                        }}
+                        >
+                            <Table
+                                   stickyHeader
+                                   sx={{
+                                       borderCollapse: 'separate',
+                                       borderSpacing: '0', // Evita que las celdas se superpongan
+                                   }}
+                            >
                                 <TableHead>
-                                    <TableRow sx={{ height: '24px' }}>
-                                        {columns.map((column) => (
+                                    <TableRow>
+                                        {columns.map((column , index) => (
                                             <TableCell
                                                 key={column.id}
                                                 align={column.align}
-                                                style={{ minWidth: column.minWidth, backgroundColor: '#F5F5DC', color:'#002776',  fontWeight: 'bold', padding: '4px'  }}
+                                                sx={{
+                                                    ...tableHeadCellStyles,
+                                                    ...(index === 0 && {
+                                                        borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
+                                                    })
+                                                }}
                                             >
                                                 {column.label}
                                             </TableCell>
                                         ))}
-                                        <TableCell align="center" style={{ minWidth: 60, backgroundColor: '#F5F5DC', fontWeight: 'bold', padding: '4px' }}>
+                                        <TableCell
+                                            align="center"
+                                            sx={{
+                                                ...tableHeadCellStyles,
+                                                borderTopRightRadius: '10px', // Redondeo solo en la celda "Acciones"
+                                            }}
+                                        >
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -526,29 +568,43 @@ function AdminDepartmentManagement(){
                                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                         .map((department) => {
                                             return (
-                                                <TableRow hover role="checkbox" tabIndex={-1} key={department.departmentId} sx={{ height: '24px' }}>
+                                                <TableRow hover
+                                                          key={department.departmentId}
+                                                          sx={{
+                                                              backgroundColor: '#FFFFFF',
+                                                              '&:hover': { backgroundColor: '#F6EFE5' },
+                                                          }}
+                                                >
                                                     {columns.map((column) => {
                                                         const value = department[column.id];
                                                         return (
-                                                            <TableCell key={column.id} align={column.align} style={{
-                                                                padding: '4px',
-                                                                minWidth: column.id === 'fullNameP' || column.id === 'fullNameR' ? '60px' : column.minWidth
-                                                            }}>
+                                                            <TableCell
+                                                                key={column.id}
+                                                                align={column.align}
+                                                                sx={{ ...tableCellStyles }} // Las celdas no tienen borderRadius
+                                                            >
                                                                 {value}
                                                             </TableCell>
                                                         );
                                                     })}
-                                                    <TableCell align="center" style={{ padding: '4px',  minWidth: 60 }}>
-                                                        <IconButton aria-label="edit" onClick={() =>
+                                                    <TableCell align="center" sx={tableCellStyles}>
+                                                        <IconButton
+                                                            aria-label="edit"
+                                                            onClick={() =>
                                                             handleClickOpenEdit(
                                                                 department.departmentId,
                                                                 department.code,
                                                                 department.personIdP,
                                                                 department.personIdR)
-                                                        } sx={{ padding: '2px' }}>
+                                                        } sx={{ color: '#002776' }}
+                                                        >
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
-                                                        <IconButton aria-label="delete" onClick={() => handleClickOpen(department.departmentId)} sx={{ padding: '2px' }}>
+                                                        <IconButton
+                                                            aria-label="delete"
+                                                            onClick={() => handleClickOpen(department.departmentId)}
+                                                            sx={{ color: '#B2675E' }}
+                                                        >
                                                             <DeleteIcon fontSize="small" />
                                                         </IconButton>
                                                     </TableCell>
@@ -559,7 +615,7 @@ function AdminDepartmentManagement(){
                             </Table>
                         </TableContainer>
                         <TablePagination
-                            rowsPerPageOptions={[10, 20, 50]}
+                            rowsPerPageOptions={[5]}
                             component="div"
                             count={allDepartments.length}
                             rowsPerPage={rowsPerPage}
@@ -567,10 +623,12 @@ function AdminDepartmentManagement(){
                             onPageChange={handleChangePage}
                             onRowsPerPageChange={handleChangeRowsPerPage}
                             labelRowsPerPage="Filas por página"
+                            sx={{ backgroundColor: '#FFFFFF', color: '#002776', fontWeight: 'bold' }}
                         />
-                    </Paper>
+                    </Box>
+                    </Box>
                 </Box>
-            </Paper>
+            </Box>
             <Dialog
                 open={open}
                 onClose={(event, reason) => {

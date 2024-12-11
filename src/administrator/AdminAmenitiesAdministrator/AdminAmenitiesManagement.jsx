@@ -1,7 +1,7 @@
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {
-    Alert,
+    Alert, Card, CardActions, CardContent, CardMedia,
     Dialog,
     DialogActions,
     DialogContent,
@@ -26,6 +26,9 @@ import DeleteIcon from "@mui/icons-material/Delete.js";
 import EditIcon from "@mui/icons-material/Edit";
 import AdminCreateAmenity from "./AdminCreateAmenity.jsx";
 import {jwtDecode} from "jwt-decode";
+import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import {Create} from "@mui/icons-material";
 
 const columns = [
     { id: 'name', label: 'Espacio Común', minWidth: 100 },
@@ -48,6 +51,7 @@ function AdminAmenitiesManagement(){
     const [amenityUpdate, setAmenityUpdate] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
     const [amenitytInfo, setAmenitytInfo] = useState({})
+    const [uploadedImages, setUploadedImages] = useState({}); // Estado para manejar las imágenes subidas
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -261,167 +265,145 @@ function AdminAmenitiesManagement(){
                 alert("Ocurrió un error al intentar eliminar el amenity.");
             }
         }
+    }
+
+    const handleImageUpload = (event, amenityId) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                console.log(reader.result)
+                setUploadedImages((prev) => ({ ...prev, [amenityId]: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     return(
         <div>
             <Box
                 sx={{
-                    padding: '20px',
                     display: 'flex',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    // Ajustar padding dependiendo del tamaño de la pantalla
-                    paddingX: { xs: '10px', sm: '20px', md: '40px' }
+                    minHeight: '100vh',
                 }}
             >
-                <Typography
-                    variant="h6"
-                    component="h1"
-                    sx={{
-                        fontWeight: 'bold',
-                        color: '#003366',
-                        // Ajustar el tamaño de la fuente para diferentes tamaños de pantalla
-                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' }
-                    }}
-                >
-                    Espacios Comunes de {consortiumName}
-                </Typography>
-            </Box>
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 2,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '90%', sm: '80%', md: '40%', lg: '30%' },
-                }}
-            >
-                <Box
-                    mt={3}
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'center', // Cambiado para centrar el input
-                        gap: '16px', // Espacio entre los inputs si hay más
-                        width: '100%',
-                    }}
-                >
-                    <TextField
-                        id="outlined-basic"
-                        label="Nombre"
-                        variant="outlined"
-                        size="small"
-                        type="text"
-                        focused
-                        value={amenityName}
-                        onChange={(e) => {
-                            setAmenityName(e.target.value);
-                        }}
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776', // Azul Francia oscuro
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776', // Cambia el color del label al enfocarse
-                            },
-                        }}
-                    />
-                </Box>
+                {/* Sidebar */}
+                <AdminGallerySidebar />
 
-                <Box mt={3} sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Button
-                        variant="contained"
+                <Box
+                    component="main"
+                    sx={{
+                        flexGrow: 1,
+                        padding: { xs: '16px', sm: '24px' },
+                        marginLeft: { xs: 0, sm: '240px' },
+                        transition: 'margin-left 0.3s ease',
+                    }}
+                >
+                    <Box
                         sx={{
-                            backgroundColor: '#002776',
-                            '&:hover': { backgroundColor: '#001B5E' },
-                            marginRight: '10px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
                         }}
-                        onClick={getAllAmenitiesByFilter}
                     >
-                        Buscar
-                    </Button>
-                    <AdminCreateAmenity/>
-                </Box>
-            </Paper>
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 2,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '95%', sm: '85%', md: '45%', lg: '35%' },
-                }}
-            >
-                <Box display="flex" justifyContent="center" mt={3}>
-                    <Paper sx={{ width: '90%', overflow: 'hidden' }}>
-                        <TableContainer sx={{ maxHeight: 600, overflowX: 'auto' }}>
-                            <Table stickyHeader aria-label="sticky table">
-                                <TableHead>
-                                    <TableRow sx={{ height: '24px' }}>
-                                        {columns.map((column) => (
-                                            <TableCell
-                                                key={column.id}
-                                                align={column.align}
-                                                style={{ minWidth: column.minWidth, backgroundColor: '#F5F5DC', color:'#002776',  fontWeight: 'bold', padding: '4px'  }}
+                        {/* Título */}
+                        <Typography
+                            variant="h6"
+                            component="h1"
+                            sx={{
+                                fontWeight: 'bold',
+                                color: '#003366',
+                                fontSize: { xs: '1.5rem', md: '2rem' },
+                                marginBottom: '20px',
+                            }}
+                        >
+                            Espacios Comunes de {consortiumName}
+                        </Typography>
+
+                        {/* Botón Crear Espacio */}
+                        <Box mt={3} sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <AdminCreateAmenity />
+                        </Box>
+
+                        {/* Tarjetas - Agregamos mt={5} para dar más espacio entre el botón y las tarjetas */}
+                        <Grid container spacing={3} justifyContent="center" mt={5}>
+                            {allAmenities.map((amenity) => (
+                                <Grid item xs={12} sm={6} md={4} key={amenity.amenityId}>
+                                    <Card
+                                        sx={{
+                                            maxWidth: 400,
+                                            mx: 'auto',
+                                            textAlign: 'center',
+                                            backgroundColor: '#FFF', // Fondo de las tarjetas
+                                            border: `1px solid #B2675E`, // Borde con el color marrón
+                                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                        }}
+                                    >
+                                        {/* Mostrar la imagen cargada, si existe */}
+                                        {uploadedImages[amenity.amenityId] ? (
+                                            <CardMedia
+                                                component="img"
+                                                height="220"
+                                                image={uploadedImages[amenity.amenityId]} // Imagen cargada
+                                                alt={amenity.name}
+                                            />
+                                        ) : (
+                                            <CardMedia
+                                                component="img"
+                                                height="220"
+                                                image={amenity.image || 'https://via.placeholder.com/400x220'} // Imagen predeterminada
+                                                alt={amenity.name}
+                                            />
+                                        )}
+                                        <CardContent>
+                                            <Typography gutterBottom variant="h6" component="div" sx={{
+                                                color: '#002776', // Azul oscuro
+                                                fontWeight: 'bold',
+                                            }}>
+                                                {amenity.name}
+                                            </Typography>
+                                            <Typography variant="body2"
+                                                        color="text.secondary"
+                                                        sx={{ color: '#B2675E' }}>
+                                                Máximas Reservas: {amenity.maxBookings}
+                                            </Typography>
+                                        </CardContent>
+                                        <CardActions sx={{ justifyContent: 'center' }}>
+                                            <IconButton component="label">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    style={{ display: 'none' }}
+                                                    onChange={(event) => handleImageUpload(event, amenity.amenityId)}
+                                                />
+                                                <PhotoCameraIcon sx={{ color: '#002776' }} /> {/* Icono para "Cambiar foto" */}
+                                            </IconButton>
+                                            <IconButton
+                                                aria-label="edit"
+                                                onClick={() =>
+                                                    handleClickOpenEdit(
+                                                        amenity.amenityId,
+                                                        amenity.name,
+                                                        amenity.maxBookings
+                                                    )
+                                                }
                                             >
-                                                {column.label}
-                                            </TableCell>
-                                        ))}
-                                        <TableCell align="center" style={{ minWidth: 60, backgroundColor: '#F5F5DC', fontWeight: 'bold', padding: '1px' }}>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {allAmenities
-                                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                        .map((amenity) => {
-                                            return (
-                                                <TableRow hover role="checkbox" tabIndex={-1} key={amenity.name} sx={{ height: '24px' }}>
-                                                    {columns.map((column) => {
-                                                        const value = amenity[column.id];
-                                                        return (
-                                                            <TableCell key={column.id} align={column.align} style={{
-                                                                padding: '4px',
-                                                                minWidth: column.minWidth
-                                                            }}>
-                                                                {value}
-                                                            </TableCell>
-                                                        );
-                                                    })}
-                                                    <TableCell align="center" style={{ padding: '4px',  minWidth: 60 }}>
-                                                        <IconButton aria-label="edit" onClick={() =>
-                                                            handleClickOpenEdit(
-                                                                amenity.amenityId,
-                                                                amenity.name,
-                                                                amenity.maxBookings)
-                                                        } sx={{ padding: '2px' }}>
-                                                            <EditIcon fontSize="small" />
-                                                        </IconButton>
-                                                        <IconButton aria-label="delete" onClick={() => handleClickOpen(amenity.amenityId)} sx={{ padding: '2px' }}>
-                                                            <DeleteIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                        <TablePagination
-                            rowsPerPageOptions={[10, 20, 50]}
-                            component="div"
-                            count={allAmenities.length}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                            labelRowsPerPage="Filas por página"
-                        />
-                    </Paper>
+                                                <EditIcon sx={{ color: '#002776' }} />
+                                            </IconButton>
+                                            <IconButton
+                                                aria-label="delete"
+                                                onClick={() => handleClickOpen(amenity.amenityId)}
+                                            >
+                                                <DeleteIcon sx={{ color: '#002776' }} />
+                                            </IconButton>
+                                        </CardActions>
+                                    </Card>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
                 </Box>
-            </Paper>
+            </Box>
             <Dialog
                 open={open}
                 onClose={(event, reason) => {

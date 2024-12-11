@@ -249,7 +249,27 @@ function AdminCreatePerson(){
 
     return (
         <>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenDniDialog} sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>
+            <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenDniDialog}
+                sx={{
+                    backgroundColor: '#B2675E', // Color personalizado
+                    color: '#FFFFFF',
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    borderRadius: '30px', // Bordes redondeados
+                    padding: '10px 20px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para profundidad
+                    transition: 'all 0.3s ease', // Transición suave
+                    '&:hover': {
+                        backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
+                        boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                    },
+                    '&:active': {
+                        backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                    },
+                }}>
                 Nuevo
             </Button>
 

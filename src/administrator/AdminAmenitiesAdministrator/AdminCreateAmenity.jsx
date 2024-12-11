@@ -101,7 +101,30 @@ function AdminCreateAmenity(){
 
     return (
         <>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={handleClickOpen} sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>
+            <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleClickOpen}
+                sx={{
+                    backgroundColor: '#B2675E', // Color personalizado
+                    color: '#FFFFFF',
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    borderRadius: '30px', // Bordes redondeados
+                    padding: '12px 24px', // Espacio interno reducido
+                    fontSize: '1.1rem', // Tamaño de fuente ligeramente más pequeño
+                    minWidth: '180px', // Tamaño mínimo ajustado
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra moderada
+                    transition: 'all 0.3s ease', // Transición suave
+                    '&:hover': {
+                        backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
+                        boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                    },
+                    '&:active': {
+                        backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                    },
+                }}
+            >
                 Nuevo
             </Button>
 
