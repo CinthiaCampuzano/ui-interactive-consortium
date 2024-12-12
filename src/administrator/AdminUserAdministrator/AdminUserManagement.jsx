@@ -613,7 +613,6 @@ function AdminUserManagement(){
                     </Box>
                 </Box>
             </Box>
-
             <Dialog
                 open={open}
                 onClose={(event, reason) => {
@@ -622,25 +621,61 @@ function AdminUserManagement(){
                     }
                 }}
             >
-                <DialogTitle id="alert-dialog-title" sx={{ backgroundColor: '#E5E5E5',  color: '#002776', textAlign: 'center' }}>
-                    {"Desea eliminar este Administrador ?"}
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        backgroundColor: '#E5E5E5',
+                        color: '#002776',
+                        textAlign: 'center',
+                        padding: '20px 30px',
+                        borderBottom: '2px solid #028484',
+                        fontWeight: 'bold',
+                    }}
+                >
+                    {"Desea eliminar este Usuario?"}
                 </DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#E5E5E5' }}>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
                     <DialogContentText id="alert-dialog-description">
-                        Si acepta se eliminara el usuario deseado.
+                        Si acepta, se eliminará el usuario deseado.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Button onClick={handleClose} variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>Rechazar</Button>
-                    <Button variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#3D9970' } }} onClick={() => {
-                        deletePerson(idPersonCreated)
-                        handleClose()
-                    }
-                    }>
+                <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                    <Button
+                        onClick={handleClose}
+                        variant="contained"
+                        sx={{
+                            backgroundColor: '#B2675E',
+                            '&:hover': {
+                                backgroundColor: '#8E5346',
+                            },
+                            borderRadius: '25px',
+                            padding: '8px 20px',
+                            transition: 'background-color 0.3s ease',
+                        }}
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="contained"
+                        sx={{
+                            backgroundColor: '#028484',
+                            '&:hover': {
+                                backgroundColor: '#026F6B',
+                            },
+                            borderRadius: '25px',
+                            padding: '8px 20px',
+                            transition: 'background-color 0.3s ease',
+                        }}
+                        onClick={() => {
+                            deletePerson(idPersonCreated);
+                            handleClose();
+                        }}
+                    >
                         Aceptar
                     </Button>
                 </DialogActions>
             </Dialog>
+
             <Dialog
                 open={openEdit}
                 onClose={(event, reason) => {
@@ -649,10 +684,19 @@ function AdminUserManagement(){
                     }
                 }}
             >
-                <DialogTitle sx={{ backgroundColor: '#E5E5E5',  color: '#002776', textAlign: 'center' }}>Actualizar Información</DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#EDEDED',  marginTop: '10px'}}>
-                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2}}>
+                <DialogTitle  sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #028484',
+                    fontWeight: 'bold',
+                }}>
+                    Actualizar Información
+                </DialogTitle>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
+                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px' }}>
+                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} sm={6}>
                                     <TextField
@@ -667,17 +711,17 @@ function AdminUserManagement(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.name ? 'red' : '#002776',
+                                                    borderColor: errors.name ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.name ? 'red' : '#002776',
+                                                    borderColor: errors.name ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.name ? 'red' : '#002776',
+                                                    borderColor: errors.name ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: errors.name ? 'red' : '#028484',
                                             },
                                         }}
                                         error={errors.name}
@@ -698,17 +742,17 @@ function AdminUserManagement(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.lastName ? 'red' : '#002776',
+                                                    borderColor: errors.lastName ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.lastName ? 'red' : '#002776',
+                                                    borderColor: errors.lastName ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.lastName ? 'red' : '#002776',
+                                                    borderColor: errors.lastName ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: errors.address ? 'red' : '#002776', // Cambia el color del label al enfocarse
+                                                color: errors.lastName ? 'red' : '#028484',
                                             },
                                         }}
                                         error={errors.lastName}
@@ -729,17 +773,17 @@ function AdminUserManagement(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.mail ? 'red' : '#002776',
+                                                    borderColor: errors.mail ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.mail ? 'red' : '#002776',
+                                                    borderColor: errors.mail ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.mail ? 'red' : '#002776',
+                                                    borderColor: errors.mail ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: errors.province ? 'red' : '#002776', // Cambia el color del label al enfocarse
+                                                color: errors.mail ? 'red' : '#028484',
                                             },
                                         }}
                                         error={errors.mail}
@@ -760,17 +804,17 @@ function AdminUserManagement(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.dni ? 'red' : '#002776',
+                                                    borderColor: errors.dni ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.dni ? 'red' : '#002776',
+                                                    borderColor: errors.dni ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.dni ? 'red' : '#002776',
+                                                    borderColor: errors.dni ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                         error={errors.dni}
@@ -791,17 +835,17 @@ function AdminUserManagement(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.phoneNumber ? 'red' : '#002776',
+                                                    borderColor: errors.phoneNumber ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.phoneNumber ? 'red' : '#002776',
+                                                    borderColor: errors.phoneNumber ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.phoneNumber ? 'red' : '#002776',
+                                                    borderColor: errors.phoneNumber ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                         error={errors.phoneNumber}
@@ -813,14 +857,40 @@ function AdminUserManagement(){
                         </Box>
                     </Paper>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Button onClick={handleCloseEdit} variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>
+                <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                    <Button
+                        onClick={handleCloseEdit}
+                        variant="contained"
+                        sx={{
+                            backgroundColor: '#B2675E',
+                            '&:hover': {
+                                backgroundColor: '#8E5346',
+                            },
+                            borderRadius: '25px',
+                            padding: '8px 20px',
+                            transition: 'background-color 0.3s ease',
+                        }}
+                    >
                         Cancelar
                     </Button>
-                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!validateFields} variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#228B22' } }}>
+                    <Button
+                        type="submit"
+                        color="primary"
+                        onClick={handleSubmit}
+                        disabled={!validateFields}
+                        variant="contained"
+                        sx={{
+                            backgroundColor: '#028484',
+                            '&:hover': {
+                                backgroundColor: '#026F6B',
+                            },
+                            borderRadius: '25px',
+                            padding: '8px 20px',
+                            transition: 'background-color 0.3s ease',
+                        }}
+                    >
                         Guardar
                     </Button>
-
                 </DialogActions>
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>

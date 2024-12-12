@@ -194,10 +194,12 @@ function AdminCreateDepartment(){
                     }
                 }}
             >
-                <DialogTitle sx={{ backgroundColor: '#E5E5E5',  color: '#002776', textAlign: 'center' }}>Nuevo Departamento</DialogTitle>
+                <DialogTitle sx={{ backgroundColor: '#E5E5E5', color: '#002776', textAlign: 'center' }}>
+                    Nuevo Departamento
+                </DialogTitle>
                 <DialogContent sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#EDEDED',  marginTop: '10px' }}>
-                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2}}>
+                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#EDEDED', marginTop: '10px' }}>
+                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} sm={6}>
                                     <TextField
@@ -222,7 +224,7 @@ function AdminCreateDepartment(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#002776',
                                             },
                                         }}
                                     />
@@ -230,7 +232,7 @@ function AdminCreateDepartment(){
                                 <Grid item xs={12} sm={6}>
                                     <TextField
                                         select
-                                        label="Selecciones un Propietario"
+                                        label="Seleccione un Propietario"
                                         variant="outlined"
                                         size="small"
                                         name="propietaryId"
@@ -249,7 +251,7 @@ function AdminCreateDepartment(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#002776',
                                             },
                                         }}
                                         fullWidth
@@ -283,7 +285,7 @@ function AdminCreateDepartment(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#002776',
                                             },
                                         }}
                                         fullWidth
@@ -300,13 +302,27 @@ function AdminCreateDepartment(){
                     </Paper>
                 </DialogContent>
                 <DialogActions sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Button onClick={handleClose} variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>
+                    <Button
+                        onClick={handleClose}
+                        variant="contained"
+                        sx={{
+                            backgroundColor: '#B2675E',
+                            '&:hover': { backgroundColor: '#9C5A4D' },
+                        }}
+                    >
                         Cancelar
                     </Button>
-                    <Button type="submit" onClick={handleSubmit} variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#228B22' } }} >
+                    <Button
+                        type="submit"
+                        onClick={handleSubmit}
+                        variant="contained"
+                        sx={{
+                            backgroundColor: '#028484',
+                            '&:hover': { backgroundColor: '#026F6F' },
+                        }}
+                    >
                         Guardar
                     </Button>
-
                 </DialogActions>
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>

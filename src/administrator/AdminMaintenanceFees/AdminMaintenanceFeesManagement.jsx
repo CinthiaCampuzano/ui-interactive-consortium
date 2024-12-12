@@ -29,6 +29,7 @@ import {CircularProgress} from '@mui/material';
 import { CloudUpload as CloudUploadIcon } from '@mui/icons-material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SettingsIcon from "@mui/icons-material/Settings";
+import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
 
 
 const columns = [
@@ -177,142 +178,213 @@ function AdminMaintenanceFeesManagement(){
         }
     };
 
+    const textFieldStyles = {
+        '& .MuiOutlinedInput-root': {
+            '&.Mui-focused fieldset': {
+                borderColor: '#002776',
+            },
+        },
+        '& label.Mui-focused': { color: '#002776' },
+        minWidth: { xs: '100%', sm: 'auto' },
+    };
+
+    const buttonStyles = {
+        backgroundColor: '#002776',
+        '&:hover': { backgroundColor: '#001B5E' },
+    };
+
+    const tableHeadCellStyles = {
+        backgroundColor: '#002776',
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    };
+
+    const tableCellStyles = {
+        color: '#002776',
+        padding: '8px',
+    };
     return(
         <div>
             <Box
                 sx={{
-                    padding: '20px',
                     display: 'flex',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    paddingX: { xs: '10px', sm: '20px', md: '40px' }
+                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
                 }}
             >
-                <Typography
-                    variant="h6"
-                    component="h1"
+                <AdminGallerySidebar/>
+                <Box
+                    component="main"
                     sx={{
-                        fontWeight: 'bold',
-                        color: '#003366',
-                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' }
+                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
+                        padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
+                        marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
+                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
                     }}
                 >
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                        }}
+                    >
+                        {/* Título */}
+
+                        <Typography
+                            variant="h6"
+                            component="h1"
+                            sx={{
+                                fontWeight: 'bold',
+                                color: '#003366',
+                                fontSize: { xs: '1.5rem', md: '2rem' },
+                                marginBottom: '20px',
+                            }}
+                        >
                     Expensas de {consortiumName}
                 </Typography>
             </Box>
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 2,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '90%', sm: '80%', md: '40%', lg: '30%' },
-                }}
-            >
-                <Box mt={3} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    {/* Botón para seleccionar archivo */}
-                    <Button
-                        variant="outlined"
-                        component="label"
+
+                    <Paper
+                        elevation={2}
                         sx={{
-                            backgroundColor: '#002776',
-                            color: '#fff',
-                            '&:hover': { backgroundColor: '#001B5E' },
+                            padding: 2,
+                            margin: 'auto',
+                            marginTop: '20px',
+                            width: { xs: '90%', sm: '80%', md: '40%', lg: '30%' },
+                            borderRadius: '10px',
+                            border: '1px solid #002776',
+                        }}
+                    >
+                        <Box mt={3} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <Button
+                                variant="outlined"
+                                component="label"
+                                sx={{
+                                    backgroundColor: '#B2675E',
+                                    color: '#FFFFFF',
+                                    fontWeight: 'bold',
+                                    textTransform: 'none',
+                                    borderRadius: '30px',
+                                    padding: '10px 20px',
+                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': { backgroundColor: '#A15D50' },
+                                    '&:active': { backgroundColor: '#8A4A3D' },
+                                }}
+                            >
+                                <CloudUploadIcon sx={{ marginRight: 1 }} />
+                                Seleccionar archivo
+                                <input type="file" hidden onChange={handleFileChange} accept="application/pdf" />
+                            </Button>
+                            {file && (
+                                <Typography variant="body2" sx={{ color: 'green', marginTop: '10px', display: 'flex', alignItems: 'center' }}>
+                                    <CheckCircleIcon sx={{ marginRight: 1 }} /> Archivo seleccionado: {file.name}
+                                </Typography>
+                            )}
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#002776',
+                                    '&:hover': { backgroundColor: '#001B5E' },
+                                    marginBottom: '20px',
+                                }}
+                                onClick={uploadMaintenanceFee}
+                                disabled={loading || !file}
+                            >
+                                {loading ? <CircularProgress size={24} color="inherit" /> : 'Cargar Expensas'}
+                            </Button>
+
+                            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseAlert}>
+                                <Alert onClose={handleCloseAlert} severity={snackbarSeverity} sx={{ width: '100%' }}>
+                                    {snackbarMessage}
+                                </Alert>
+                            </Snackbar>
+                        </Box>
+                    </Paper>
+
+                    <Box
+                        sx={{
                             display: 'flex',
+                            justifyContent: 'center',
                             alignItems: 'center',
-                            padding: '10px 20px',
-                            marginBottom: '20px',
+                            marginTop: '40px', // Aumenta la separación entre el Paper y la tabla
                         }}
                     >
-                        <CloudUploadIcon sx={{ marginRight: 1 }} />
-                        Seleccionar archivo
-                        <input
-                            type="file"
-                            hidden
-                            onChange={handleFileChange}
-                            accept="application/pdf" // Ajusta los tipos de archivo permitidos
-                        />
-                    </Button>
-                    {file && (
-                        <Typography variant="body2" sx={{ color: 'green', marginTop: '10px', display: 'flex', alignItems: 'center' }}>
-                            <CheckCircleIcon sx={{ marginRight: 1 }} /> Archivo seleccionado: {file.name}
-                        </Typography>
-                    )}
-                    {/* Botón para cargar la expensa */}
-                    <Button
-                        variant="contained"
-                        sx={{
-                            backgroundColor: '#002776',
-                            '&:hover': { backgroundColor: '#001B5E' },
-                            marginBottom: '20px',
-                        }}
-                        onClick={uploadMaintenanceFee}
-                        disabled={loading || !file}
-                    >
-                        {loading ? <CircularProgress size={24} color="inherit" /> : 'Cargar Expensas'}
-                    </Button>
-
-                    <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseAlert}>
-                        <Alert onClose={handleCloseAlert} severity={snackbarSeverity} sx={{ width: '100%' }}>
-                            {snackbarMessage}
-                        </Alert>
-                    </Snackbar>
-                </Box>
-            </Paper>
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 2,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '95%', sm: '85%', md: '70%', lg: '60%' },
-                }}
-            >
-                <Box display="flex" justifyContent="center" mt={3}>
-                    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-                        <TableContainer sx={{ maxHeight: 600, overflowX: 'auto' }}>
-                            <Table stickyHeader aria-label="sticky table">
-                                <TableHead>
-                                    <TableRow sx={{ height: '24px' }}>
-                                        {columns.map((column) => (
+                        <Box
+                            sx={{
+                                width: '100%',
+                                maxWidth: '900px',
+                            }}
+                        >
+                            <TableContainer
+                                sx={{
+                                    maxHeight: 600,
+                                    overflowX: 'auto',
+                                    borderRadius: '10px',
+                                    border: '1px solid #002776',
+                                }}
+                            >
+                                <Table
+                                    stickyHeader
+                                    sx={{
+                                        borderCollapse: 'separate',
+                                        borderSpacing: '0',
+                                    }}
+                                >
+                                    <TableHead>
+                                        <TableRow>
+                                            {columns.map((column, index) => (
+                                                <TableCell
+                                                    key={column.id}
+                                                    align={column.align}
+                                                    sx={{
+                                                        ...tableHeadCellStyles,
+                                                        ...(index === 0 && { borderTopLeftRadius: '10px' }),
+                                                    }}
+                                                >
+                                                    {column.label}
+                                                </TableCell>
+                                            ))}
                                             <TableCell
-                                                key={column.id}
-                                                align={column.align}
-                                                style={{ minWidth: column.minWidth || 150, backgroundColor: '#F5F5DC', color:'#002776',  fontWeight: 'bold', padding: '8px'  }}
+                                                align="center"
+                                                sx={{
+                                                    ...tableHeadCellStyles,
+                                                    borderTopRightRadius: '0px',
+                                                }}
                                             >
-                                                {column.label}
+                                                Descargar
                                             </TableCell>
-                                        ))}
-                                        <TableCell align="center" style={{ minWidth: 100, backgroundColor: '#F5F5DC', fontWeight: 'bold', padding: '8px' }}>
-                                            Descargar
-                                        </TableCell>
-                                        <TableCell align="center" style={{ minWidth: 100, backgroundColor: '#F5F5DC', fontWeight: 'bold', padding: '8px' }}>
-
-                                        </TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {allMaintenanceFees
-                                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                        .map((maintenanceFee) => {
-                                            return (
-                                                <TableRow hover role="checkbox" tabIndex={-1} key={maintenanceFee.maintenanceFeeId} sx={{ height: 'auto' }}>
+                                            <TableCell
+                                                align="center"
+                                                sx={{
+                                                    ...tableHeadCellStyles,
+                                                    borderTopRightRadius: '10px',
+                                                }}
+                                            ></TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {allMaintenanceFees
+                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                            .map((maintenanceFee) => (
+                                                <TableRow
+                                                    hover
+                                                    key={maintenanceFee.maintenanceFeeId}
+                                                    sx={{
+                                                        backgroundColor: '#FFFFFF',
+                                                        '&:hover': { backgroundColor: '#F6EFE5' },
+                                                    }}
+                                                >
                                                     {columns.map((column) => {
                                                         const value = maintenanceFee[column.id];
                                                         return (
-                                                            <TableCell key={column.id} align={column.align} style={{
-                                                                padding: '8px', // Un padding mayor para dar más espacio
-                                                                minWidth: column.minWidth || 150, // Ancho mínimo para el contenido
-                                                                maxWidth: 300, // Ancho máximo para limitar el tamaño
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis', // Agrega puntos suspensivos para contenido largo
-                                                                whiteSpace: 'nowrap', // Evita que el texto se divida en varias líneas
-                                                            }}>
+                                                            <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles }}>
                                                                 {value}
                                                             </TableCell>
                                                         );
                                                     })}
-                                                    <TableCell align="center" style={{ padding: '8px', minWidth: 100 }}>
+                                                    <TableCell align="center" sx={tableCellStyles}>
                                                         <IconButton
                                                             aria-label="download-file"
                                                             onClick={() => downloadMaintenanceFee(maintenanceFee.maintenanceFeeId)}
@@ -321,43 +393,41 @@ function AdminMaintenanceFeesManagement(){
                                                             <CloudDownloadIcon fontSize="small" sx={{ color: '#002776' }} />
                                                         </IconButton>
                                                     </TableCell>
-                                                    <TableCell align="center" style={{ padding: '8px', minWidth: 100 }}>
-                                                        {/* Botón para Gestionar */}
+                                                    <TableCell align="center" sx={{ padding: '8px', minWidth: 100 }}>
                                                         <IconButton
                                                             aria-label="manage"
                                                             onClick={() => handleManageClick(maintenanceFee.period)}
-                                                            sx={{ padding: '4px', marginRight: '4px' }} // Espaciado entre los botones
+                                                            sx={{ padding: '4px', marginRight: '4px' }}
                                                         >
-                                                            <SettingsIcon fontSize="small" />
+                                                            <SettingsIcon fontSize="small" sx={{ color: '#002776' }} />
                                                         </IconButton>
-                                                        {/* Botón para Eliminar */}
                                                         <IconButton
                                                             aria-label="delete"
                                                             onClick={() => handleClickOpen(maintenanceFee.maintenanceFeeId)}
-                                                            sx={{ padding: '4px' }}
+                                                            sx={{ color: '#B2675E' }}
                                                         >
                                                             <DeleteIcon fontSize="small" />
                                                         </IconButton>
                                                     </TableCell>
                                                 </TableRow>
-                                            );
-                                        })}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                        <TablePagination
-                            rowsPerPageOptions={[10, 20, 50]}
-                            component="div"
-                            count={allMaintenanceFees.length}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                            labelRowsPerPage="Filas por página"
-                        />
-                    </Paper>
-                </Box>
-            </Paper>
+                                            ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            <TablePagination
+                                rowsPerPageOptions={[10, 20, 50]}
+                                component="div"
+                                count={allMaintenanceFees.length}
+                                rowsPerPage={rowsPerPage}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                labelRowsPerPage="Filas por página"
+                            />
+                        </Box>
+                    </Box>
+            </Box>
+            </Box>
             <Dialog
                 open={open}
                 onClose={(event, reason) => {

@@ -1,7 +1,7 @@
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {
-    Alert,
+    Alert, Card, CardContent, Chip,
     Dialog,
     DialogActions,
     DialogContent,
@@ -29,6 +29,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import {jwtDecode} from "jwt-decode";
 import { useSnackbar } from 'notistack';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
+import {AccessTime, Assessment, Assignment, AttachMoney, Person} from "@mui/icons-material";
 
 
 const columns = [
@@ -250,58 +252,193 @@ function AdminMaintenanceFeesManagement(){
             console.error('Error de descarga:', error);
         }
     };
+
+
+    const tableHeadCellStyles = {
+        backgroundColor: '#002776',
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    };
+
+    const tableCellStyles = {
+        color: '#002776',
+        padding: '8px',
+    };
+
     return(
         <div>
             <Box
                 sx={{
-                    padding: '20px',
                     display: 'flex',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    paddingX: { xs: '10px', sm: '20px', md: '40px' }
+                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
                 }}
             >
-                <Typography
-                    variant="h6"
-                    component="h1"
+                <AdminGallerySidebar/>
+                <Box
+                    component="main"
                     sx={{
-                        fontWeight: 'bold',
-                        color: '#003366',
-                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' }
+                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
+                        padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
+                        marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
+                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
+
                     }}
+                >
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                        }}
+                    >
+                        {/* Título */}
+                        <Typography
+                            variant="h6"
+                            component="h1"
+                            sx={{
+                                fontWeight: 'bold',
+                                color: '#003366',
+                                fontSize: { xs: '1.5rem', md: '2rem' },
+                                marginBottom: '20px',
+                            }}
                 >
                     Pago de Expensas de {consortiumName}
                 </Typography>
-            </Box>
 
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 2,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '95%', sm: '85%', md: '70%', lg: '60%' },
-                }}
-            >
-                <Box display="flex" justifyContent="center" mt={3}>
-                    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-                        <TableContainer sx={{ maxHeight: 600, overflowX: 'auto' }}>
-                            <Table stickyHeader aria-label="sticky table">
+                    <Box sx={{ width: '100%', maxWidth: '1100px',  marginLeft: { xs: '40px', sm: '80px' } }}>
+                        {/* Tabla de resumen */}
+                        <Box sx={{ flexGrow: 1, p: 3 }}>
+                            <Grid container spacing={3}>
+                                {/* Active Users Card */}
+                                <Grid item xs={12} sm={6} md={2.4}>
+                                    <Card>
+                                        <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                                            <Typography variant="h4" component="div" sx={{ mb: 1 }}>
+                                                4
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                                <Person color="primary" />
+                                                <Typography color="text.secondary" variant="body2">
+                                                    Departamentos
+                                                </Typography>
+                                            </Box>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+
+                                {/* Minutes Card */}
+                                <Grid item xs={12} sm={6} md={2.4}>
+                                    <Card>
+                                        <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                                            <Typography variant="h4" component="div" sx={{ mb: 1 }}>
+                                                3
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                                <AccessTime color="primary" />
+                                                <Typography color="text.secondary" variant="body2">
+                                                    Pendientes
+                                                </Typography>
+                                            </Box>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+
+                                {/* Pending Card */}
+                                <Grid item xs={12} sm={6} md={2.4}>
+                                    <Card>
+                                        <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                                            <Typography variant="h4" component="div" sx={{ mb: 1 }}>
+                                                1
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                                <Assignment color="primary" />
+                                                <Typography color="text.secondary" variant="body2">
+                                                    Pagados
+                                                </Typography>
+                                            </Box>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+
+                                {/* Reports Card */}
+                                <Grid item xs={12} sm={6} md={2.4}>
+                                    <Card>
+                                        <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                                            <Typography variant="h4" component="div" sx={{ mb: 1 }}>
+                                                $150.000
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                                <AttachMoney color="primary" />
+                                                <Typography color="text.secondary" variant="body2">
+                                                    Monto
+                                                </Typography>
+                                            </Box>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+
+                                {/* Total Card */}
+                                <Grid item xs={12} sm={6} md={2.4}>
+                                    <Card>
+                                        <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                                            <Typography variant="h4" component="div" sx={{ mb: 1 }}>
+                                                $1.652.236
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                                <AttachMoney color="primary" />
+                                                <Typography color="text.secondary" variant="body2">
+                                                    Total
+                                                </Typography>
+                                            </Box>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            </Grid>
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
+                        <TableContainer  sx={{
+                            maxHeight: 600,
+                            overflowX: 'auto',
+                            borderRadius: '10px', // Redondea solo las esquinas del contenedor
+                            border: '1px solid #002776',
+                        }}
+                        >
+                            <Table
+                                stickyHeader
+                                sx={{
+                                    borderCollapse: 'separate',
+                                    borderSpacing: '0', // Evita que las celdas se superpongan
+                                }}
+                            >
                                 <TableHead>
                                     <TableRow sx={{ height: '24px' }}>
-                                        {columns.map((column) => (
+                                        {columns.map((column , index) => (
                                             <TableCell
                                                 key={column.id}
                                                 align={column.align}
-                                                style={{ minWidth: column.minWidth || 150, backgroundColor: '#F5F5DC', color:'#002776',  fontWeight: 'bold', padding: '8px'  }}
+                                                sx={{
+                                                    ...tableHeadCellStyles,
+                                                    ...(index === 0 && {
+                                                        borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
+                                                    })
+                                                }}
                                             >
                                                 {column.label}
                                             </TableCell>
                                         ))}
-                                        <TableCell align="center" style={{ minWidth: 100, backgroundColor: '#F5F5DC',color:'#002776', fontWeight: 'bold', padding: '8px' }}>
+                                        <TableCell align="center" sx={{
+                                            ...tableHeadCellStyles,
+                                            borderTopRightRadius: '0px',
+                                        }}>
                                             Comprobante de pago
                                         </TableCell>
-                                        <TableCell align="center" style={{ minWidth: 100, backgroundColor: '#F5F5DC', fontWeight: 'bold', padding: '8px' }}>
+                                        <TableCell align="center" sx={{
+                                            ...tableHeadCellStyles,
+                                            borderTopRightRadius: '10px',
+                                        }}>
 
                                         </TableCell>
                                     </TableRow>
@@ -311,23 +448,34 @@ function AdminMaintenanceFeesManagement(){
                                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                         .map((maintenanceFeePayment) => {
                                             return (
-                                                <TableRow hover role="checkbox" tabIndex={-1} key={maintenanceFeePayment.maintenanceFeePaymentId} sx={{ height: 'auto' }}>
+                                                <TableRow hover key={maintenanceFeePayment.maintenanceFeePaymentId} sx={{
+                                                    backgroundColor: '#FFFFFF',
+                                                    '&:hover': { backgroundColor: '#F6EFE5' },
+                                                }}>
                                                     {columns.map((column) => {
                                                         const value = maintenanceFeePayment[column.id];
                                                         return (
-                                                            <TableCell key={column.id} align={column.align} style={{
-                                                                padding: '8px', // Un padding mayor para dar más espacio
-                                                                minWidth: column.minWidth || 150, // Ancho mínimo para el contenido
-                                                                maxWidth: 300, // Ancho máximo para limitar el tamaño
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis', // Agrega puntos suspensivos para contenido largo
-                                                                whiteSpace: 'nowrap', // Evita que el texto se divida en varias líneas
-                                                            }}>
-                                                                {value}
+                                                            <TableCell
+                                                                key={column.id}
+                                                                align={column.align}
+                                                                sx={{ ...tableCellStyles }}
+                                                            >
+                                                                {column.id === 'status' ? (
+                                                                    <Chip
+                                                                        label={value}
+                                                                        sx={{
+                                                                            backgroundColor: value === 'Pagado' ? '#B0F2C2' : '#BCE7FD',
+                                                                            color: '#002776',
+                                                                            fontWeight: 'bold',
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    value
+                                                                )}
                                                             </TableCell>
                                                         );
                                                     })}
-                                                    <TableCell align="center" style={{ padding: '8px', minWidth: 100 }}>
+                                                    <TableCell align="center"  sx={tableCellStyles}>
                                                         <IconButton
                                                             aria-label="download-file"
                                                             onClick={() => handleDownload(maintenanceFeePayment.maintenanceFeePaymentId)}
@@ -341,9 +489,9 @@ function AdminMaintenanceFeesManagement(){
                                                         <IconButton
                                                             aria-label="edit"
                                                             onClick={() => handleEditClick(maintenanceFeePayment)}
-                                                            sx={{ padding: '4px' }}
+                                                            sx={{ padding: '4px', marginRight: '4px' }}
                                                         >
-                                                            <EditIcon fontSize="small" />
+                                                            <EditIcon fontSize="small" sx={{ color: '#002776' }} />
                                                         </IconButton>
                                                     </TableCell>
                                                 </TableRow>
@@ -362,26 +510,14 @@ function AdminMaintenanceFeesManagement(){
                             onRowsPerPageChange={handleChangeRowsPerPage}
                             labelRowsPerPage="Filas por página"
                         />
-                    </Paper>
                 </Box>
-            </Paper>
+                </Box>
+                </Box>
+            </Box>
             <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
                 <DialogTitle>Pago de Expensa</DialogTitle>
                 <DialogContent>
                     <Box component="form" sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        {/* Selector de estado */}
-                        {/*<FormControl fullWidth sx={{ mb: 2 }}>*/}
-                        {/*    <InputLabel>Estado</InputLabel>*/}
-                        {/*    <Select value={selectedStatus} onChange={handleStatusChange}>*/}
-                        {/*        {Object.entries(statusMapping).map(([key, value]) => (*/}
-                        {/*            <MenuItem key={key} value={key}>*/}
-                        {/*                {value}*/}
-                        {/*            </MenuItem>*/}
-                        {/*        ))}*/}
-                        {/*    </Select>*/}
-                        {/*</FormControl>*/}
-
-                        {/* Botón para seleccionar archivo */}
                         <Button
                             variant="outlined"
                             component="label"

@@ -412,17 +412,40 @@ function AdminAmenitiesManagement(){
                     }
                 }}
             >
-                <DialogTitle id="alert-dialog-title" sx={{ backgroundColor: '#E5E5E5',  color: '#002776', textAlign: 'center' }}>
+                <DialogTitle id="alert-dialog-title"  sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #028484',
+                    fontWeight: 'bold',
+                }}>
                     {"Desea eliminar este Espacio Comun ?"}
                 </DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#E5E5E5' }}>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
                     <DialogContentText id="alert-dialog-description">
                         Si acepta se eliminara el espacio comun deseado.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Button onClick={handleClose} variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>Rechazar</Button>
-                    <Button variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#3D9970' } }} onClick={() => {
+                <DialogActions  sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                    <Button onClick={handleClose} variant="contained"  sx={{
+                        backgroundColor: '#B2675E',
+                        '&:hover': {
+                            backgroundColor: '#8E5346',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }}>Rechazar</Button>
+                    <Button variant="contained" sx={{
+                        backgroundColor: '#028484',
+                        '&:hover': {
+                            backgroundColor: '#026F6B',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }} onClick={() => {
                         deleteAmenity(idAmenityCreated)
                         handleClose()
                     }
@@ -439,9 +462,16 @@ function AdminAmenitiesManagement(){
                     }
                 }}
             >
-                <DialogTitle sx={{ backgroundColor: '#E5E5E5',  color: '#002776', textAlign: 'center' }}>Actualizar Información</DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#EDEDED',  marginTop: '10px'}}>
+                <DialogTitle  sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #028484',
+                    fontWeight: 'bold',
+                }}>Actualizar Información</DialogTitle>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
+                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px' }}>
                         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2}}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} sm={6}>
@@ -457,17 +487,17 @@ function AdminAmenitiesManagement(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         fullWidth
@@ -486,17 +516,17 @@ function AdminAmenitiesManagement(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         fullWidth
@@ -506,11 +536,27 @@ function AdminAmenitiesManagement(){
                         </Box>
                     </Paper>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Button onClick={handleCloseEdit} variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>
+                <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                    <Button onClick={handleCloseEdit} variant="contained" sx={{
+                        backgroundColor: '#B2675E',
+                        '&:hover': {
+                            backgroundColor: '#8E5346',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }}>
                         Cancelar
                     </Button>
-                    <Button type="submit" color="primary" onClick={handleSubmit} variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#228B22' } }}>
+                    <Button type="submit" color="primary" onClick={handleSubmit} variant="contained"  sx={{
+                        backgroundColor: '#028484',
+                        '&:hover': {
+                            backgroundColor: '#026F6B',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }}>
                         Guardar
                     </Button>
 
