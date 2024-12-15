@@ -31,7 +31,6 @@ function Autentication() {
             const response = await Auth(email, password); // Llama al servicio de login
             const token = response.token;
             localStorage.setItem('token', token); // Guarda el token en localStorage
-            console.log('Holaaaaa');
 
             // Verificamos el rol y redirigimos a la página correspondiente
             if (isSuperAdmin()) {

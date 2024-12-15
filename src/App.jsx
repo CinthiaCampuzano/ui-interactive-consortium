@@ -5,20 +5,32 @@ import SuperAdminPage from "./superAdmin/SuperAdminPage.jsx";
 import PrivateRoute from "./superAdmin/PrivateRoute/PrivateRoute.jsx";
 import ResidentPage from "./resident/ResidentPage.jsx";
 import React from "react";
-
-
-
+import {isAdmin, isResident, isSuperAdmin} from "./Atentication/TokenUtils.jsx";
 
 function App() {
     const isAuthenticated = Boolean(localStorage.getItem('token')); // Verifica si hay un token
 
+    const getRedirectPath = () => {
+        if (isSuperAdmin()) {
+            return '/superAdmin/management';
+        } else if (isAdmin()) {
+            return '/admin/management';
+        } else if (isResident()) {
+            return '/resident/management';
+        } else {
+            return '/login';
+        }
+    };
+
     return (
         <div>
             <BrowserRouter>
-
                 <Routes>
-                    {/* Redirige a /login si no está autenticado */}
-                    {!isAuthenticated && <Route path="*" element={<Navigate to="/login" replace />} />}
+                    {/* Redirige a la página correspondiente si está autenticado */}
+                    {isAuthenticated && <Route path="/" element={<Navigate to={getRedirectPath()} replace/>}/>}
+
+                    {/* Ruta por defecto para redirigir a /login */}
+                    <Route path="/" element={<Navigate to="/login" replace/>}/>
 
                     {/* Ruta para la autenticación */}
                     <Route path="/login" element={<Autentication />} />
