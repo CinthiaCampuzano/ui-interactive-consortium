@@ -5,6 +5,7 @@ import ResidentConsortiumList from "./ResdientConsortiumList.jsx";
 import ResidentDashboard from "./ResidentDashboard.jsx";
 import ResidentMaintenanceFeePayments from "./ResidentMaintenanceFee/ResidentMaintenanceFeePayments.jsx";
 import ResidentClaim from "./ResidentClaim/ResidentClaim.jsx";
+import ReserveSpace from "./ResidentBooking/ResidentBooking.jsx";
 
 function ResidentPage(){
     return (
@@ -23,7 +24,7 @@ function ResidentPage(){
 
                 <Route path="/expensas" element={<ResidentMaintenanceFeePayments/>} />
 
-                {/*<Route path="/reservas" element={<ReserveSpace/>} />*/}
+                <Route path="/reservas" element={<ReserveSpace/>} />
 
 
             </Routes>
