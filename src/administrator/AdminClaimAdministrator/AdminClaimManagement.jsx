@@ -52,6 +52,7 @@ const AdminClaimManagement = () => {
     const [cards, setCards] = useState();
     const [currentClaim, setCurrentClaim] = useState(null);
     const [formData, setFormData] = useState({status: '', comment: ''});
+    const [processingHandleMoveToUnderReview, setProcessingHandleMoveToUnderReview] = useState(false);
     const [claimInfo, setClaimInfo] = useState({
         issueReportId: null,
         consortium: {
@@ -146,6 +147,8 @@ const AdminClaimManagement = () => {
     };
 
     const handleMoveToUnderReview = async (claim) => {
+        setProcessingHandleMoveToUnderReview(true)
+
         if (!consortiumIdState) {
             return;
         }
@@ -173,9 +176,13 @@ const AdminClaimManagement = () => {
                     Authorization: `Bearer ${token}` // Incluye el token en los encabezados
                 }
             });
+
+            getAllClaimByConsortium()
         } catch (error) {
             console.error("Error al obtener las tarjetas:", error);
             alert("Hubo un problema al obtener los tarjetas. Por favor, intenta nuevamente.");
+        } finally {
+            setProcessingHandleMoveToUnderReview(false)
         }
     };
 
@@ -568,6 +575,7 @@ const AdminClaimManagement = () => {
                                                     <TableCell align="center" sx={tableCellStyles}>
                                                         {claim.status === 'Pendiente' && (
                                                             <IconButton
+                                                                disabled={ processingHandleMoveToUnderReview }
                                                                 aria-label="edit"
                                                                 onClick={() => handleMoveToUnderReview(claim)}
                                                                 sx={{ color: '#002776' }}
