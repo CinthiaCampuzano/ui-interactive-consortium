@@ -361,7 +361,6 @@ function AdminDepartmentManagement(){
 
             // Actualizar el estado con los departamentos restantes
             setAllDepartments(allDepartments.filter(department => department.departmentId !== idDepartmentToDelete));
-            alert("Departamento eliminado correctamente.");
         } catch (error) {
             console.error("Error al eliminar el departamento", error);
             alert("Ocurrió un error al intentar eliminar el departamento.");
