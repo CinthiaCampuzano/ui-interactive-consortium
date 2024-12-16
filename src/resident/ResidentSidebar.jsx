@@ -80,23 +80,29 @@ const ResidentSidebar = () => {
             <Box
                 sx={{
                     p: 2,
-                    bgcolor: '#1973B8',
-                    color: '#004481',
+                    bgcolor: '#072246',
+                    color: '#072246',
                     textAlign: 'center',
                 }}
             >
-                <Typography
-                    variant="h5"
-                    fontWeight="700"
-                    fontFamily="'Poppins', sans-serif"
-                    letterSpacing="0.8px"
-                    sx={{
-                        textTransform: 'capitalize',
-                        color: '#ffffff',
-                    }}
-                >
-                    Consorcio interactivo
-                </Typography>
+                <img src="/CiLogoLq.jpg" alt="Icon" style={{
+                    width: '75%', // Adjust the width to fit within the sidebar
+                    height: 'auto', // Maintain the aspect ratio
+                    margin: '0 auto', // Center the image
+                    display: 'block', // Ensure the image is a block element
+                }}/>
+                {/*<Typography*/}
+                {/*    variant="h5"*/}
+                {/*    fontWeight="700"*/}
+                {/*    fontFamily="'Poppins', sans-serif"*/}
+                {/*    letterSpacing="0.8px"*/}
+                {/*    sx={{*/}
+                {/*        textTransform: 'capitalize',*/}
+                {/*        color: '#ffffff',*/}
+                {/*    }}*/}
+                {/*>*/}
+                {/*    Consorcio interactivo*/}
+                {/*</Typography>*/}
             </Box>
 
             {/* Menú de navegación */}

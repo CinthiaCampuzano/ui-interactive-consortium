@@ -2,6 +2,8 @@ import {createContext, useEffect, useState} from "react";
 import axios from "axios";
 import {jwtDecode} from "jwt-decode";
 import {format} from "date-fns";
+import { useNavigate } from "react-router-dom";
+
 
 
 export const ResidentManageContext = createContext()
@@ -11,6 +13,8 @@ export function ResidentManageContextProvider(props){
     const [aConsortiumByIdConsortium, setAConsortiumByIdConsortium] = useState({})
     const [allMaintenanceFeesPaymentPerson , setAllMaintenanceFeesPaymentPerson] = useState([])
     const [allClaims , setAllClaims] = useState([])
+    const navigate = useNavigate();
+
     const statusMapping = {
         PENDING: "Pendiente",
         PAID: "Pagado"
@@ -28,8 +32,6 @@ export function ResidentManageContextProvider(props){
         const storedConsortiumId = localStorage.getItem('consortiumId');
         if (storedConsortiumId) {
             setConsortiumIdState(storedConsortiumId);
-        } else {
-            navigate('/admin/management/'); // Redirect if no consortiumId is found
         }
     }, []);
 
