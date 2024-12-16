@@ -36,7 +36,6 @@ const ResidentSidebar = () => {
                 const decodedToken = jwtDecode(token);
                 const fullName = `${decodedToken.lastName} ${decodedToken.name}`;
                 setUsername(fullName);
-                console.log(decodedToken.role)
                 setFilteredMenuItems(menuItems.filter(item => !item.role || decodedToken.role.includes(item.role)));
             } catch (error) {
                 console.error('Error decoding token:', error);

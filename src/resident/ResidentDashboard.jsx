@@ -1,4 +1,4 @@
-import React, {useContext, useEffect} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import { Grid, Card, CardActionArea, CardContent, Typography } from '@mui/material';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import AnnouncementIcon from '@mui/icons-material/Announcement';
@@ -9,22 +9,36 @@ import BusinessIcon from '@mui/icons-material/Business';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import {ResidentManageContext} from "./ResidentManageContext.jsx";
 import ResidentSidebar from "./ResidentSidebar.jsx";
+import {jwtDecode} from "jwt-decode";
 
 const options = [
     { title: 'Mis Consorcios', icon: <BusinessIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management' },
     { title: 'Expensas', icon: <ReceiptIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/expensas' },
     { title: 'Tablón de Anuncios', icon: <AnnouncementIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/publicaciones'},
     { title: 'Reclamos', icon: <ReportIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/reclamos' },
-    { title: 'Reservas', icon: <CalendarTodayIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/reservas' },
+    { title: 'Reservas', icon: <CalendarTodayIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/reservas', role: 'ROLE_RESIDENT' },
 ];
 
 const ResidentDashboard = () => {
     const {consortiumName, consortiumIdState, getAConsortiumByIdConsortium} = useContext(ResidentManageContext)
     const navigate = useNavigate();
+    const [filteredOptionsItems, setFilteredOptionsItems] = useState([]);
 
     useEffect(() => {
         getAConsortiumByIdConsortium();
     }, [consortiumIdState]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedToken = jwtDecode(token);
+                setFilteredOptionsItems(options.filter(item => !item.role || decodedToken.role.includes(item.role)));
+            } catch (error) {
+                console.error('Error decoding token:', error);
+            }
+        }
+    }, []);
 
     return (
         <Box
@@ -67,7 +81,7 @@ const ResidentDashboard = () => {
                     </Typography>
 
                     <Grid container spacing={3} justifyContent="center" maxWidth="1000px"> {/* Se aumentó el spacing entre las tarjetas */}
-                        {options.map((option, index) => (
+                        {filteredOptionsItems?.map((option, index) => (
                             <Grid
                                 item
                                 xs={12}
