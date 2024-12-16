@@ -47,8 +47,8 @@ function Autentication() {
             setSuccess(true);
             setError('');
         } catch (err) {
-            console.error(err.message);
-            setError(err.message); // Muestra el error en la interfaz
+            console.log(err);
+            setError("Usuario o contraseña incorrectos"); // Muestra el error en la interfaz
             setSuccess(false);
         }
     };
