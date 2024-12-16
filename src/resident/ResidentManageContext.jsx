@@ -97,6 +97,10 @@ export function ResidentManageContextProvider(props){
 
     const getAllMaintenanceFeesPaymentByIdConsortiumAndPerson = async () => {
         try {
+            if (!consortiumIdState) {
+                return;
+            }
+
             // Obtén el token
             const token = localStorage.getItem('token');
             if (!token) {
