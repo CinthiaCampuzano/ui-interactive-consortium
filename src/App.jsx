@@ -5,7 +5,7 @@ import SuperAdminPage from "./superAdmin/SuperAdminPage.jsx";
 import PrivateRoute from "./superAdmin/PrivateRoute/PrivateRoute.jsx";
 import ResidentPage from "./resident/ResidentPage.jsx";
 import React from "react";
-import {isAdmin, isResident, isSuperAdmin} from "./Atentication/TokenUtils.jsx";
+import {isAdmin, isPerson, isResident, isSuperAdmin} from "./Atentication/TokenUtils.jsx";
 
 function App() {
     const isAuthenticated = Boolean(localStorage.getItem('token')); // Verifica si hay un token
@@ -15,7 +15,7 @@ function App() {
             return '/superAdmin/management';
         } else if (isAdmin()) {
             return '/admin/management';
-        } else if (isResident()) {
+        } else if (isPerson()) {
             return '/resident/management';
         } else {
             return '/login';
@@ -58,7 +58,7 @@ function App() {
                     <Route
                         path="/resident/management/*"
                         element={
-                            <PrivateRoute requiredRole="ROLE_RESIDENT">
+                            <PrivateRoute requiredRole="ROLE_RESIDENT" orRequiredRole="ROLE_PROPIETARY">
                                 <ResidentPage />
                             </PrivateRoute>
                         }

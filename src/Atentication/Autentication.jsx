@@ -9,7 +9,7 @@ import {
     Box, Alert,
 } from '@mui/material';
 import Auth from "./Auth.jsx";
-import {isAdmin, isResident, isSuperAdmin} from "./TokenUtils.jsx";
+import {isAdmin, isPerson, isResident, isSuperAdmin} from "./TokenUtils.jsx";
 import {useNavigate} from "react-router-dom";
 import { Carousel } from 'react-responsive-carousel'; // Librería para el carrusel de imágenes
 import 'react-responsive-carousel/lib/styles/carousel.min.css'; // Estilos para el carrusel
@@ -37,7 +37,7 @@ function Autentication() {
                 navigate('/superAdmin/management'); // Redirige al Dashboard del SuperAdmin
             } else if (isAdmin()) {
                 navigate('/admin/management'); // Redirige al Dashboard del Admin
-            } else if (isResident()) {
+            } else if (isPerson()) {
                 navigate('/resident/management'); // Redirige al Dashboard del Resident
             } else {
                 navigate('/login'); // Redirige a login si no se encuentra un rol válido
@@ -138,18 +138,18 @@ function Autentication() {
                             </Button>
                         </form>
 
-                        <Box sx={{ marginTop: '20px' }}>
-                            <Link
-                                href="#"
-                                sx={{
-                                    color: '#0043A6',
-                                    textDecoration: 'none',
-                                    '&:hover': { textDecoration: 'underline' },
-                                }}
-                            >
-                                ¿Olvidaste tu contraseña?
-                            </Link>
-                        </Box>
+                        {/*<Box sx={{ marginTop: '20px' }}>*/}
+                        {/*    <Link*/}
+                        {/*        href="#"*/}
+                        {/*        sx={{*/}
+                        {/*            color: '#0043A6',*/}
+                        {/*            textDecoration: 'none',*/}
+                        {/*            '&:hover': { textDecoration: 'underline' },*/}
+                        {/*        }}*/}
+                        {/*    >*/}
+                        {/*        ¿Olvidaste tu contraseña?*/}
+                        {/*    </Link>*/}
+                        {/*</Box>*/}
                     </Paper>
                 </Container>
             )}

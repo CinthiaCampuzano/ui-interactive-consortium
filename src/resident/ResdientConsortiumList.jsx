@@ -64,7 +64,7 @@ function ResidentConsortiumList(){
         try {
             // Decodifica el token y verifica si tiene el rol de ROLE_ADMIN
             const decodedToken = jwtDecode(token);
-            const isResident = decodedToken?.role?.includes('ROLE_RESIDENT');
+            const isResident = decodedToken?.role?.includes('ROLE_RESIDENT') || decodedToken?.role?.includes('ROLE_PROPIETARY');
 
             if (!isResident) {
                 alert("No tienes permisos de residente para realizar esta acción.");

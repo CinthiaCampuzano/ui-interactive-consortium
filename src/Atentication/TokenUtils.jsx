@@ -31,5 +31,13 @@ export const isAdmin = () => {
 export const isResident = () => {
     const role = getRole();
     return role.includes('ROLE_RESIDENT');
+}
 
+export const isPropietary = () => {
+    const role = getRole();
+    return role.includes('ROLE_PROPIETARY');
+}
+
+export const isPerson = () => {
+    return isResident() || isPropietary()
 }

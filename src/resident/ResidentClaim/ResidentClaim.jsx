@@ -181,7 +181,7 @@ const ResidentClaim = () => {
 
         // Decodifica el token para verificar el rol
         const decodedToken = jwtDecode(token);
-        const isResident = decodedToken?.role?.includes('ROLE_RESIDENT');
+        const isResident = decodedToken?.role?.includes('ROLE_RESIDENT') || decodedToken?.role?.includes('ROLE_PROPIETARY');
         if (!isResident) {
             alert("No tienes permisos para realizar esta acción.");
             return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN
@@ -275,7 +275,7 @@ const ResidentClaim = () => {
 
         // Decodifica el token para verificar el rol
         const decodedToken = jwtDecode(token);
-        const isResident = decodedToken?.role?.includes('ROLE_RESIDENT');
+        const isResident = decodedToken?.role?.includes('ROLE_RESIDENT') || decodedToken?.role?.includes('ROLE_PROPIETARY');
         if (!isResident) {
             alert("No tienes permisos para realizar esta acción.");
             return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN

@@ -63,7 +63,7 @@ export function ResidentManageContextProvider(props){
         try {
             // Decodifica el token para verificar el rol
             const decodedToken = jwtDecode(token);
-            const isResident = decodedToken?.role?.includes('ROLE_RESIDENT');
+            const isResident = decodedToken?.role?.includes('ROLE_RESIDENT') || decodedToken?.role?.includes('ROLE_PROPIETARY');
 
             if (!isResident) {
                 alert("No tienes permisos para realizar esta acción.");
@@ -113,7 +113,7 @@ export function ResidentManageContextProvider(props){
             const roles = decodedToken.role || [];
 
             // Verifica el rol
-            if (!roles.includes('ROLE_RESIDENT')) {
+            if (!(roles.includes('ROLE_RESIDENT') || roles.includes('ROLE_PROPIETARY'))) {
                 alert("No tienes permisos para acceder a esta información.");
                 return;
             }
@@ -166,7 +166,7 @@ export function ResidentManageContextProvider(props){
             const roles = decodedToken.role || [];
 
             // Verifica el rol
-            if (!roles.includes('ROLE_RESIDENT')) {
+            if (!(roles.includes('ROLE_RESIDENT') || roles.includes('ROLE_PROPIETARY'))) {
                 alert("No tienes permisos para acceder a esta información.");
                 return;
             }

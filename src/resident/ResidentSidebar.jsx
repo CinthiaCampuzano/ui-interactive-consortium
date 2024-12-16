@@ -26,6 +26,8 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday"; // Importar e
 const ResidentSidebar = () => {
     const [isDrawerOpen, setDrawerOpen] = useState(false);
     const [username, setUsername] = useState('');
+    const [filteredMenuItems, setFilteredMenuItems] = useState([]);
+
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -34,6 +36,8 @@ const ResidentSidebar = () => {
                 const decodedToken = jwtDecode(token);
                 const fullName = `${decodedToken.lastName} ${decodedToken.name}`;
                 setUsername(fullName);
+                console.log(decodedToken.role)
+                setFilteredMenuItems(menuItems.filter(item => !item.role || decodedToken.role.includes(item.role)));
             } catch (error) {
                 console.error('Error decoding token:', error);
                 setUsername('Usuario');
@@ -54,11 +58,11 @@ const ResidentSidebar = () => {
     };
 
     const menuItems = [
-        { title: 'Mis Consorcios', icon: <BusinessIcon />, path: '/resident/management'},
+        { title: 'Mis Consorcios', icon: <BusinessIcon />, path: '/resident/management' },
         { title: 'Expensas', icon: <ReceiptIcon />, path: '/resident/management/expensas' },
-        { title: 'Tablón de Anuncios', icon: <AnnouncementIcon />, path:'/resident/management/publicaciones' },
-        { title: 'Reclamos', icon: <ReportIcon />, path:'/resident/management/reclamos' },
-        { title: 'Reservas', icon: <CalendarTodayIcon />, path: '/resident/management/reservas' },
+        { title: 'Tablón de Anuncios', icon: <AnnouncementIcon />, path: '/resident/management/publicaciones' },
+        { title: 'Reclamos', icon: <ReportIcon />, path: '/resident/management/reclamos' },
+        { title: 'Reservas', icon: <CalendarTodayIcon />, path: '/resident/management/reservas', role: 'ROLE_RESIDENT' },
     ];
 
     const sidebarContent = (
@@ -98,7 +102,7 @@ const ResidentSidebar = () => {
 
             {/* Menú de navegación */}
             <List>
-                {menuItems.map((item, index) => (
+                {filteredMenuItems.map((item, index) => (
                     <ListItem
                         button
                         key={index}

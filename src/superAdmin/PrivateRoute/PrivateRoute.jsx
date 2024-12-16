@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
-function PrivateRoute({ children, requiredRole }) {
+function PrivateRoute({ children, requiredRole, orRequiredRole }) {
     const token = localStorage.getItem('token'); // Obtén el token almacenado
 
     if (!token) {
@@ -12,7 +12,7 @@ function PrivateRoute({ children, requiredRole }) {
         const decodedToken = jwtDecode(token); // Decodifica el token
 
         // Verifica si el rol del usuario coincide con el rol requerido
-        const hasRequiredRole = decodedToken?.role.includes(requiredRole);
+        const hasRequiredRole = decodedToken?.role.includes(requiredRole) || decodedToken?.role.includes(orRequiredRole);
 
         if (!hasRequiredRole) {
             return <Navigate to="/login" replace />; // Redirige si no tiene el rol requerido
