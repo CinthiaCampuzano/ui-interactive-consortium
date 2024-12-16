@@ -118,6 +118,7 @@ function AdminCreateDepartment(){
 
             // Si el usuario tiene el rol adecuado, realiza la solicitud
             const url = `${import.meta.env.VITE_API_BASE_URL}/departments`;
+            departmentInfo.consortium.consortiumId = consortiumIdState;
 
             await axios.post(url, departmentInfo, {
                 headers: {
