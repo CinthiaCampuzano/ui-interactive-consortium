@@ -55,7 +55,6 @@ const ResidentSidebar = () => {
 
     const menuItems = [
         { title: 'Mis Consorcios', icon: <BusinessIcon />, path: '/resident/management'},
-        { title: 'Espacio Común', icon: <HomeIcon />, path: '/admin/management/espacio-comun' },
         { title: 'Expensas', icon: <ReceiptIcon />, path: '/resident/management/expensas' },
         { title: 'Tablón de Anuncios', icon: <AnnouncementIcon />, path:'/resident/management/publicaciones' },
         { title: 'Reclamos', icon: <ReportIcon />, path:'/resident/management/reclamos' },
