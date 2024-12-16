@@ -645,7 +645,7 @@ const ResidentClaim = () => {
                                                             );
                                                         })}
                                                         <TableCell align="center" sx={tableCellStyles}>
-                                                            <IconButton aria-label="delete" onClick={() => handleClickOpenDelete(claim.issueReportId)} sx={{ color: '#B2675E' }}>
+                                                            <IconButton aria-label="delete" onClick={() => handleClickOpenDelete(claim.issueReportId)} sx={{ color: '#B2675E' }} disabled = {claim.status !== 'Pendiente'} >
                                                                 <DeleteIcon fontSize="small" />
                                                             </IconButton>
                                                         </TableCell>
