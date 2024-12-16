@@ -34,8 +34,8 @@ const SuperAdminSidebar = () => {
     };
 
     const menuItems = [
-        { title: 'Administradores', url: '/superAdmin/management/administradores', icon: <AccountCircleIcon /> },
-        { title: 'Consorcios', url: '/superAdmin/management/consorcios', icon: <ApartmentIcon /> }
+        { title: 'Administradores', path: '/superAdmin/management/administradores', icon: <AccountCircleIcon /> },
+        { title: 'Consorcios', path: '/superAdmin/management/consorcios', icon: <ApartmentIcon /> }
     ];
 
     const sidebarContent = (
