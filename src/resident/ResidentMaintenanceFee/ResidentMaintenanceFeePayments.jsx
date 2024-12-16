@@ -25,6 +25,7 @@ import {jwtDecode} from "jwt-decode";
 import { useSnackbar } from 'notistack';
 import {AccessTime, Assessment, Assignment, AttachMoney, Person} from "@mui/icons-material";
 import {ResidentManageContext} from "../ResidentManageContext.jsx";
+import ResidentSidebar from "../ResidentSidebar.jsx";
 
 
 const columns = [
@@ -182,7 +183,7 @@ function ResidentMaintenanceFeePayments(){
                     minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
                 }}
             >
-                {/*<AdminGallerySidebar/>*/}
+                <ResidentSidebar/>
                 <Box
                     component="main"
                     sx={{

@@ -1,20 +1,14 @@
 import React, {useContext, useEffect} from 'react';
 import { Grid, Card, CardActionArea, CardContent, Typography } from '@mui/material';
-import PeopleIcon from '@mui/icons-material/People';
-import HomeIcon from '@mui/icons-material/Home';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import AnnouncementIcon from '@mui/icons-material/Announcement';
 import ReportIcon from '@mui/icons-material/Report';
 import { useNavigate } from 'react-router-dom';
-import Container from "@mui/material/Container";
-import ApartmentIcon from "@mui/icons-material/Apartment";
-import Paper from "@mui/material/Paper";
 import Box from "@mui/material/Box";
 import BusinessIcon from '@mui/icons-material/Business';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import {AdminManageContext} from "../administrator/AdminManageContext.jsx";
-import AdminGallerySidebar from "../administrator/AdminGallerySidebar.jsx";
 import {ResidentManageContext} from "./ResidentManageContext.jsx";
+import ResidentSidebar from "./ResidentSidebar.jsx";
 
 const options = [
     { title: 'Mis Consorcios', icon: <BusinessIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management' },
@@ -39,7 +33,7 @@ const ResidentDashboard = () => {
                 minHeight: '100vh',
             }}
         >
-            <AdminGallerySidebar />
+            <ResidentSidebar/>
             <Box
                 component="main"
                 sx={{

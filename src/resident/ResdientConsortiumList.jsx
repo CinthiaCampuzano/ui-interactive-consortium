@@ -23,6 +23,7 @@ import {ResidentManageContext} from "./ResidentManageContext.jsx";
 import AdminGallerySidebar from "../administrator/AdminGallerySidebar.jsx";
 import {LocationOn} from "@mui/icons-material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera.js";
+import ResidentSidebar from "./ResidentSidebar.jsx";
 
 const columns = [
     { id: 'name', label: 'Edificio', minWidth: 100 },
@@ -128,7 +129,7 @@ function ResidentConsortiumList(){
                 }}
             >
                 {/* Sidebar */}
-                <AdminGallerySidebar/>
+                <ResidentSidebar/>
 
                 {/* Main content */}
                 <Box

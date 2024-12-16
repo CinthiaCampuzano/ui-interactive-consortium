@@ -15,6 +15,7 @@ import {
 import {jwtDecode} from "jwt-decode";
 import { useNavigate } from 'react-router-dom'
 import {ResidentManageContext} from "../ResidentManageContext.jsx";
+import ResidentSidebar from "../ResidentSidebar.jsx";
 
 
 const AdminBulletinBoard = () => {
@@ -96,7 +97,7 @@ const AdminBulletinBoard = () => {
                 minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
             }}
         >
-            {/*<AdminGallerySidebar />*/}
+            <ResidentSidebar/>
 
             <Box
                 component="main"

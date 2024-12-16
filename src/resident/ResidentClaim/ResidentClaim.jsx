@@ -38,6 +38,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AccessTimeIcon from "@mui/icons-material/AccessTime.js";
 import AnnouncementIcon from "@mui/icons-material/Announcement.js";
 import BarChartIcon from "@mui/icons-material/BarChart.js";
+import ResidentSidebar from "../ResidentSidebar.jsx";
 
 
 
@@ -307,7 +308,7 @@ const ResidentClaim = () => {
                     minHeight: '100vh', // Ensures that the container takes the full height of the screen
                 }}
             >
-                {/*<AdminGallerySidebar />*/}
+                <ResidentSidebar/>
                 <Box
                     component="main"
                     sx={{
