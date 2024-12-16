@@ -292,9 +292,7 @@ function ResidentMaintenanceFeePayments(){
                                                                                     )
                                                                                 }
                                                                                 disabled={
-                                                                                    maintenanceFeePayment.status === 'PENDING' ||
-                                                                                    !maintenanceFeePayment.paymentDate
-                                                                                }
+                                                                                    maintenanceFeePayment.status === 'PENDING' }
                                                                                 sx={{ padding: '4px' }}
                                                                             >
                                                                                 <CloudDownloadIcon
