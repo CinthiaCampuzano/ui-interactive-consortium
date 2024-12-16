@@ -48,6 +48,10 @@ const AdminBulletinBoard = () => {
     };
 
     useEffect(() => {
+        if (!consortiumIdState) {
+            return;
+        }
+
         const fetchPosts = async () => {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -81,7 +85,7 @@ const AdminBulletinBoard = () => {
             }
         };
         fetchPosts();
-    }, []);
+    }, [consortiumIdState]);
 
 
 

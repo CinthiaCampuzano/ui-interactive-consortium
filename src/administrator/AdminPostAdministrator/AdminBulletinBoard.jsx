@@ -31,6 +31,11 @@ const AdminBulletinBoard = () => {
 
     useEffect(() => {
         const fetchPosts = async () => {
+
+            if (!consortiumIdState) {
+                return;
+            }
+
             const token = localStorage.getItem('token');
             if (!token) {
                 setLoading(false);
