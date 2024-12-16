@@ -1,29 +1,17 @@
-import {
-    Alert,
-    Box, Button,
-    Card,
-    CardContent, Dialog, DialogActions, DialogContent, DialogTitle,
-    FormControl,
-    Grid, InputAdornment,
-    InputLabel,
-    MenuItem,
-    Select, Snackbar,
-    TextField,
-    Typography
-} from "@mui/material";
-import ResidentSidebar from "../../resident/ResidentSidebar.jsx";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday.js";
+import {Box, Typography} from "@mui/material";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
-import React from "react";
+import React, {useContext, useEffect, useState} from "react";
 import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
 import IconButton from "@mui/material/IconButton";
-import EditIcon from "@mui/icons-material/Edit.js";
 import DeleteIcon from "@mui/icons-material/Delete";
+import {jwtDecode} from "jwt-decode";
+import axios from "axios";
+import {AdminManageContext} from "../AdminManageContext.jsx";
 
 const AdminBooking = () => {
     const reservations = [
@@ -53,12 +41,108 @@ const AdminBooking = () => {
         },
     ];
 
+    const shiftMapping = {
+        'MORNING': 'Mañana',
+        'NIGHT': 'Noche'
+    };
+
+    const [reservationsState, setReservationsState] = useState([]);
+    const { consortiumIdState } = useContext(AdminManageContext)
+
+
+    const getAllReservation = async () => {
+        try {
+
+            if (!consortiumIdState) {
+                return;
+            }
+
+            // Obtén el token almacenado
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("No estás autorizado. Por favor, inicia sesión.");
+                return; // Detener la ejecución si no hay token
+            }
+
+            // Decodifica el token para verificar el rol
+            const decodedToken = jwtDecode(token);
+
+            // Si el usuario tiene el rol adecuado, realiza la solicitud
+            const res = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/Bookings/consortium/${consortiumIdState}/ForAdmin`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                    },
+                }
+            );
+
+            // Mapear y establecer las amenities
+            const reservations = res.data.content;
+            setReservationsState(
+                reservations.map((reservation) => {
+                    return {
+                        space: reservation.amenity.name,
+                        reserveDay: reservation.createdAt.replace(/T/, ' ').substring(0, 16),
+                        shift: shiftMapping[reservation.shift],
+                        reserveDate: reservation.startDate,
+                        resident: reservation.resident.name + ' ' + reservation.resident.lastName,
+                    };
+                })
+            );
+        } catch (error) {
+            console.error("Error al obtener amenities:", error);
+            alert("Hubo un problema al obtener los amenities.");
+        }
+
+    }
+
+    const deleteReservation = async () => {
+        try {
+
+            if (!consortiumIdState) {
+                return;
+            }
+
+            // Obtén el token almacenado
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("No estás autorizado. Por favor, inicia sesión.");
+                return; // Detener la ejecución si no hay token
+            }
+
+            // Decodifica el token para verificar el rol
+            const decodedToken = jwtDecode(token);
+
+            // Si el usuario tiene el rol adecuado, realiza la solicitud
+            const res = await axios.delete(
+                `${import.meta.env.VITE_API_BASE_URL}/Bookings/${consortiumIdState}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                    },
+                }
+            );
+
+            getAllReservation()
+
+        } catch (error) {
+            console.error("Error al obtener amenities:", error);
+            alert("Hubo un problema al obtener los amenities.");
+        }
+
+    }
+
+    useEffect(() => {
+        getAllReservation(consortiumIdState)
+    }, [consortiumIdState]);
+
     const columns = [
         { id: 'space', label: 'Espacio Común', align: 'center' },
         { id: 'reserveDay', label: 'Día de Reserva', align: 'center' },
         { id: 'shift', label: 'Turno', align: 'center' },
         { id: 'reserveDate', label: 'Fecha de Reserva', align: 'center' },
-        { id: 'available', label: 'Cantidad Disponible', align: 'center' },
+        // { id: 'available', label: 'Cantidad Disponible', align: 'center' },
         { id: 'resident', label: 'Residente', align: 'center' }, // Nueva columna
     ];
 
@@ -154,7 +238,7 @@ const AdminBooking = () => {
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {reservations.map((row, index) => (
+                                            {reservationsState.map((row, index) => (
                                                 <TableRow hover key={index} sx={{
                                                     backgroundColor: '#FFFFFF',
                                                     '&:hover': { backgroundColor: '#F6EFE5' },
@@ -168,7 +252,7 @@ const AdminBooking = () => {
                                                         align="center"
                                                         sx={tableCellStyles}
                                                     >
-                                                        <IconButton aria-label="delete" onClick={() => console.log(Hola)} sx={{ color: '#B2675E' }}>
+                                                        <IconButton aria-label="delete" onClick={() => console.log("eliminar")} sx={{ color: '#B2675E' }}>
                                                             <DeleteIcon fontSize="small" />
                                                         </IconButton>
                                                     </TableCell>

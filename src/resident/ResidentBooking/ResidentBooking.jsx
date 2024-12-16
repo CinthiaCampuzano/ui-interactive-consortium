@@ -22,6 +22,11 @@ const shifts = [
     { id: 'NIGHT',   name: 'Noche'}
 ];
 
+const shiftMapping = {
+    'MORNING': 'Mañana',
+    'NIGHT': 'Noche'
+};
+
 const ReserveSpace = () => {
 
     const { consortiumIdState } = useContext(ResidentManageContext)
@@ -42,6 +47,8 @@ const ReserveSpace = () => {
     const handleOpenDialog = () => setOpenDialog(true);
     const handleCloseDialog = () => setOpenDialog(false);
 
+    const [reservationsState, setReservationsState] = useState([]);
+
     const handleOpenAlert = () => {
         setOpenAlert(true);
     }
@@ -53,8 +60,55 @@ const ReserveSpace = () => {
         setOpenAlert(false);
     };
 
+    const getAllReservation = async () => {
+        try {
+
+            if (!consortiumIdState) {
+                return;
+            }
+
+            // Obtén el token almacenado
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("No estás autorizado. Por favor, inicia sesión.");
+                return; // Detener la ejecución si no hay token
+            }
+
+            // Decodifica el token para verificar el rol
+            const decodedToken = jwtDecode(token);
+
+            // Si el usuario tiene el rol adecuado, realiza la solicitud
+            const res = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/Bookings/consortium/${consortiumIdState}/ForResident`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                    },
+                }
+            );
+            
+            // Mapear y establecer las amenities
+            const reservations = res.data.content;
+            setReservationsState(
+                reservations.map((reservation) => {
+                    return {
+                        space: reservation.amenity.name,
+                        reserveDay: reservation.createdAt.replace(/T/, ' ').substring(0, 16),
+                        shift: shiftMapping[reservation.shift],
+                        reserveDate: reservation.startDate
+                    };
+                })
+            );
+        } catch (error) {
+            console.error("Error al obtener amenities:", error);
+            alert("Hubo un problema al obtener los amenities.");
+        }
+
+    }
+
     useEffect(() => {
         getAllAmenitiesByIdConsortium(consortiumIdState)
+        getAllReservation(consortiumIdState)
     }, [consortiumIdState]);
 
     const getAllAmenitiesByIdConsortium = async () => {
@@ -83,8 +137,7 @@ const ReserveSpace = () => {
                     },
                 }
             );
-            console.log(res.data);
-
+            
             // Mapear y establecer las amenities
             const amenities = res.data.content;
             setAmenities(
@@ -196,7 +249,7 @@ const ReserveSpace = () => {
         { id: 'reserveDay', label: 'Día de Reserva', align: 'center' },
         { id: 'shift', label: 'Turno', align: 'center' },
         { id: 'reserveDate', label: 'Fecha de Reserva', align: 'center' },
-        { id: 'available', label: 'Cantidad Disponible', align: 'center' },
+        // { id: 'available', label: 'Cantidad Disponible', align: 'center' },
     ];
 
     const tableHeadCellStyles = {
@@ -359,7 +412,7 @@ const ReserveSpace = () => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {reservations.map((row, index) => (
+                                                {reservationsState.map((row, index) => (
                                                     <TableRow hover key={index} sx={{
                                                         backgroundColor: '#FFFFFF',
                                                         '&:hover': { backgroundColor: '#F6EFE5' },
