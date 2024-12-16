@@ -99,7 +99,7 @@ const AdminClaimManagement = () => {
 
     useEffect(() => {
         getIssueCards(consortiumIdState)
-    }, [consortiumIdState]);
+    }, [consortiumIdState, allClaims]);
 
     const getIssueCards = async (idConsortium) => {
         if (!consortiumIdState) {
