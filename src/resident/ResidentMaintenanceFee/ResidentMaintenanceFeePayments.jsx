@@ -214,53 +214,7 @@ function ResidentMaintenanceFeePayments(){
                             Pago de Expensas de {consortiumName}
                         </Typography>
 
-                        <Box sx={{ width: '100%', maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
-                            {/* Tabla de resumen */}
-                            <Box sx={{ flexGrow: 1, p: 3 }}>
-                                <Grid
-                                    container
-                                    spacing={3}
-                                    sx={{
-                                        justifyContent: 'center', // Centra horizontalmente las tarjetas
-                                        alignItems: 'center', // Centra verticalmente las tarjetas (si fuera necesario)
-                                    }}
-                                >
-                                    {/* Active Users Card */}
-                                    <Grid item xs={12} sm={6} md={2.4}>
-                                        <Card>
-                                            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                                                <Typography variant="h4" component="div" sx={{ mb: 1 }}>
-                                                    $138.125
-                                                </Typography>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                                                    <AttachMoney color="primary" />
-                                                    <Typography color="text.secondary" variant="body2">
-                                                        Deuda Actual
-                                                    </Typography>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
 
-                                    {/* Minutes Card */}
-                                    <Grid item xs={12} sm={6} md={2.4}>
-                                        <Card>
-                                            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                                                <Typography variant="h4" component="div" sx={{ mb: 1 }}>
-                                                    3
-                                                </Typography>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                                                    <AccessTime color="primary" />
-                                                    <Typography color="text.secondary" variant="body2">
-                                                        Pendientes
-                                                    </Typography>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
-                                </Grid>
-                            </Box>
-                        </Box>
 
                         <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
                             <TableContainer  sx={{

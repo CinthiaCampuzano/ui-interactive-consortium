@@ -10,10 +10,20 @@ export function ResidentManageContextProvider(props){
     const [consortiumName, setConsortiumName] = useState("")
     const [aConsortiumByIdConsortium, setAConsortiumByIdConsortium] = useState({})
     const [allMaintenanceFeesPaymentPerson , setAllMaintenanceFeesPaymentPerson] = useState([])
+    const [allClaims , setAllClaims] = useState([])
     const statusMapping = {
         PENDING: "Pendiente",
         PAID: "Pagado"
     };
+    const statusMappingClaim = {
+        PENDING: "Pendiente",
+        PAID: "Pagado",
+        EXPIRED: "Expirado",
+        CANCELED: "Cancelado",
+        UNDER_REVIEW: "En Revisión",
+        FINISHED : "Resuelto"
+    };
+
 
     function formatDate(dateString) {
         if (!dateString) {
@@ -114,15 +124,73 @@ export function ResidentManageContextProvider(props){
             alert("Hubo un error al obtener los datos.");
         }
     };
+
+    const getAllClaimByConsortiumAndPerson = async () => {
+        try {
+
+            if (!consortiumIdState) {
+                return;
+            }
+
+            // Obtén el token
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("No tienes acceso. Por favor, inicia sesión.");
+                return;
+            }
+
+            // Decodifica el token
+            const decodedToken = jwtDecode(token);
+            const roles = decodedToken.role || [];
+
+            // Verifica el rol
+            if (!roles.includes('ROLE_RESIDENT')) {
+                alert("No tienes permisos para acceder a esta información.");
+                return;
+            }
+
+            // Realiza la solicitud
+            const res = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/issueReport/consortium/${consortiumIdState}/person`, // consortiumId en la URL
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const claims = res.data.content;
+            console.log(claims)
+            setAllClaims(
+                claims.map((claim) => ({
+                    issueReportId: claim.issueReportId,
+                    subject: claim.subject,
+                    issue: claim.issue,
+                    status: statusMappingClaim[claim.status] || claim.status,
+                    createdDate: formatDate(claim.createdDate),
+                    response: claim.response,
+                    responseDate: formatDate(claim.responseDate),
+                }))
+            );
+            console.log(allClaims)
+        } catch (error) {
+            console.error("Error al obtener las expensas: ", error);
+            alert("Hubo un error al obtener los datos.");
+        }
+    };
+
+
     return(
         <ResidentManageContext.Provider value={{
             consortiumIdState,
             setConsortiumIdState,
             consortiumName, setConsortiumName,
             aConsortiumByIdConsortium, setAConsortiumByIdConsortium,
-            allMaintenanceFeesPaymentPerson , setAllMaintenanceFeesPaymentPerson,
+            allMaintenanceFeesPaymentPerson , setAllMaintenanceFeesPaymentPerson,statusMappingClaim,
+            allClaims , setAllClaims,
             getAConsortiumByIdConsortium,
-            getAllMaintenanceFeesPaymentByIdConsortiumAndPerson
+            getAllMaintenanceFeesPaymentByIdConsortiumAndPerson,
+            getAllClaimByConsortiumAndPerson
         }}>
             {props.children}
         </ResidentManageContext.Provider>

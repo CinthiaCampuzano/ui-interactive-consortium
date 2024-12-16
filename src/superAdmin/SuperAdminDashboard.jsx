@@ -3,76 +3,71 @@ import { Box, Typography, Container, Paper, Grid, Card, CardActionArea, CardCont
 import ApartmentIcon from '@mui/icons-material/Apartment'; // Ícono para Consorcios
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'; // Ícono para Administradores
 import { useNavigate } from 'react-router-dom';
+import SuperAdminSidebar from "../SuperAdminSidebar.jsx";
+
+
 
 const options = [
-    {
-        title: 'Consorcios',
-        icon: <ApartmentIcon style={{ fontSize: 80, color: '#002776' }} />,
-        path: '/superAdmin/management/consorcios',
-    },
-    {
-        title: 'Administradores',
-        icon: <SupervisorAccountIcon style={{ fontSize: 80, color: '#002776' }} />,
-        path: '/superAdmin/management/administradores',
-    },
+    { title: 'Consorcios', icon: <ApartmentIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/superAdmin/management/consorcios' },
+    { title: 'Administradores', icon: <SupervisorAccountIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/superAdmin/management/administradores' }
 ];
 
 const SuperAdminDashboard = () => {
     const navigate = useNavigate();
 
     return (
-        <div>
-            {/* Título del Dashboard */}
+        <Box
+            sx={{
+                display: 'flex',
+                minHeight: '100vh',
+            }}
+        >
+            <SuperAdminSidebar />
             <Box
+                component="main"
                 sx={{
-                    padding: '20px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    paddingX: { xs: '10px', sm: '20px', md: '40px' },
+                    flexGrow: 1,
+                    padding: { xs: '16px', sm: '24px' },
+                    marginLeft: { xs: 0, sm: '240px' },
+                    transition: 'margin-left 0.3s ease',
                 }}
             >
-                <Typography
-                    variant="h6"
-                    component="h1"
+                <Box
                     sx={{
-                        fontWeight: 'bold',
-                        color: '#003366',
-                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        minHeight: '100vh',
+                        paddingTop: '40px',
                     }}
                 >
-                    Panel de Administración
-                </Typography>
-            </Box>
+                    <Typography
+                        variant="h6"
+                        component="h1"
+                        sx={{
+                            fontWeight: 'bold',
+                            color: '#003366',
+                            fontSize: { xs: '1.5rem', md: '2rem' },
+                            marginBottom: '20px', // Se aumentó el margen para separar más el título de las tarjetas
+                        }}
+                    >
+                        Panel de Gestión del SuperAdmin
+                    </Typography>
 
-            {/* Contenedor de las opciones */}
-            <Container
-                maxWidth="lg"
-                sx={{
-                    marginTop: '80px',
-                    marginBottom: '60px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                }}
-            >
-                <Paper
-                    elevation={2}
-                    sx={{
-                        padding: '40px',
-                        borderRadius: '12px',
-                        width: '100%',
-                        maxWidth: '900px',
-                    }}
-                >
-                    <Grid container spacing={4} justifyContent="center" alignItems="center">
-                        {options.map((option) => (
+                    <Grid container spacing={3} justifyContent="center" maxWidth="1000px"> {/* Se aumentó el spacing entre las tarjetas */}
+                        {options.map((option, index) => (
                             <Grid
                                 item
                                 xs={12}
                                 sm={6}
-                                md={4}
+                                md={3}
                                 key={option.title}
-                                sx={{ display: 'flex', justifyContent: 'center' }}
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    marginBottom: index >= 4 ? '30px' : '0px',
+                                }}
                             >
                                 <Card
                                     sx={{
@@ -81,15 +76,52 @@ const SuperAdminDashboard = () => {
                                         display: 'flex',
                                         justifyContent: 'center',
                                         alignItems: 'center',
+                                        backgroundColor: 'transparent',
+                                        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+                                        transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                                        '&:hover': {
+                                            transform: 'scale(1.05)',
+                                            boxShadow: '0px 16px 32px rgba(184, 218, 227, 0.8)',
+                                        },
                                     }}
                                 >
                                     <CardActionArea
                                         onClick={() => navigate(option.path)}
-                                        sx={{ height: '100%', width: '100%' }}
+                                        sx={{
+                                            width: '100%',
+                                            height: '100%',
+                                            '&:hover .MuiCardContent-root': {
+                                                backgroundColor: 'transparent',
+                                            },
+                                        }}
                                     >
-                                        <CardContent sx={{ textAlign: 'center' }}>
-                                            {option.icon}
-                                            <Typography variant="h6" sx={{ marginTop: '10px' }}>
+                                        <CardContent
+                                            sx={{
+                                                textAlign: 'center',
+                                                transition: 'background-color 0.3s ease',
+                                                backgroundColor: 'transparent',
+                                            }}
+                                        >
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    marginBottom: '15px', // Aumenté el margen para bajar los iconos
+                                                    transition: 'color 0.3s ease',
+                                                    color: '#002776',
+                                                    fontSize: { xs: '2rem', md: '2.5rem' }, // Aumenté el tamaño de los iconos
+                                                }}
+                                            >
+                                                {option.icon}
+                                            </Box>
+                                            <Typography
+                                                variant="h6"
+                                                sx={{
+                                                    color: '#644536',
+                                                    fontWeight: 'bold',
+                                                }}
+                                            >
                                                 {option.title}
                                             </Typography>
                                         </CardContent>
@@ -98,9 +130,9 @@ const SuperAdminDashboard = () => {
                             </Grid>
                         ))}
                     </Grid>
-                </Paper>
-            </Container>
-        </div>
+                </Box>
+            </Box>
+        </Box>
     );
 };
 

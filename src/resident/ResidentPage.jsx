@@ -1,10 +1,10 @@
 import {Route, Routes} from "react-router-dom";
-import AdminDashboard from "../administrator/AdminDashboard.jsx";
 import {ResidentManageContextProvider} from "./ResidentManageContext.jsx";
 import ResidentBulletinBoard from "./ResidentBulletinBoard/ResidentBulletinBoard.jsx";
 import ResidentConsortiumList from "./ResdientConsortiumList.jsx";
 import ResidentDashboard from "./ResidentDashboard.jsx";
 import ResidentMaintenanceFeePayments from "./ResidentMaintenanceFee/ResidentMaintenanceFeePayments.jsx";
+import ResidentClaim from "./ResidentClaim/ResidentClaim.jsx";
 
 function ResidentPage(){
     return (
@@ -19,11 +19,11 @@ function ResidentPage(){
 
                 <Route path="/publicaciones" element={<ResidentBulletinBoard />} />
 
-                {/*<Route path="/reclamos" element={<AdminClaimManagement />} />*/}
+                <Route path="/reclamos" element={<ResidentClaim />} />
 
                 <Route path="/expensas" element={<ResidentMaintenanceFeePayments/>} />
 
-                {/*<Route path="/expensas/pago" element={<AdminMaintenanceFeePayments/>} />*/}
+                {/*<Route path="/reservas" element={<ReserveSpace/>} />*/}
 
 
             </Routes>

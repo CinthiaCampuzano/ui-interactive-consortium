@@ -25,6 +25,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import {SuperAdminManagesAdministratorContext} from "./SuperAdminManagesAdministratorContext.jsx";
 import Typography from "@mui/material/Typography";
 import {jwtDecode} from "jwt-decode";
+import SuperAdminSidebar from "../../SuperAdminSidebar.jsx";
+import SearchIcon from "@mui/icons-material/Search.js";
 
 
 const columns = [
@@ -314,180 +316,205 @@ function SuperAdminManagesAdministrator(){
         }
     };
 
+    const textFieldStyles = {
+        '& .MuiOutlinedInput-root': {
+            '&.Mui-focused fieldset': {
+                borderColor: '#002776',
+            },
+        },
+        '& label.Mui-focused': { color: '#002776' },
+        minWidth: { xs: '100%', sm: 'auto' },
+    };
+
+    const buttonStyles = {
+        backgroundColor: '#002776',
+        '&:hover': { backgroundColor: '#001B5E' },
+    };
+
+    const tableHeadCellStyles = {
+        backgroundColor: '#002776',
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    };
+
+    const tableCellStyles = {
+        color: '#002776',
+        padding: '8px',
+    };
+
     return (
         <div>
             <Box
                 sx={{
-                    padding: '20px',
                     display: 'flex',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    paddingX: { xs: '10px', sm: '20px', md: '40px' }
+                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
                 }}
             >
+                <SuperAdminSidebar/>
+            <Box
+                component="main"
+                sx={{
+                flexGrow: 1, // Permite que este componente ocupe el espacio restante
+                padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
+                marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
+                transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
+            }}
+                >
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                }}
+            >
+                {/* Título */}
                 <Typography
                     variant="h6"
                     component="h1"
                     sx={{
                         fontWeight: 'bold',
                         color: '#003366',
-                        fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' }
+                        fontSize: { xs: '1.5rem', md: '2rem' },
+                        marginBottom: '20px',
                     }}
                 >
                     Administradores
                 </Typography>
-            </Box>
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 3,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '90%', sm: '80%', md: '60%', lg: '50%' },
-                }}
-            >
-                {/* Ajustamos el contenedor de los inputs para que se alineen en una fila */}
+
+                {/* Filtros */}
                 <Box
-                    mt={3}
                     sx={{
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        flexWrap: 'nowrap', // No permite que los elementos se envuelvan
-                        gap: '16px' // Espacio entre los inputs
+                        flexWrap: 'wrap',
+                        gap: '16px',
+                        justifyContent: 'center',
+                        marginBottom: '20px',
+                        width: '100%',
+                        maxWidth: '800px',
                     }}
                 >
                     <TextField
-                        id="outlined-basic"
                         label="Nombre"
                         variant="outlined"
                         size="small"
                         type="text"
-                        focused
                         value={administratorName}
                         onChange={(e) => setAdministratorName(e.target.value)}
-                        fullWidth
                         sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776', // Azul Francia oscuro
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776',
-                            },
+                            ...textFieldStyles,
+                            flex: 1, // Esto asegura que los inputs se distribuyan uniformemente en el espacio disponible
                         }}
                     />
 
                     <TextField
-                        id="outlined-basic"
                         label="Apellido"
                         variant="outlined"
                         size="small"
                         type="text"
-                        focused
                         value={administratorLastName}
                         onChange={(e) => setAdministratorLastName(e.target.value)}
-                        fullWidth
                         sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776',
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776',
-                            },
+                            ...textFieldStyles,
+                            flex: 1,
                         }}
                     />
 
                     <TextField
-                        id="outlined-basic"
                         label="Email"
                         variant="outlined"
                         size="small"
                         type="text"
-                        focused
                         value={administratorMail}
                         onChange={(e) => setAdministratorMail(e.target.value)}
-                        fullWidth
                         sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776',
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776',
-                            },
+                            ...textFieldStyles,
+                            flex: 1,
                         }}
                     />
 
                     <TextField
-                        id="outlined-basic"
                         label="DNI"
                         variant="outlined"
                         size="small"
                         type="number"
-                        focused
                         value={administratorDni}
                         onChange={(e) => setAdministratorDni(e.target.value)}
-                        fullWidth
                         sx={{
-                            '& .MuiOutlinedInput-root': {
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#002776',
-                                },
-                            },
-                            '& label.Mui-focused': {
-                                color: '#002776',
-                            },
+                            ...textFieldStyles,
+                            flex: 1,
                         }}
                     />
                 </Box>
-
                 {/* Botones */}
-                <Box mt={3} sx={{ display: 'flex', justifyContent: 'center' }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        marginBottom: '20px',
+                    }}
+                >
                     <Button
                         variant="contained"
                         sx={{
-                            backgroundColor: '#002776',
-                            '&:hover': { backgroundColor: '#001B5E' },
-                            marginRight: '10px',
+                            backgroundColor: '#B2675E', // Color personalizado
+                            color: '#FFFFFF',
+                            fontWeight: 'bold',
+                            textTransform: 'none',
+                            borderRadius: '30px', // Bordes redondeados
+                            padding: '10px 20px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para efecto de profundidad
+                            transition: 'all 0.3s ease', // Transición suave
+                            '&:hover': {
+                                backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
+                                boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                            },
+                            '&:active': {
+                                backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                            },
                         }}
                         onClick={getAllAdministratorByFilter}
+                        startIcon={<SearchIcon />}
                     >
                         Buscar
                     </Button>
                     <SuperAdminCreateAdministrator />
                 </Box>
-            </Paper>
 
             {/* Tabla responsive */}
-            <Paper
-                elevation={2}
-                sx={{
-                    padding: 3,
-                    margin: 'auto',
-                    marginTop: '20px',
-                    width: { xs: '95%', sm: '85%', md: '70%', lg: '60%' },
-                }}
-            >
-                <Box display="flex" justifyContent="center" mt={3}>
-                    <Paper sx={{ width: '98%', overflow: 'hidden' }}>
-                        <TableContainer sx={{ maxHeight: 600, overflowX: 'auto' }}>
-                            <Table stickyHeader aria-label="sticky table">
+                <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
+                        <TableContainer sx={{
+                            maxHeight: 600,
+                            overflowX: 'auto',
+                            borderRadius: '10px', // Redondea solo las esquinas del contenedor
+                            border: '1px solid #002776',
+                        }}>
+                            <Table stickyHeader sx={{
+                                borderCollapse: 'separate',
+                                borderSpacing: '0', // Evita que las celdas se superpongan
+                            }}>
                                 <TableHead>
                                     <TableRow sx={{ height: '24px' }}>
-                                        {columns.map((column) => (
+                                        {columns.map((column, index) => (
                                             <TableCell
                                                 key={column.id}
                                                 align={column.align}
-                                                style={{ minWidth: column.minWidth, backgroundColor: '#F5F5DC', color:'#002776',  fontWeight: 'bold', padding: '4px'  }}
+                                                sx={{
+                                                    ...tableHeadCellStyles,
+                                                    ...(index === 0 && {
+                                                        borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
+                                                    })
+                                                }}
                                             >
                                                 {column.label}
                                             </TableCell>
                                         ))}
-                                        <TableCell align="center" style={{ minWidth: 60, backgroundColor: '#F5F5DC', fontWeight: 'bold', padding: '4px' }}>
+                                        <TableCell align="center"  sx={{
+                                            ...tableHeadCellStyles,
+                                            borderTopRightRadius: '10px', // Redondeo solo en la celda "Acciones"
+                                        }}>
+
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -496,19 +523,19 @@ function SuperAdminManagesAdministrator(){
                                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                         .map((administrator) => {
                                             return (
-                                                <TableRow hover role="checkbox" tabIndex={-1} key={administrator.name} sx={{ height: '24px' }}>
+                                                <TableRow hover key={administrator.name}  sx={{
+                                                    backgroundColor: '#FFFFFF',
+                                                    '&:hover': { backgroundColor: '#F6EFE5' },
+                                                }}>
                                                     {columns.map((column) => {
                                                         const value = administrator[column.id];
                                                         return (
-                                                            <TableCell key={column.id} align={column.align} style={{
-                                                                padding: '4px',
-                                                                minWidth: column.id === 'name' || column.id === 'dni' ? '60px' : column.minWidth
-                                                            }}>
+                                                            <TableCell key={column.id} align={column.align}  sx={{ ...tableCellStyles }}>
                                                                 {value}
                                                             </TableCell>
                                                         );
                                                     })}
-                                                    <TableCell align="center" style={{ padding: '4px',  minWidth: 60 }}>
+                                                    <TableCell align="center" sx={tableCellStyles}>
                                                         <IconButton aria-label="edit" onClick={() =>
                                                             handleClickOpenEdit(
                                                                 administrator.administratorId,
@@ -516,10 +543,10 @@ function SuperAdminManagesAdministrator(){
                                                                 administrator.lastName,
                                                                 administrator.mail,
                                                                 administrator.dni)
-                                                        } sx={{ padding: '2px' }}>
+                                                        } sx={{ color: '#002776' }}>
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
-                                                        <IconButton aria-label="delete" onClick={() => handleClickOpen(administrator.administratorId)} sx={{ padding: '2px' }}>
+                                                        <IconButton aria-label="delete" onClick={() => handleClickOpen(administrator.administratorId)} sx={{ color: '#B2675E' }}>
                                                             <DeleteIcon fontSize="small" />
                                                         </IconButton>
                                                     </TableCell>
@@ -530,7 +557,7 @@ function SuperAdminManagesAdministrator(){
                             </Table>
                         </TableContainer>
                         <TablePagination
-                            rowsPerPageOptions={[10, 20, 50]}
+                            rowsPerPageOptions={[5]}
                             component="div"
                             count={allAdministrator.length}
                             rowsPerPage={rowsPerPage}
@@ -538,10 +565,12 @@ function SuperAdminManagesAdministrator(){
                             onPageChange={handleChangePage}
                             onRowsPerPageChange={handleChangeRowsPerPage}
                             labelRowsPerPage="Filas por página"
+                            sx={{ backgroundColor: '#FFFFFF', color: '#002776', fontWeight: 'bold' }}
                         />
-                    </Paper>
                 </Box>
-            </Paper>
+            </Box>
+            </Box>
+        </Box>
                 <Dialog
                     open={open}
                     onClose={(event, reason) => {
@@ -550,17 +579,40 @@ function SuperAdminManagesAdministrator(){
                         }
                     }}
                 >
-                <DialogTitle id="alert-dialog-title" sx={{ backgroundColor: '#E5E5E5',  color: '#002776', textAlign: 'center' }}>
+                <DialogTitle id="alert-dialog-title" sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #028484',
+                    fontWeight: 'bold',
+                }}>
                     {"Desea eliminar este Administrador ?"}
                 </DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#E5E5E5' }}>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
                     <DialogContentText id="alert-dialog-description">
                         Si acepta se eliminara el administrador deseado.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Button onClick={handleClose} variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>Rechazar</Button>
-                    <Button variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#3D9970' } }} onClick={() => {
+                <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                    <Button onClick={handleClose} variant="contained"  sx={{
+                        backgroundColor: '#B2675E',
+                        '&:hover': {
+                            backgroundColor: '#8E5346',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }}>Cancelar</Button>
+                    <Button variant="contained" sx={{
+                        backgroundColor: '#028484',
+                        '&:hover': {
+                            backgroundColor: '#026F6B',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }} onClick={() => {
                         deleteAdministrator(idAdministratorCreated)
                         handleClose()
                     }
@@ -577,9 +629,16 @@ function SuperAdminManagesAdministrator(){
                         }
                     }}
                 >
-                <DialogTitle sx={{ backgroundColor: '#E5E5E5',  color: '#002776', textAlign: 'center' }}>Actualizar Información</DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#EDEDED',  marginTop: '10px'}}>
+                <DialogTitle sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #028484',
+                    fontWeight: 'bold',
+                }}>Actualizar Información</DialogTitle>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
+                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px' }}>
                         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2}}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} sm={6}>
@@ -595,17 +654,17 @@ function SuperAdminManagesAdministrator(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.name ? 'red' : '#002776',
+                                                    borderColor: errors.name ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.name ? 'red' : '#002776',
+                                                    borderColor: errors.name ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.name ? 'red' : '#002776',
+                                                    borderColor: errors.name ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         error={errors.name}
@@ -626,17 +685,17 @@ function SuperAdminManagesAdministrator(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.lastName ? 'red' : '#002776',
+                                                    borderColor: errors.lastName ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.lastName ? 'red' : '#002776',
+                                                    borderColor: errors.lastName ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.lastName ? 'red' : '#002776',
+                                                    borderColor: errors.lastName ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: errors.address ? 'red' : '#002776', // Cambia el color del label al enfocarse
+                                                color: errors.address ? 'red' : '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         error={errors.lastName}
@@ -657,17 +716,17 @@ function SuperAdminManagesAdministrator(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.mail ? 'red' : '#002776',
+                                                    borderColor: errors.mail ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.mail ? 'red' : '#002776',
+                                                    borderColor: errors.mail ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.mail ? 'red' : '#002776',
+                                                    borderColor: errors.mail ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: errors.province ? 'red' : '#002776', // Cambia el color del label al enfocarse
+                                                color: errors.province ? 'red' : '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         error={errors.mail}
@@ -691,17 +750,17 @@ function SuperAdminManagesAdministrator(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.dni ? 'red' : '#002776',
+                                                    borderColor: errors.dni ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.dni ? 'red' : '#002776',
+                                                    borderColor: errors.dni ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.dni ? 'red' : '#002776',
+                                                    borderColor: errors.dni ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         // error={errors.dni}
@@ -713,11 +772,28 @@ function SuperAdminManagesAdministrator(){
                         </Box>
                     </Paper>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Button onClick={handleCloseEdit} variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>
+                <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                    <Button onClick={handleCloseEdit} variant="contained"  sx={{
+                        backgroundColor: '#B2675E',
+                        '&:hover': {
+                            backgroundColor: '#8E5346',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }}>
                         Cancelar
                     </Button>
-                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!validateFields} variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#228B22' } }}>
+                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!validateFields} variant="contained"
+                            sx={{
+                                backgroundColor: '#028484',
+                                '&:hover': {
+                                    backgroundColor: '#026F6B',
+                                },
+                                borderRadius: '25px',
+                                padding: '8px 20px',
+                                transition: 'background-color 0.3s ease',
+                            }}>
                         Guardar
                     </Button>
 

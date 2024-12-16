@@ -287,9 +287,16 @@ function SuperAdminCreateConsortium(){
                         }
                     }}
                 >
-                <DialogTitle sx={{ backgroundColor: '#E5E5E5',  color: '#002776', textAlign: 'center' }}>Nuevo Edificio</DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#EDEDED',  marginTop: '10px' }}>
+                <DialogTitle sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #028484',
+                    fontWeight: 'bold',
+                }}>Nuevo Edificio</DialogTitle>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
+                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px' }}>
                         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2}}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} sm={6}>
@@ -305,17 +312,17 @@ function SuperAdminCreateConsortium(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                     />
@@ -333,17 +340,17 @@ function SuperAdminCreateConsortium(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: errors.address ? 'red' : '#002776',
+                                                    borderColor: errors.address ? 'red' : '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: errors.address ? 'red' : '#002776',
+                                                    borderColor: errors.address ? 'red' : '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: errors.address ? 'red' : '#002776',
+                                                    borderColor: errors.address ? 'red' : '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: errors.address ? 'red' : '#002776', // Cambia el color del label al enfocarse
+                                                color: errors.address ? 'red' : '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         error={errors.address}
@@ -363,17 +370,17 @@ function SuperAdminCreateConsortium(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         fullWidth
@@ -400,17 +407,17 @@ function SuperAdminCreateConsortium(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         fullWidth
@@ -436,17 +443,17 @@ function SuperAdminCreateConsortium(){
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&:hover fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                                 '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
+                                                    borderColor: '#028484',
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#028484', // Cambia el color del label al enfocarse
                                             },
                                         }}
                                         fullWidth
@@ -462,11 +469,28 @@ function SuperAdminCreateConsortium(){
                         </Box>
                     </Paper>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#E5E5E5' }}>
-                    <Button onClick={handleClose} variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>
+                <DialogActions sx={{ backgroundColor: '#F9F9F9' }}>
+                    <Button onClick={handleClose} variant="contained" sx={{
+                        backgroundColor: '#B2675E',
+                        '&:hover': {
+                            backgroundColor: '#8E5346',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }}>
                         Cancelar
                     </Button>
-                    <Button type="submit" onClick={handleSubmit} disabled={!validateFields} variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#228B22' } }} >
+                    <Button type="submit" onClick={handleSubmit} disabled={!validateFields} variant="contained"
+                            sx={{
+                                backgroundColor: '#028484',
+                                '&:hover': {
+                                    backgroundColor: '#026F6B',
+                                },
+                                borderRadius: '25px',
+                                padding: '8px 20px',
+                                transition: 'background-color 0.3s ease',
+                            }} >
                         Guardar
                     </Button>
 

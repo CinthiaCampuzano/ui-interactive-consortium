@@ -1,47 +1,176 @@
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
+import React, {useContext, useEffect, useState} from 'react';
 import {
-    Alert, Card, CardContent, Chip,
+    Box,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography,
+    Select,
+    MenuItem,
+    Paper,
+    Chip,
     Dialog,
-    DialogActions,
+    DialogTitle,
     DialogContent,
-    DialogContentText,
-    DialogTitle, FormControl, Grid, InputLabel, MenuItem, Select, Snackbar,
+    DialogActions,
+    Grid,
+    Card,
+    CardContent,
     TablePagination,
-    TextField
-} from "@mui/material";
-import React, {useContext, useEffect, useState} from "react";
-import axios from "axios";
-import TableContainer from "@mui/material/TableContainer";
-import Table from "@mui/material/Table";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import TableCell from "@mui/material/TableCell";
-import TableBody from "@mui/material/TableBody";
+    TextField,
+    Snackbar, Alert, DialogContentText,
+} from '@mui/material';
+
+import EditIcon from "@mui/icons-material/Edit";
 import IconButton from "@mui/material/IconButton";
-import {useNavigate} from "react-router-dom";
-import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import {AccessTime, Assessment, Assignment, AttachMoney, CheckCircle, Pending, Person} from "@mui/icons-material";
+import {useSnackbar} from "notistack";
+import Button from "@mui/material/Button";
 import {jwtDecode} from "jwt-decode";
-import { useSnackbar } from 'notistack';
-import {AccessTime, Assessment, Assignment, AttachMoney, Person} from "@mui/icons-material";
+import axios from "axios";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance.js";
 import {ResidentManageContext} from "../ResidentManageContext.jsx";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
+
+
 
 
 const columns = [
-    { id: 'period', label: 'Periodo', minWidth: 100 },
-    { id: 'code', label: 'Departamento', minWidth: 100 },
-    { id: 'maintenanceFee', label: 'Expensas', minWidth: 100 },
-    { id: 'status', label: 'Estado de Pago', minWidth: 100 },
-    { id: 'paymentDate', label: 'Fecha de Pago', minWidth: 100 }
+    { id: 'subject', label: 'Título', minWidth: 100 },
+    { id: 'issue', label: 'Descripción', minWidth: 100 },
+    { id: 'status', label: 'Estado del Reclamo', minWidth: 100 },
+    { id: 'createdDate', label: 'Fecha del Reclamo', minWidth: 100 },
+    {id: 'response', label: 'Respuesta', minWidth: 100 },
+    {id: 'responseDate', label: 'Fecha de la Solución', minWidth: 100 },
 ]
-
-function ResidentClaim(){
-    const {consortiumIdState, getAConsortiumByIdConsortium, consortiumName, getAllMaintenanceFeesPaymentByIdConsortiumAndPerson,
-        allMaintenanceFeesPaymentPerson , setAllMaintenanceFeesPaymentPerson } = useContext(ResidentManageContext)
+const ResidentClaim = () => {
+    const {consortiumName, getAllClaimByConsortiumAndPerson, allClaims , setAllClaims, getAConsortiumByIdConsortium,consortiumIdState,statusMappingClaim  } = useContext(ResidentManageContext)
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [page, setPage] = React.useState(0);
     const { enqueueSnackbar } = useSnackbar();
+    const [open, setOpen] = useState(false);
+    const [openDelete, setOpenDelete] = useState(false)
+    const [idClaimToDelete, setIdClaimToDelete] = useState(null)
+    const [currentClaim, setCurrentClaim] = useState(null);
+    const [formData, setFormData] = useState({ status: '', comment: '' });
+    const [claimInfo, setClaimInfo] = useState({
+        subject: '',
+        issue: '',
+        person:{
+            personId: null},
+        consortium: {
+            consortiumId: null
+        }
+    })
+    const [text, setText] = useState('')
+    const [postCreated, setPostCreated] = useState(true);
+    const [openAlert, setOpenAlert] = useState(false)
 
+
+    const handleClickOpen = () => {
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error("No se encontró el token.");
+            return; // Detenemos la ejecución si no hay token
+        }
+        const decodedToken = jwtDecode(token); // Decodifica el token
+        const userId = decodedToken.userId; // Extrae el userId del token
+        setClaimInfo({
+            subject: '',
+            issue: '',
+            person:{
+                personId: userId},
+            consortium: {
+                consortiumId: consortiumIdState
+            }
+        });
+        setOpen(true);
+    }
+
+    const handleOpenAlert = () => {
+        setOpenAlert(true);
+    }
+
+    const handleClose = () => {
+        setOpen(false)
+        setClaimInfo({})
+    }
+
+    const handleCloseAlert= (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpenAlert(false);
+    };
+
+    const handleChange = (event) => {
+        const { name, value } = event.target;
+
+        setClaimInfo((prevValues) => ({
+            ...prevValues,
+            [name]: value, // Actualiza solo el campo que está siendo editado (subject o issue)
+            consortium: prevValues.consortium, // Preserva el objeto 'consortium'
+            person: prevValues.person, // Preserva el valor de 'personId'
+        }));
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        // Obtén el token del almacenamiento local
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("No estás autorizado. Por favor, inicia sesión.");
+            return; // Detenemos la ejecución si no hay token
+        }
+
+        // Decodifica el token para verificar el rol
+        const decodedToken = jwtDecode(token);
+        const isResident = decodedToken?.role?.includes('ROLE_RESIDENT');
+        if (!isResident) {
+            alert("No tienes permisos para realizar esta acción.");
+            return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN
+        }
+
+        console.log(JSON.stringify(claimInfo));
+        const Url = `${import.meta.env.VITE_API_BASE_URL}/issueReport`;
+
+        try {
+            // Realiza la solicitud con el token en los encabezados
+            await axios.post(Url, claimInfo, {
+                headers: {
+                    Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                    'Content-Type': 'application/json'
+                },
+            });
+
+            setText('Se realizó la carga correctamente');
+            setPostCreated(true);
+            handleClose();
+
+        } catch (exception) {
+            setPostCreated(false);
+
+            switch (exception.response?.status) {
+                case 409:
+                    setText('No se realizó la carga porque ya existe un espacio común con ese nombre en este consorcio');
+                    break;
+                case 404:
+                    setText('No se realizó la carga porque el consorcio no fue encontrado');
+                    break;
+                default:
+                    setText('No se realizó la carga debido a un error de datos');
+            }
+        } finally {
+            handleOpenAlert();
+            getAllClaimByConsortiumAndPerson();
+        }
+    };
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -58,14 +187,38 @@ function ResidentClaim(){
 
 
     useEffect(() => {
-        getAllMaintenanceFeesPaymentByIdConsortiumAndPerson();
+        console.log('Probandoooooo')
+        getAllClaimByConsortiumAndPerson();
     }, [consortiumIdState]);
 
+    const tableHeadCellStyles = {
+        backgroundColor: '#002776',
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    };
 
+    const tableCellStyles = {
+        color: '#002776',
+        padding: '8px',
+    };
+    const statusColors = {
+        'Pendiente': '#BCE7FD',
+        'En Revisión': '#d79569',
+        'Resuelto': '#B0F2C2',
+    };
 
-    const handleDownload = async (id) => {
+    const handleClickOpenDelete = (idToDelete) => {
+        setIdClaimToDelete(idToDelete)
+        setOpenDelete(true)
+    };
+    const handleCloseDelete = () => {
+        setOpenDelete(false)
+        setIdClaimToDelete(null)
+    };
+
+    const deleteClaim = async (idClaimToDelete) =>{
         const token = localStorage.getItem('token');
-
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
             return; // Detenemos la ejecución si no hay token
@@ -80,117 +233,40 @@ function ResidentClaim(){
         }
 
         try {
-            // Hacer la solicitud fetch al backend para descargar el archivo
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment/${id}/download`, {
-                method: 'GET',
+            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/issueReport/${idClaimToDelete}`, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`, // Incluir el token en los encabezados
                 },
             });
-
-            if (!response.ok) {
-                throw new Error('No se pudo descargar el archivo');
-            }
-
-            // Convertir la respuesta en un Blob (archivo binario)
-            const blob = await response.blob();
-
-            // Obtener el encabezado 'Content-Disposition' y extraer el nombre del archivo
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let fileName = 'default.pdf';  // Valor por defecto en caso de que no haya nombre en el encabezado
-
-            if (contentDisposition) {
-                const matches = contentDisposition.match(/filename="(.+)"/);
-                if (matches && matches[1]) {
-                    fileName = matches[1];  // Extrae el nombre del archivo
-                }
-            }
-
-            // Crear una URL de objeto para el archivo
-            const url = window.URL.createObjectURL(blob);
-
-            // Crear un enlace para descargar el archivo
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName); // Asigna el nombre del archivo
-            document.body.appendChild(link);
-            link.click();
-
-            // Limpiar el DOM y la URL del objeto después de la descarga
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-
+            // Filtrar el post eliminado de la lista
+            setAllClaims(allClaims.filter(post => post.postId !== idClaimToDelete));
+            getAllClaimByConsortiumAndPerson();
+            setPostCreated(true);
+            setText('Se elimino correctamente el reclamo');
+            handleOpenAlert();
         } catch (error) {
-            // Manejo de errores
-            enqueueSnackbar('Error al descargar el archivo', { variant: 'error' });
-            console.error('Error de descarga:', error);
+            setPostCreated(false);
+            setText('Solo se puede eliminar reclamos en estado "Pendiente" ');
+            console.error('Error al eliminar el post:', error);
         }
-    };
-    const downloadMaintenanceFee = async (maintenanceFeeId) => {
-        try {
-            const response = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/maintenanceFee/${maintenanceFeeId}/download`,
-                {
-                    responseType: 'blob', // Indica que esperas un archivo binario
-                }
-            );
 
-            // Extrae el encabezado Content-Disposition
-            const contentDisposition = response.headers['content-disposition'];
-            console.log('Content-Disposition:', contentDisposition);
-
-            // Extrae el nombre del archivo con una expresión regular
-            const fileNameMatch = contentDisposition?.match(/filename="?(.+)"?/);
-            const fileName = fileNameMatch ? fileNameMatch[1] : 'archivo.pdf';
-
-            console.log('Nombre del archivo extraído:', fileName);
-
-            // Crear un objeto Blob y un enlace temporal para descargar el archivo
-            const fileURL = window.URL.createObjectURL(
-                new Blob([response.data], { type: 'application/pdf' })
-            );
-
-            const link = document.createElement('a');
-            link.href = fileURL;
-            link.setAttribute('download', fileName); // Asigna el nombre extraído
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        } catch (error) {
-            console.error('Error al descargar el archivo:', error);
-            alert('Hubo un error al descargar el archivo.');
-        }
-    };
-
-    const tableHeadCellStyles = {
-        backgroundColor: '#002776',
-        color: '#FFFFFF',
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-    };
-
-    const tableCellStyles = {
-        color: '#002776',
-        padding: '8px',
-    };
-
-    return(
+    }
+    return (
         <div>
             <Box
                 sx={{
                     display: 'flex',
-                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
+                    minHeight: '100vh', // Ensures that the container takes the full height of the screen
                 }}
             >
-                {/*<AdminGallerySidebar/>*/}
+                {/*<AdminGallerySidebar />*/}
                 <Box
                     component="main"
                     sx={{
-                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
-                        padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
-                        marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
-                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
-
+                        flexGrow: 1, // Allows this component to take up the remaining space
+                        padding: { xs: '16px', sm: '24px' },
+                        marginLeft: { xs: 0, sm: '240px' },
+                        transition: 'margin-left 0.3s ease',
                     }}
                 >
                     <Box
@@ -200,7 +276,7 @@ function ResidentClaim(){
                             alignItems: 'center',
                         }}
                     >
-                        {/* Título */}
+                        {/* Title */}
                         <Typography
                             variant="h6"
                             component="h1"
@@ -211,48 +287,200 @@ function ResidentClaim(){
                                 marginBottom: '20px',
                             }}
                         >
-                            Pago de Expensas de {consortiumName}
+                            Reclamos del Consorcio {consortiumName}
                         </Typography>
-
-                        <Box sx={{ width: '100%', maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
+                        <Box
+                            sx={{
+                                width: '100%',
+                                maxWidth: '1100px',
+                                marginLeft: { xs: '40px', sm: '80px' },
+                            }}
+                        >
                             {/* Tabla de resumen */}
                             <Box sx={{ flexGrow: 1, p: 3 }}>
-                                <Grid
-                                    container
-                                    spacing={3}
-                                    sx={{
-                                        justifyContent: 'center', // Centra horizontalmente las tarjetas
-                                        alignItems: 'center', // Centra verticalmente las tarjetas (si fuera necesario)
-                                    }}
-                                >
-                                    {/* Active Users Card */}
-                                    <Grid item xs={12} sm={6} md={2.4}>
-                                        <Card>
-                                            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                                                <Typography variant="h4" component="div" sx={{ mb: 1 }}>
-                                                    $138.125
-                                                </Typography>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                                                    <AttachMoney color="primary" />
-                                                    <Typography color="text.secondary" variant="body2">
-                                                        Deuda Actual
+                                <Grid container spacing={3}>
+                                    {/* PENDING Card */}
+                                    <Grid item xs={3}>
+                                        <Card
+                                            sx={{
+                                                boxShadow:
+                                                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                                                transition:
+                                                    'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    boxShadow:
+                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+                                                },
+                                            }}
+                                        >
+                                            <CardContent>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <Pending sx={{ color: 'info.main' }} />
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            color="info.main"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        >
+                                                            PENDIENTES
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        CANTIDAD
+                                                    </Typography>
+                                                    <Typography variant="h4" component="div">
+                                                        0
                                                     </Typography>
                                                 </Box>
                                             </CardContent>
                                         </Card>
                                     </Grid>
 
-                                    {/* Minutes Card */}
-                                    <Grid item xs={12} sm={6} md={2.4}>
-                                        <Card>
-                                            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                                                <Typography variant="h4" component="div" sx={{ mb: 1 }}>
-                                                    3
-                                                </Typography>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                                                    <AccessTime color="primary" />
-                                                    <Typography color="text.secondary" variant="body2">
-                                                        Pendientes
+                                    {/* En Revisión Card */}
+                                    <Grid item xs={3}>
+                                        <Card
+                                            sx={{
+                                                boxShadow:
+                                                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                                                transition:
+                                                    'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    boxShadow:
+                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+                                                },
+                                            }}
+                                        >
+                                            <CardContent>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <CheckCircle color="warning" />
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            color="warning.main"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        >
+                                                            EN REVISIÓN
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        CANTIDAD
+                                                    </Typography>
+                                                    <Typography variant="h4" component="div">
+                                                        0
+                                                    </Typography>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+
+                                    {/* PAGADAS Card */}
+                                    <Grid item xs={3}>
+                                        <Card
+                                            sx={{
+                                                boxShadow:
+                                                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                                                transition:
+                                                    'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    boxShadow:
+                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+                                                },
+                                            }}
+                                        >
+                                            <CardContent>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <CheckCircle color="success" />
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            color="success.main"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        >
+                                                            RESUELTAS
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        CANTIDAD
+                                                    </Typography>
+                                                    <Typography variant="h4" component="div">
+                                                        0
+                                                    </Typography>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+
+                                    {/* TOTAL Card */}
+                                    <Grid item xs={3}>
+                                        <Card
+                                            sx={{
+                                                boxShadow:
+                                                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                                                transition:
+                                                    'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    boxShadow:
+                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+                                                },
+                                            }}
+                                        >
+                                            <CardContent>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <AccountBalanceIcon color="primary" />
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            color="primary"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        >
+                                                            TOTAL
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        CANTIDAD
+                                                    </Typography>
+                                                    <Typography variant="h4" component="div">
+                                                        0
                                                     </Typography>
                                                 </Box>
                                             </CardContent>
@@ -262,101 +490,104 @@ function ResidentClaim(){
                             </Box>
                         </Box>
 
-                        <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
-                            <TableContainer  sx={{
-                                maxHeight: 600,
-                                overflowX: 'auto',
-                                borderRadius: '10px', // Redondea solo las esquinas del contenedor
-                                border: '1px solid #002776',
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={handleClickOpen}
+                            sx={{
+                                backgroundColor: '#B2675E', // Color personalizado
+                                color: '#FFFFFF',
+                                fontWeight: 'bold',
+                                textTransform: 'none',
+                                borderRadius: '30px', // Bordes redondeados
+                                padding: '12px 24px', // Espacio interno reducido
+                                fontSize: '1.1rem', // Tamaño de fuente ligeramente más pequeño
+                                minWidth: '180px', // Tamaño mínimo ajustado
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra moderada
+                                transition: 'all 0.3s ease', // Transición suave
+                                '&:hover': {
+                                    backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
+                                    boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                                },
+                                '&:active': {
+                                    backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                                },
                             }}
+                        >
+                            Nuevo
+                        </Button>
+
+                        <Box sx={{ marginTop: '20px', width: '100%', maxWidth: '900px', marginBottom: '40px' }}>
+                            <TableContainer
+                                sx={{
+                                    maxHeight: 600,
+                                    overflowX: 'auto',
+                                    borderRadius: '10px',
+                                    border: '1px solid #002776',
+                                }}
                             >
                                 <Table
                                     stickyHeader
                                     sx={{
                                         borderCollapse: 'separate',
-                                        borderSpacing: '0', // Evita que las celdas se superpongan
+                                        borderSpacing: '0',
                                     }}
                                 >
                                     <TableHead>
                                         <TableRow sx={{ height: '24px' }}>
-                                            {columns.map((column , index) => (
+                                            {columns.map((column, index) => (
                                                 <TableCell
                                                     key={column.id}
                                                     align={column.align}
                                                     sx={{
                                                         ...tableHeadCellStyles,
                                                         ...(index === 0 && {
-                                                            borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
-                                                        })
+                                                            borderTopLeftRadius: '10px',
+                                                        }),
                                                     }}
                                                 >
                                                     {column.label}
                                                 </TableCell>
                                             ))}
-                                            <TableCell align="center" sx={{
-                                                ...tableHeadCellStyles,
-                                                borderTopRightRadius: '0px',
-                                            }}>
-                                                Comprobante de pago
+                                            <TableCell
+                                                align="center"
+                                                sx={{
+                                                    ...tableHeadCellStyles,
+                                                    borderTopRightRadius: '10px',
+                                                }}
+                                            >
+                                                Eliminar
                                             </TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {allMaintenanceFeesPaymentPerson
-                                            .sort((a, b) => new Date(b.period) - new Date(a.period)) // Ordenar por período descendente
+                                        {allClaims
                                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                            .map((maintenanceFeePayment) => {
+                                            .map((claim) => {
                                                 return (
                                                     <TableRow
                                                         hover
-                                                        key={maintenanceFeePayment.maintenanceFeePaymentId}
+                                                        key={claim.issueReportId}
                                                         sx={{
                                                             backgroundColor: '#FFFFFF',
                                                             '&:hover': { backgroundColor: '#F6EFE5' },
                                                         }}
                                                     >
                                                         {columns.map((column) => {
-                                                            const value = maintenanceFeePayment[column.id];
+                                                            const value = claim[column.id];
                                                             return (
                                                                 <TableCell
                                                                     key={column.id}
                                                                     align="center"
                                                                     sx={{ ...tableCellStyles, textAlign: 'center' }}
                                                                 >
-                                                                    {column.id === 'maintenanceFee' ? (
-                                                                        <Box display="flex" justifyContent="center" alignItems="center">
-                                                                            {/* Valor de Expensas */}
-                                                                            <Typography sx={{ marginRight: '8px' }}>
-                                                                                {value}
-                                                                            </Typography>
-                                                                            {/* Botón con validación del estado y fecha de pago */}
-                                                                            <IconButton
-                                                                                aria-label="download-file"
-                                                                                onClick={() =>
-                                                                                    downloadMaintenanceFee(
-                                                                                        maintenanceFeePayment.maintenanceFeeId
-                                                                                    )
-                                                                                }
-                                                                                disabled={
-                                                                                    maintenanceFeePayment.status === 'PENDING' ||
-                                                                                    !maintenanceFeePayment.paymentDate
-                                                                                }
-                                                                                sx={{ padding: '4px' }}
-                                                                            >
-                                                                                <CloudDownloadIcon
-                                                                                    fontSize="small"
-                                                                                    sx={{ color: '#002776' }}
-                                                                                />
-                                                                            </IconButton>
-                                                                        </Box>
-                                                                    ) : column.id === 'status' ? (
+                                                                    {column.id === 'status' ? (
+                                                                        // Show Chip based on the status color
                                                                         <Chip
-                                                                            label={value}
+                                                                            label={statusMappingClaim[claim.status] || claim.status}
                                                                             sx={{
-                                                                                backgroundColor:
-                                                                                    value === 'Pagado' ? '#B0F2C2' : '#BCE7FD',
-                                                                                color: '#002776',
-                                                                                fontWeight: 'bold',
+                                                                                backgroundColor: statusColors[claim.status] || '#FFFFFF',
+                                                                                color: '#000000',
                                                                             }}
                                                                         />
                                                                     ) : (
@@ -365,33 +596,9 @@ function ResidentClaim(){
                                                                 </TableCell>
                                                             );
                                                         })}
-                                                        <TableCell align="center" sx={{ ...tableCellStyles, textAlign: 'center' }}>
-                                                            <IconButton
-                                                                aria-label="download-file"
-                                                                onClick={() =>
-                                                                    handleDownload(maintenanceFeePayment.maintenanceFeePaymentId)
-                                                                }
-                                                                disabled={
-                                                                    maintenanceFeePayment.status === 'PENDING' ||
-                                                                    !maintenanceFeePayment.paymentDate
-                                                                }
-                                                                sx={{
-                                                                    padding: '4px',
-                                                                    '&.Mui-disabled': {
-                                                                        color: '#B0B0B0', // Color gris para el botón deshabilitado
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <CloudDownloadIcon
-                                                                    fontSize="small"
-                                                                    sx={{
-                                                                        color:
-                                                                            maintenanceFeePayment.status === 'PENDING' ||
-                                                                            !maintenanceFeePayment.paymentDate
-                                                                                ? '#B0B0B0' // Gris para el ícono si está deshabilitado
-                                                                                : '#002776', // Azul si está habilitado
-                                                                    }}
-                                                                />
+                                                        <TableCell align="center" sx={tableCellStyles}>
+                                                            <IconButton aria-label="delete" onClick={() => handleClickOpenDelete(claim.issueReportId)} sx={{ color: '#B2675E' }}>
+                                                                <DeleteIcon fontSize="small" />
                                                             </IconButton>
                                                         </TableCell>
                                                     </TableRow>
@@ -401,9 +608,9 @@ function ResidentClaim(){
                                 </Table>
                             </TableContainer>
                             <TablePagination
-                                rowsPerPageOptions={[10, 20, 50]}
+                                rowsPerPageOptions={[5]}
                                 component="div"
-                                count={allMaintenanceFeesPaymentPerson.length}
+                                count={allClaims.length}
                                 rowsPerPage={rowsPerPage}
                                 page={page}
                                 onPageChange={handleChangePage}
@@ -414,7 +621,173 @@ function ResidentClaim(){
                     </Box>
                 </Box>
             </Box>
+            <Dialog
+                open={openDelete}
+                onClose={(event, reason) => {
+                    if (reason !== 'backdropClick') {
+                        handleCloseDelete();
+                    }
+                }}
+            >
+                <DialogTitle id="alert-dialog-title" sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #028484',
+                    fontWeight: 'bold',
+                }}>
+                    {"Desea eliminar este reclamo?"}
+                </DialogTitle>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
+                    <DialogContentText id="alert-dialog-description">
+                        Si acepta se eliminara el reclamo deseado.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                    <Button onClick={handleCloseDelete} variant="contained"  sx={{
+                        backgroundColor: '#B2675E',
+                        '&:hover': {
+                            backgroundColor: '#8E5346',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }}>Cancelar</Button>
+                    <Button variant="contained"  sx={{
+                        backgroundColor: '#028484',
+                        '&:hover': {
+                            backgroundColor: '#026F6B',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }} onClick={() => {
+                        deleteClaim(idClaimToDelete)
+                        handleCloseDelete()
+                    }
+                    }>
+                        Aceptar
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={open}
+                onClose={(event, reason) => {
+                    if (reason !== 'backdropClick') {
+                        handleClose();
+                    }
+                }}
+            >
+                <DialogTitle  sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #028484',
+                    fontWeight: 'bold',
+                }}>Nuevo Reclamo</DialogTitle>
+                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
+                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px' }}>
+                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2}}>
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} >
+                                    <TextField
+                                        id="outlined-basic"
+                                        label="Título"
+                                        variant="outlined"
+                                        size="small"
+                                        type="text"
+                                        name="subject"
+                                        value={claimInfo.subject || ""}
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={12} >
+                                    <TextField
+                                        id="outlined-basic"
+                                        label="Contenido"
+                                        variant="outlined"
+                                        size="small"
+                                        type="text"
+                                        name="issue"
+                                        multiline
+                                        rows={4}
+                                        value={claimInfo.issue || ""}
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    />
+                                </Grid>
+                            </Grid>
+                        </Box>
+                    </Paper>
+                </DialogContent>
+                <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                    <Button onClick={handleClose} variant="contained"  sx={{
+                        backgroundColor: '#B2675E',
+                        '&:hover': {
+                            backgroundColor: '#8E5346',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }}>
+                        Cancelar
+                    </Button>
+                    <Button type="submit" onClick={handleSubmit} variant="contained"  sx={{
+                        backgroundColor: '#028484',
+                        '&:hover': {
+                            backgroundColor: '#026F6B',
+                        },
+                        borderRadius: '25px',
+                        padding: '8px 20px',
+                        transition: 'background-color 0.3s ease',
+                    }} >
+                        Guardar
+                    </Button>
+
+                </DialogActions>
+            </Dialog>
+            <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
+                <Alert onClose={handleCloseAlert} severity={postCreated ? "success" : "error"} sx={{width: '100%'}}>
+                    {text}
+                </Alert>
+            </Snackbar>
         </div>
-    )
-}
-export default ResidentClaim
+    );
+};
+
+export default ResidentClaim;
