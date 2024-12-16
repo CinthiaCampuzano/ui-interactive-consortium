@@ -35,6 +35,9 @@ import AccountBalanceIcon from "@mui/icons-material/AccountBalance.js";
 import {ResidentManageContext} from "../ResidentManageContext.jsx";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AccessTimeIcon from "@mui/icons-material/AccessTime.js";
+import AnnouncementIcon from "@mui/icons-material/Announcement.js";
+import BarChartIcon from "@mui/icons-material/BarChart.js";
 
 
 
@@ -48,7 +51,7 @@ const columns = [
     {id: 'responseDate', label: 'Fecha de la Solución', minWidth: 100 },
 ]
 const ResidentClaim = () => {
-    const {consortiumName, getAllClaimByConsortiumAndPerson, allClaims , setAllClaims, getAConsortiumByIdConsortium,consortiumIdState,statusMappingClaim  } = useContext(ResidentManageContext)
+    const {consortiumName, getAllClaimByConsortiumAndPerson, allClaims , setAllClaims, getAConsortiumByIdConsortium, consortiumIdState, statusMappingClaim  } = useContext(ResidentManageContext)
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [page, setPage] = React.useState(0);
     const { enqueueSnackbar } = useSnackbar();
@@ -57,6 +60,7 @@ const ResidentClaim = () => {
     const [idClaimToDelete, setIdClaimToDelete] = useState(null)
     const [currentClaim, setCurrentClaim] = useState(null);
     const [formData, setFormData] = useState({ status: '', comment: '' });
+    const [cards, setCards] = useState();
     const [claimInfo, setClaimInfo] = useState({
         subject: '',
         issue: '',
@@ -69,6 +73,51 @@ const ResidentClaim = () => {
     const [text, setText] = useState('')
     const [postCreated, setPostCreated] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
+
+    useEffect(() => {
+        getIssueCards(consortiumIdState)
+    }, [consortiumIdState, allClaims]);
+
+    const getIssueCards = async (idConsortium) => {
+        if (!consortiumIdState) {
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            alert("No estás autorizado. Por favor, inicia sesión.");
+            return; // Detener la ejecución si no hay token
+        }
+
+        try {
+            // Decodifica el token para verificar el rol
+            const decodedToken = jwtDecode(token);
+            const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
+
+
+            // Realizar la solicitud GET para obtener los departamentos
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/issueReport/consortium/${consortiumIdState}/cards/person`, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                }
+            });
+
+            // Acceder a los datos de los departamentos y actualizar el estado
+            const cards = res.data;
+            setCards({
+                issueReportId: cards.issueReportId,
+                pending: cards.pending,
+                underReview: cards.underReview,
+                resolved: cards.resolved,
+                total: cards.total
+            });
+
+        } catch (error) {
+            console.error("Error al obtener las tarjetas:", error);
+            alert("Hubo un problema al obtener los tarjetas. Por favor, intenta nuevamente.");
+        }
+    };
 
 
     const handleClickOpen = () => {
@@ -187,7 +236,6 @@ const ResidentClaim = () => {
 
 
     useEffect(() => {
-        console.log('Probandoooooo')
         getAllClaimByConsortiumAndPerson();
     }, [consortiumIdState]);
 
@@ -324,7 +372,7 @@ const ResidentClaim = () => {
                                                     }}
                                                 >
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <Pending sx={{ color: 'info.main' }} />
+                                                        <AccessTimeIcon sx={{ color: 'info.main' }} />
                                                         <Typography
                                                             variant="subtitle1"
                                                             color="info.main"
@@ -339,7 +387,7 @@ const ResidentClaim = () => {
                                                         CANTIDAD
                                                     </Typography>
                                                     <Typography variant="h4" component="div">
-                                                        0
+                                                        {cards ? cards.pending : 0}
                                                     </Typography>
                                                 </Box>
                                             </CardContent>
@@ -371,7 +419,7 @@ const ResidentClaim = () => {
                                                     }}
                                                 >
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <CheckCircle color="warning" />
+                                                        <AnnouncementIcon color="warning" />
                                                         <Typography
                                                             variant="subtitle1"
                                                             color="warning.main"
@@ -386,7 +434,7 @@ const ResidentClaim = () => {
                                                         CANTIDAD
                                                     </Typography>
                                                     <Typography variant="h4" component="div">
-                                                        0
+                                                        {cards?.underReview ? cards.underReview : 0}
                                                     </Typography>
                                                 </Box>
                                             </CardContent>
@@ -424,7 +472,7 @@ const ResidentClaim = () => {
                                                             color="success.main"
                                                             sx={{ fontWeight: 'bold' }}
                                                         >
-                                                            RESUELTAS
+                                                            RESUELTOS
                                                         </Typography>
                                                     </Box>
                                                 </Box>
@@ -433,7 +481,7 @@ const ResidentClaim = () => {
                                                         CANTIDAD
                                                     </Typography>
                                                     <Typography variant="h4" component="div">
-                                                        0
+                                                        { cards?.resolved ? cards.resolved : 0 }
                                                     </Typography>
                                                 </Box>
                                             </CardContent>
@@ -465,7 +513,7 @@ const ResidentClaim = () => {
                                                     }}
                                                 >
                                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <AccountBalanceIcon color="primary" />
+                                                        <BarChartIcon color="primary" />
                                                         <Typography
                                                             variant="subtitle1"
                                                             color="primary"
@@ -480,7 +528,7 @@ const ResidentClaim = () => {
                                                         CANTIDAD
                                                     </Typography>
                                                     <Typography variant="h4" component="div">
-                                                        0
+                                                        {cards?.total ? cards.total : 0}
                                                     </Typography>
                                                 </Box>
                                             </CardContent>

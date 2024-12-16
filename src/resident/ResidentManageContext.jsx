@@ -1,4 +1,4 @@
-import {createContext, useState} from "react";
+import {createContext, useEffect, useState} from "react";
 import axios from "axios";
 import {jwtDecode} from "jwt-decode";
 import {format} from "date-fns";
@@ -24,6 +24,14 @@ export function ResidentManageContextProvider(props){
         FINISHED : "Resuelto"
     };
 
+    useEffect(() => {
+        const storedConsortiumId = localStorage.getItem('consortiumId');
+        if (storedConsortiumId) {
+            setConsortiumIdState(storedConsortiumId);
+        } else {
+            navigate('/admin/management/'); // Redirect if no consortiumId is found
+        }
+    }, []);
 
     function formatDate(dateString) {
         if (!dateString) {
@@ -32,8 +40,18 @@ export function ResidentManageContextProvider(props){
         return format(new Date(dateString), "dd/MM/yyyy HH:mm"); // Formato de fecha legible
     }
 
+    useEffect(() => {
+        if (consortiumIdState) {
+            getAConsortiumByIdConsortium();
+        }
+    }, [consortiumIdState]);
 
     const getAConsortiumByIdConsortium = async () => {
+
+        if (!consortiumIdState) {
+            return;
+        }
+
         // Obtén el token almacenado
         const token = localStorage.getItem('token');
 
