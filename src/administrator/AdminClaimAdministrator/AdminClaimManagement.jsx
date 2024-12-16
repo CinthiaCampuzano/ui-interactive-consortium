@@ -24,7 +24,9 @@ import Button from "@mui/material/Button";
 import {jwtDecode} from "jwt-decode";
 import axios from "axios";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance.js";
-
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AnnouncementIcon from '@mui/icons-material/Announcement';
+import BarChartIcon from '@mui/icons-material/BarChart';
 
 const columns = [
     { id: 'subject', label: 'Título', minWidth: 100 },
@@ -34,13 +36,22 @@ const columns = [
     { id: 'createdDate', label: 'Fecha del Reclamo', minWidth: 100 }
 ]
 const AdminClaimManagement = () => {
-    const {consortiumName, getAllClaimByConsortium, allClaims , setAllClaims, getAConsortiumByIdConsortium,consortiumIdState,statusMapping  } = useContext(AdminManageContext)
+    const {
+        consortiumName,
+        getAllClaimByConsortium,
+        allClaims,
+        setAllClaims,
+        getAConsortiumByIdConsortium,
+        consortiumIdState,
+        statusMapping
+    } = useContext(AdminManageContext)
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [page, setPage] = React.useState(0);
-    const { enqueueSnackbar } = useSnackbar();
+    const {enqueueSnackbar} = useSnackbar();
     const [open, setOpen] = useState(false);
+    const [cards, setCards] = useState();
     const [currentClaim, setCurrentClaim] = useState(null);
-    const [formData, setFormData] = useState({ status: '', comment: '' });
+    const [formData, setFormData] = useState({status: '', comment: ''});
     const [claimInfo, setClaimInfo] = useState({
         issueReportId: null,
         consortium: {
@@ -85,9 +96,94 @@ const AdminClaimManagement = () => {
         'Resuelto': '#B0F2C2',
     };
 
+    useEffect(() => {
+        getIssueCards(consortiumIdState)
+    }, [consortiumIdState]);
+
+    const getIssueCards = async (idConsortium) => {
+        if (!consortiumIdState) {
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            alert("No estás autorizado. Por favor, inicia sesión.");
+            return; // Detener la ejecución si no hay token
+        }
+
+        try {
+            // Decodifica el token para verificar el rol
+            const decodedToken = jwtDecode(token);
+            const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
+
+            if (!isAdmin) {
+                alert("No tienes permisos para realizar esta acción.");
+                return; // Detener la ejecución si no es ROLE_ADMIN
+            }
+
+            // Realizar la solicitud GET para obtener los departamentos
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/issueReport/consortium/${consortiumIdState}/cards`, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                }
+            });
+
+            // Acceder a los datos de los departamentos y actualizar el estado
+            const cards = res.data;
+            setCards({
+                issueReportId: cards.issueReportId,
+                pending: cards.pending,
+                underReview: cards.underReview,
+                resolved: cards.resolved,
+                total: cards.total
+            });
+
+        } catch (error) {
+            console.error("Error al obtener las tarjetas:", error);
+            alert("Hubo un problema al obtener los tarjetas. Por favor, intenta nuevamente.");
+        }
+    };
+
+    const handleMoveToUnderReview = async (claim) => {
+        if (!consortiumIdState) {
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            alert("No estás autorizado. Por favor, inicia sesión.");
+            return; // Detener la ejecución si no hay token
+        }
+
+        try {
+            // Decodifica el token para verificar el rol
+            const decodedToken = jwtDecode(token);
+            const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
+
+            if (!isAdmin) {
+                alert("No tienes permisos para realizar esta acción.");
+                return; // Detener la ejecución si no es ROLE_ADMIN
+            }
+
+            // Realizar la solicitud GET para obtener los departamentos
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/issueReport/${claim.issueReportId}/review`, null, {
+                headers: {
+                    Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                }
+            });
+        } catch (error) {
+            console.error("Error al obtener las tarjetas:", error);
+            alert("Hubo un problema al obtener los tarjetas. Por favor, intenta nuevamente.");
+        }
+    };
+
+
     const handleOpenDialog = (claim) => {
         setCurrentClaim(claim);
-        setClaimInfo({ issueReportId: claim.issueReportId,
+        setClaimInfo({
+            issueReportId: claim.issueReportId,
             consortium: {
                 consortiumId: consortiumIdState
             },
@@ -131,37 +227,16 @@ const AdminClaimManagement = () => {
             return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN
         }
         try {
-            if (status === "Pendiente") {
-                // Si el estado es "Pendiente", cerramos el diálogo
-                handleCloseDialog();
-                return;
-            }
-
-            if (status === "En Revisión") {
-                // Lógica para estado "En Revisión"
-                await axios.patch(
-                    `http://localhost:8080/InteractiveConsortium/v1/issueReport/${claimInfo.issueReportId}/review`,
-                    null, // PATCH no requiere cuerpo en este caso
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-                console.log("Estado actualizado a 'En Revisión'");
-            } else if (status === "Resuelto") {
-                // Lógica para estado "Resuelto"
-                await axios.put(
-                    `${import.meta.env.VITE_API_BASE_URL}/issueReport/resolve`,
-                    claimInfo,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-                console.log("Estado actualizado a 'Resuelto'");
-            }
+            // Lógica para estado "Resuelto"
+            await axios.put(
+                `${import.meta.env.VITE_API_BASE_URL}/issueReport/resolve`,
+                claimInfo,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
             handleCloseDialog();
             getAllClaimByConsortium()
 
@@ -244,7 +319,7 @@ const AdminClaimManagement = () => {
                                                 }}
                                             >
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <Pending sx={{ color: 'info.main' }} />
+                                                    <AccessTimeIcon sx={{ color: 'info.main' }} />
                                                     <Typography
                                                         variant="subtitle1"
                                                         color="info.main"
@@ -259,7 +334,7 @@ const AdminClaimManagement = () => {
                                                     CANTIDAD
                                                 </Typography>
                                                 <Typography variant="h4" component="div">
-                                                    0
+                                                    {cards ? cards.pending : 0}
                                                 </Typography>
                                             </Box>
                                         </CardContent>
@@ -291,13 +366,13 @@ const AdminClaimManagement = () => {
                                                 }}
                                             >
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <CheckCircle color="warning" />
+                                                    <AnnouncementIcon color="warning" />
                                                     <Typography
                                                         variant="subtitle1"
                                                         color="warning.main"
                                                         sx={{ fontWeight: 'bold' }}
                                                     >
-                                                        En Revisión
+                                                        EN REVISIÓN
                                                     </Typography>
                                                 </Box>
                                             </Box>
@@ -306,7 +381,7 @@ const AdminClaimManagement = () => {
                                                     CANTIDAD
                                                 </Typography>
                                                 <Typography variant="h4" component="div">
-                                                    0
+                                                    {cards?.underReview ? cards.underReview : 0}
                                                 </Typography>
                                             </Box>
                                         </CardContent>
@@ -344,7 +419,7 @@ const AdminClaimManagement = () => {
                                                         color="success.main"
                                                         sx={{ fontWeight: 'bold' }}
                                                     >
-                                                        PAGADAS
+                                                        RESUELTOS
                                                     </Typography>
                                                 </Box>
                                             </Box>
@@ -353,7 +428,7 @@ const AdminClaimManagement = () => {
                                                     CANTIDAD
                                                 </Typography>
                                                 <Typography variant="h4" component="div">
-                                                    0
+                                                    { cards?.resolved ? cards.resolved : 0 }
                                                 </Typography>
                                             </Box>
                                         </CardContent>
@@ -385,7 +460,7 @@ const AdminClaimManagement = () => {
                                                 }}
                                             >
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <AccountBalanceIcon color="primary" />
+                                                    <BarChartIcon color="primary" />
                                                     <Typography
                                                         variant="subtitle1"
                                                         color="primary"
@@ -400,7 +475,7 @@ const AdminClaimManagement = () => {
                                                     CANTIDAD
                                                 </Typography>
                                                 <Typography variant="h4" component="div">
-                                                    0
+                                                    {cards?.total ? cards.total : 0}
                                                 </Typography>
                                             </Box>
                                         </CardContent>
@@ -491,13 +566,24 @@ const AdminClaimManagement = () => {
                                                         );
                                                     })}
                                                     <TableCell align="center" sx={tableCellStyles}>
-                                                        <IconButton
-                                                            aria-label="edit"
-                                                            onClick={() => handleOpenDialog(claim)}
-                                                            sx={{ color: '#002776' }}
-                                                        >
-                                                            <EditIcon fontSize="small" />
-                                                        </IconButton>
+                                                        {claim.status === 'Pendiente' && (
+                                                            <IconButton
+                                                                aria-label="edit"
+                                                                onClick={() => handleMoveToUnderReview(claim)}
+                                                                sx={{ color: '#002776' }}
+                                                            >
+                                                                <AnnouncementIcon fontSize="small"  />
+                                                            </IconButton>
+                                                        )}
+                                                        {claim.status === 'En Revisión' && (
+                                                            <IconButton
+                                                                aria-label="edit"
+                                                                onClick={() => handleOpenDialog(claim)}
+                                                                sx={{ color: '#002776' }}
+                                                            >
+                                                                <CheckCircle fontSize="small" />
+                                                            </IconButton>
+                                                        )}
                                                     </TableCell>
                                                 </TableRow>
                                             );
@@ -523,28 +609,13 @@ const AdminClaimManagement = () => {
                 <DialogTitle>Editar Estado del Reclamo</DialogTitle>
                 <DialogContent>
                     <TextField
-                        select
-                        label="Estado"
-                        name="status"
-                        value={status}
-                        onChange={handleChangeStatus}
+                        label="Comentario"
+                        name="response"
+                        value={claimInfo.response}
+                        onChange={handleChangeResponse}
                         fullWidth
                         margin="dense"
-                    >
-                        <MenuItem value="Pendiente">Pendiente</MenuItem>
-                        <MenuItem value="En Revisión">En Revisión</MenuItem>
-                        <MenuItem value="Resuelto">Resuelto</MenuItem>
-                    </TextField>
-                    {status === 'Resuelto' && (
-                        <TextField
-                            label="Comentario"
-                            name="response"
-                            value={claimInfo.response}
-                            onChange={handleChangeResponse}
-                            fullWidth
-                            margin="dense"
-                        />
-                    )}
+                    />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog} color="secondary">
