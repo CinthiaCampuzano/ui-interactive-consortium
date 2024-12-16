@@ -160,22 +160,22 @@ const AdminBulletinBoard = () => {
                                     {/* Reacciones */}
                                     <Box sx={{ display: 'flex', justifyContent: 'space-around', marginTop: '15px' }}>
                                         <Button
-                                            sx={{ color: '#4CAF50', '&:hover': { backgroundColor: '#E8F5E9' } }}
+                                            sx={{ color: '#4CAF50', fontSize: '1.3rem', '&:hover': { backgroundColor: '#E8F5E9' } }}
                                         >
                                             👍 {post.reactions?.THUMBS_UP || 0}
                                         </Button>
                                         <Button
-                                            sx={{ color: '#F44336', '&:hover': { backgroundColor: '#FFEBEE' } }}
+                                            sx={{ color: '#F44336', fontSize: '1.3rem', '&:hover': { backgroundColor: '#FFEBEE' } }}
                                         >
                                             👎 {post.reactions?.THUMBS_DOWN || 0}
                                         </Button>
                                         <Button
-                                            sx={{ color: '#FFC107', '&:hover': { backgroundColor: '#FFF8E1' } }}
+                                            sx={{ color: '#FFC107', fontSize: '1.3rem', '&:hover': { backgroundColor: '#FFF8E1' } }}
                                         >
                                             👏 {post.reactions?.CLAPS || 0}
                                         </Button>
                                         <Button
-                                            sx={{ color: '#2196F3', '&:hover': { backgroundColor: '#E3F2FD' } }}
+                                            sx={{ color: '#2196F3', fontSize: '1.3rem', '&:hover': { backgroundColor: '#E3F2FD' } }}
                                         >
                                             😢 {post.reactions?.SAD_FACE || 0}
                                         </Button>
