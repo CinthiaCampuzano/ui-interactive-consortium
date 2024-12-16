@@ -1,32 +1,164 @@
-import React, { useState } from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {
     Container, Typography, Grid, TextField, MenuItem, Button, Box, Card, CardContent, FormControl, InputLabel, Select,
-    InputAdornment, IconButton, Dialog, DialogActions, DialogContent, DialogTitle
+    InputAdornment, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, Alert, Snackbar
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import {ResidentManageContext} from "../ResidentManageContext.jsx";
+import {jwtDecode} from "jwt-decode";
+import axios from "axios";
 import ResidentSidebar from "../ResidentSidebar.jsx";
 
-const spaces = ['Piscina', 'Gimnasio', 'Sala de Reuniones', 'Cancha de Tenis'];
-const shifts = ['Mañana', 'Tarde'];
+// const spaces = ['Piscina', 'Gimnasio', 'Sala de Reuniones', 'Cancha de Tenis'];
+const shifts = [
+    { id: 'MORNING', name: 'Mañana'},
+    { id: 'NIGHT',   name: 'Noche'}
+];
 
 const ReserveSpace = () => {
+
+    const { consortiumIdState } = useContext(ResidentManageContext)
+
     const [space, setSpace] = useState('');
     const [date, setDate] = useState('');
     const [shift, setShift] = useState('');
-    const [openDialog, setOpenDialog] = useState(false);
+    const [amenities, setAmenities] = useState([]);
+    const [text, setText] = useState('')
+    const [openAlert, setOpenAlert] = useState(false)
+    const [bookingMade, setBookingMade] = useState(true);
 
+    const [openDialog, setOpenDialog] = useState(false);
     const handleChangeSpace = (event) => setSpace(event.target.value);
     const handleChangeDate = (event) => setDate(event.target.value);
-    const handleChangeShift = (event) => setShift(event.target.value);
 
+    const handleChangeShift = (event) => setShift(event.target.value);
     const handleOpenDialog = () => setOpenDialog(true);
     const handleCloseDialog = () => setOpenDialog(false);
 
-    const handleSubmit = () => {
+    const handleOpenAlert = () => {
+        setOpenAlert(true);
+    }
+
+    const handleCloseAlert= (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setOpenAlert(false);
+    };
+
+    useEffect(() => {
+        getAllAmenitiesByIdConsortium(consortiumIdState)
+    }, [consortiumIdState]);
+
+    const getAllAmenitiesByIdConsortium = async () => {
+        try {
+
+            if (!consortiumIdState) {
+                return;
+            }
+
+            // Obtén el token almacenado
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("No estás autorizado. Por favor, inicia sesión.");
+                return; // Detener la ejecución si no hay token
+            }
+
+            // Decodifica el token para verificar el rol
+            const decodedToken = jwtDecode(token);
+
+            // Si el usuario tiene el rol adecuado, realiza la solicitud
+            const res = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/Amenities?idConsortium=${consortiumIdState}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                    },
+                }
+            );
+            console.log(res.data);
+
+            // Mapear y establecer las amenities
+            const amenities = res.data.content;
+            setAmenities(
+                amenities.map((amenity) => {
+                    return {
+                        amenityId: amenity.amenityId,
+                        name: amenity.name,
+                        maxBookings: amenity.maxBookings,
+                        imagePath: amenity.imagePath,
+                    };
+                })
+            );
+        } catch (error) {
+            console.error("Error al obtener amenities:", error);
+            alert("Hubo un problema al obtener los amenities.");
+        }
+    };
+
+
+    const handleSubmit = async () => {
         // Aquí se puede agregar la lógica para enviar los datos de la reserva
         console.log('Reserva realizada:', { space, date, shift });
         setOpenDialog(false);  // Cerrar el diálogo de confirmación
+        try {
+
+            if (!consortiumIdState) {
+                return;
+            }
+
+            // Obtén el token almacenado
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("No estás autorizado. Por favor, inicia sesión.");
+                return; // Detener la ejecución si no hay token
+            }
+
+            // Decodifica el token para verificar el rol
+            const decodedToken = jwtDecode(token);
+            // const residentId = decodedToken.;
+
+            const request = {
+                startDate: date,
+                shift: shift,
+                amenity: {amenityId: space}
+            }
+
+            console.log(request)
+
+            // Si el usuario tiene el rol adecuado, realiza la solicitud
+            const res = await axios.post(
+                `${import.meta.env.VITE_API_BASE_URL}/Bookings`,
+                request,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                    },
+                }
+            );
+
+            setText('Espacio reservado exitosamente');
+            setBookingMade(true);
+
+            // Mapear y establecer las amenities
+            // const amenities = res.data.content;
+            // setAmenities(
+            //     amenities.map((amenity) => {
+            //         return {
+            //             amenityId: amenity.amenityId,
+            //             name: amenity.name,
+            //             maxBookings: amenity.maxBookings,
+            //             imagePath: amenity.imagePath,
+            //         };
+            //     })
+            // );
+        } catch (error) {
+            setText('Error al reservar espacio');
+            setBookingMade(false);
+        } finally {
+            handleOpenAlert()
+        }
     };
 
     return (
@@ -70,8 +202,8 @@ const ReserveSpace = () => {
                         <Box
                             sx={{
                                 width: '100%',
-                                maxWidth: '1100px',
-                                marginLeft: {xs: '40px', sm: '80px'},
+                                maxWidth: '600px',
+                                // marginLeft: {xs: '40px', sm: '80px'},
                             }}
                         >
                             <Card sx={{boxShadow: 3, padding: 2}}>
@@ -83,9 +215,9 @@ const ReserveSpace = () => {
                                                 <InputLabel>Espacio Común</InputLabel>
                                                 <Select value={space} onChange={handleChangeSpace}
                                                         label="Espacio Común">
-                                                    {spaces.map((option) => (
-                                                        <MenuItem key={option} value={option}>
-                                                            {option}
+                                                    {amenities.map((amenity) => (
+                                                        <MenuItem key={amenity.amenityId} value={amenity.amenityId}>
+                                                            {amenity.name}
                                                         </MenuItem>
                                                     ))}
                                                 </Select>
@@ -117,8 +249,8 @@ const ReserveSpace = () => {
                                                 <InputLabel>Turno</InputLabel>
                                                 <Select value={shift} onChange={handleChangeShift} label="Turno">
                                                     {shifts.map((option) => (
-                                                        <MenuItem key={option} value={option}>
-                                                            {option}
+                                                        <MenuItem key={option.id} value={option.id}>
+                                                            {option.name}
                                                         </MenuItem>
                                                     ))}
                                                 </Select>
@@ -128,6 +260,7 @@ const ReserveSpace = () => {
                                         {/* Botón para reservar */}
                                         <Grid item xs={12} textAlign="center">
                                             <Button
+                                                disabled={!space || !date || !shift}
                                                 variant="contained"
                                                 color="primary"
                                                 onClick={handleOpenDialog}
@@ -152,8 +285,7 @@ const ReserveSpace = () => {
                 <DialogTitle>Confirmar Reserva</DialogTitle>
                 <DialogContent>
                     <Typography variant="body1">
-                        Estás a punto de reservar el espacio <strong>{space}</strong> para el
-                        día <strong>{date}</strong> en el turno <strong>{shift}</strong>.
+                        Estás de realizar la reserva día <strong>{date}</strong>
                     </Typography>
                 </DialogContent>
                 <DialogActions>
@@ -161,8 +293,13 @@ const ReserveSpace = () => {
                     <Button onClick={handleSubmit} color="primary">Confirmar</Button>
                 </DialogActions>
             </Dialog>
-</div>
- );
- };
+            <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
+                <Alert onClose={handleCloseAlert} severity={bookingMade ? "success" : "error"} sx={{width: '100%'}}>
+                    {text}
+                </Alert>
+            </Snackbar>
+        </div>
+    );
+};
 
 export default ReserveSpace;
