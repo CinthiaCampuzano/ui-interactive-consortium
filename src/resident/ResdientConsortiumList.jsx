@@ -84,8 +84,8 @@ function ResidentConsortiumList(){
                     consortiumId: consortium.consortiumId,
                     name: consortium.name,
                     address: consortium.address,
-                    city: consortium.city,
-                    province: consortium.province
+                    city: consortium.city.displayName,
+                    province: consortium.province.displayName
                 };
             }));
             // Create an array of promises for the image download requests
