@@ -10,6 +10,7 @@ import AdminBulletinBoard from "./AdminPostAdministrator/AdminBulletinBoard.jsx"
 import AdminClaimManagement from "./AdminClaimAdministrator/AdminClaimManagement.jsx";
 import AdminMaintenanceFeesAdministrator from "./AdminMaintenanceFees/AdminMaintenanceFeesManagement.jsx";
 import AdminMaintenanceFeePayments from "./AdminMaintenanceFees/AdminMaintenanceFeePayments.jsx";
+import AdminBooking from "./AdminBooking/AdminBooking.jsx";
 
 
 function AdministratorPage(){
@@ -38,6 +39,7 @@ function AdministratorPage(){
 
         <Route path="/expensas/pago" element={<AdminMaintenanceFeePayments/>} />
 
+        <Route path="/reservas" element={<AdminBooking/>} />
 
     </Routes>
 </AdminManageContextProvider>

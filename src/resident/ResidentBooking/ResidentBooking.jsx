@@ -9,6 +9,12 @@ import {ResidentManageContext} from "../ResidentManageContext.jsx";
 import {jwtDecode} from "jwt-decode";
 import axios from "axios";
 import ResidentSidebar from "../ResidentSidebar.jsx";
+import TableContainer from "@mui/material/TableContainer";
+import Table from "@mui/material/Table";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TableCell from "@mui/material/TableCell";
+import TableBody from "@mui/material/TableBody";
 
 // const spaces = ['Piscina', 'Gimnasio', 'Sala de Reuniones', 'Cancha de Tenis'];
 const shifts = [
@@ -161,6 +167,50 @@ const ReserveSpace = () => {
         }
     };
 
+    const reservations = [
+        {
+            space: 'Piscina',
+            reserveDay: '2024-12-20',
+            shift: 'Mañana',
+            reserveDate: '2024-12-10',
+            available: 3,
+        },
+        {
+            space: 'Gimnasio',
+            reserveDay: '2024-12-21',
+            shift: 'Tarde',
+            reserveDate: '2024-12-11',
+            available: 5,
+        },
+        {
+            space: 'Salón de fiestas',
+            reserveDay: '2024-12-22',
+            shift: 'Noche',
+            reserveDate: '2024-12-12',
+            available: 2,
+        },
+    ];
+
+    const columns = [
+        { id: 'space', label: 'Espacio Común', align: 'center' },
+        { id: 'reserveDay', label: 'Día de Reserva', align: 'center' },
+        { id: 'shift', label: 'Turno', align: 'center' },
+        { id: 'reserveDate', label: 'Fecha de Reserva', align: 'center' },
+        { id: 'available', label: 'Cantidad Disponible', align: 'center' },
+    ];
+
+    const tableHeadCellStyles = {
+        backgroundColor: '#002776',
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    };
+
+    const tableCellStyles = {
+        color: '#002776',
+        padding: '8px',
+    };
+
     return (
         <div>
             <Box
@@ -276,6 +326,55 @@ const ReserveSpace = () => {
                                     </Grid>
                                 </CardContent>
                             </Card>
+
+                            <Box sx={{ marginTop: '20px', width: '100%', maxWidth: '900px', marginBottom: '40px' }}>
+                            {/* Tabla de reservas */}
+                                    <TableContainer sx={{
+                                        maxHeight: 600,
+                                        overflowX: 'auto',
+                                        borderRadius: '10px',
+                                        border: '1px solid #002776',
+                                    }} >
+                                        <Table stickyHeader
+                                               sx={{
+                                                   borderCollapse: 'separate',
+                                                   borderSpacing: '0',
+                                               }}>
+                                            <TableHead >
+                                                <TableRow sx={{ height: '24px' }}>
+                                                    {columns.map((column, index) => (
+                                                        <TableCell
+                                                            key={column.id}
+                                                            align={column.align}
+                                                            sx={{
+                                                                ...tableHeadCellStyles,
+                                                                ...(index === 0 && {
+                                                                    borderTopLeftRadius: '10px',
+                                                                }),
+                                                            }}
+                                                        >
+                                                            {column.label}
+                                                        </TableCell>
+                                                    ))}
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {reservations.map((row, index) => (
+                                                    <TableRow hover key={index} sx={{
+                                                        backgroundColor: '#FFFFFF',
+                                                        '&:hover': { backgroundColor: '#F6EFE5' },
+                                                    }}>
+                                                        {columns.map((column) => (
+                                                            <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles, textAlign: 'center' }}>
+                                                                {row[column.id]}
+                                                            </TableCell>
+                                                        ))}
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                            </Box>
                         </Box>
                     </Box>
                 </Box>
