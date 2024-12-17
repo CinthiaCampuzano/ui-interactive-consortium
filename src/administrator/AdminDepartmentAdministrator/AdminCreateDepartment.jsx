@@ -132,29 +132,30 @@ function AdminCreateDepartment(){
 
         } catch (exception) {
             // Manejo de errores más detallado según las excepciones del backend
-            if (exception.response) {
-                switch (exception.response.status) {
-                    case 404:
-                        if (exception.response.data.message.includes('Consorcio no encontrado')) {
-                            setText('El consorcio especificado no se encontró.');
-                        } else if (exception.response.data.message.includes('Propietario no encontrado')) {
-                            setText('El propietario especificado no se encontró.');
-                        } else if (exception.response.data.message.includes('Residente no encontrado')) {
-                            setText('El residente especificado no se encontró.');
-                        }
-                        break;
-                    case 409:
-                        if (exception.response.data.message.includes('Ya existe un departamento en ese piso con ese identificador')) {
-                            setText('Ya existe un departamento en ese piso con ese identificador.');
-                        } else {
-                            setText('Conflicto al crear el departamento: datos duplicados.');
-                        }
-                        break;
-                    default:
-                        setText('No se realizó la carga, error de datos!!');
-                }
-                setDepartmentCreated(false);
-            }
+            // if (exception.response) {
+            //     switch (exception.response.status) {
+            //         case 404:
+            //             if (exception.response.data.message.includes('Consorcio no encontrado')) {
+            //                 setText('El consorcio especificado no se encontró.');
+            //             } else if (exception.response.data.message.includes('Propietario no encontrado')) {
+            //                 setText('El propietario especificado no se encontró.');
+            //             } else if (exception.response.data.message.includes('Residente no encontrado')) {
+            //                 setText('El residente especificado no se encontró.');
+            //             }
+            //             break;
+            //         case 409:
+            //             if (exception.response.data.message.includes('Ya existe un departamento en ese piso con ese identificador')) {
+            //                 setText('Ya existe un departamento en ese piso con ese identificador.');
+            //             } else {
+            //                 setText('Conflicto al crear el departamento: datos duplicados.');
+            //             }
+            //             break;
+            //         default:
+            //             setText('No se realizó la carga, error de datos!!');
+            //     }
+            // }
+            setText(exception.response.data)
+            setDepartmentCreated(false);
         } finally {
             handleOpenAlert();
             getAllDepartmentsByConsortium(consortiumIdState);
