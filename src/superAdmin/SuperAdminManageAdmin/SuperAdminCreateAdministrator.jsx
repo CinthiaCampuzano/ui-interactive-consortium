@@ -118,7 +118,7 @@ function SuperAdminCreateAdministrator(){
                     setAdminCreated(false);
                     switch (exception.response?.status) {
                         case 409:
-                            setText('No se realizo la carga porque hay un Administrador con ese mail o dni');
+                            setText(exception.response.data);
                             break;
                         default:
                             setText('No se realizo la carga, error de datos!!');

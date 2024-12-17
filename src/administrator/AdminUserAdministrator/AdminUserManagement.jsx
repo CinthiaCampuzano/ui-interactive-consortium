@@ -331,7 +331,6 @@ function AdminUserManagement(){
 
             // Actualizar la lista de personas después de eliminar
             setAllPersons(allPersons.filter(person => person.personId !== idPersonToDelete));
-            alert("Persona eliminada exitosamente.");
         } catch (error) {
             console.error("Error al eliminar la persona:", error);
             alert("Hubo un problema al eliminar la persona. Por favor, intenta nuevamente.");

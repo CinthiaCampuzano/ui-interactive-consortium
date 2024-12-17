@@ -308,7 +308,6 @@ function SuperAdminManagesAdministrator(){
             });
 
             setAllAdministrator(allAdministrator.filter(administrator => administrator.administratorId !== idAdministratorToDelete));
-            alert('Administrador eliminado correctamente.');
 
         } catch (error) {
             console.error("Error al eliminar el administrador:", error);

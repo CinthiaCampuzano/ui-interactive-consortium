@@ -479,7 +479,7 @@ function AdminCreatePerson(){
                                 <Grid item xs={12}>
                                     <TextField
                                         id="outlined-basic"
-                                        label="NUmero de Teléfono"
+                                        label="Número de Teléfono"
                                         variant="outlined"
                                         size="small"
                                         type="text"
