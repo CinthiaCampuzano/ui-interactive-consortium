@@ -234,7 +234,6 @@ function AdminAmenitiesManagement(){
 
             // Actualiza el estado local tras eliminar
             setAllAmenities(allAmenities.filter((amenity) => amenity.amenityId !== idAmenityToDelete));
-            alert("Amenity eliminado exitosamente.");
         } catch (error) {
             console.error("Error al eliminar el amenity:", error);
             if (error.response?.status === 403) {

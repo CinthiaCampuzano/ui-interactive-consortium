@@ -33,6 +33,7 @@ function Autentication() {
             const response = await Auth(email, password);
             const token = response.token;
             localStorage.setItem('token', token);
+            let validUser = true;
 
             if (isSuperAdmin()) {
                 navigate('/superAdmin/management');
@@ -41,11 +42,18 @@ function Autentication() {
             } else if (isPerson()) {
                 navigate('/resident/management');
             } else {
+                validUser = false;
                 navigate('/login');
             }
 
-            setSuccess(true);
-            setError('');
+            if (validUser) {
+                setSuccess(true);
+                setError('');
+            } else {
+                setError('No posee roles para la aplicacion');
+                setSuccess(false);
+            }
+
         } catch (err) {
             console.log(err);
             setError('Usuario o contraseña incorrectos');

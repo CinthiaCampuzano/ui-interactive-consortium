@@ -199,6 +199,8 @@ const ReserveSpace = () => {
 
             setText('Espacio reservado exitosamente');
             setBookingMade(true);
+            getAllReservation()
+
 
             // Mapear y establecer las amenities
             // const amenities = res.data.content;
@@ -213,7 +215,7 @@ const ReserveSpace = () => {
             //     })
             // );
         } catch (error) {
-            setText('Error al reservar espacio');
+            setText(error.response.data);
             setBookingMade(false);
         } finally {
             handleOpenAlert()
