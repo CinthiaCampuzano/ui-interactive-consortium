@@ -82,6 +82,7 @@ const AdminBooking = () => {
             setReservationsState(
                 reservations.map((reservation) => {
                     return {
+                        bookingId: reservation.bookingId,
                         space: reservation.amenity.name,
                         reserveDay: reservation.createdAt.replace(/T/, ' ').substring(0, 16),
                         shift: shiftMapping[reservation.shift],
@@ -97,7 +98,7 @@ const AdminBooking = () => {
 
     }
 
-    const deleteReservation = async () => {
+    const handleDeleteReservation = async (bookingId) => {
         try {
 
             if (!consortiumIdState) {
@@ -116,7 +117,7 @@ const AdminBooking = () => {
 
             // Si el usuario tiene el rol adecuado, realiza la solicitud
             const res = await axios.delete(
-                `${import.meta.env.VITE_API_BASE_URL}/Bookings/${consortiumIdState}`,
+                `${import.meta.env.VITE_API_BASE_URL}/Bookings/${bookingId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
@@ -252,7 +253,7 @@ const AdminBooking = () => {
                                                         align="center"
                                                         sx={tableCellStyles}
                                                     >
-                                                        <IconButton aria-label="delete" onClick={() => console.log("eliminar")} sx={{ color: '#B2675E' }}>
+                                                        <IconButton aria-label="delete" onClick={() => handleDeleteReservation(row.bookingId)} sx={{ color: '#B2675E' }}>
                                                             <DeleteIcon fontSize="small" />
                                                         </IconButton>
                                                     </TableCell>
