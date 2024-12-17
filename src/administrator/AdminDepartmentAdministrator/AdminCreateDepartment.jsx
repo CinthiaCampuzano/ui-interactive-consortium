@@ -57,7 +57,6 @@ function AdminCreateDepartment(){
     const handleChange = (event) => {
         const name = event.target.name; // Obtiene el nombre del campo
         const value = event.target.value; // Obtiene el nuevo valor del campo
-        console.log('Holaaaa')
         setDepartmentInfo((values) => {
             // Crea una copia del objeto actual
             const updatedValues = { ...values };
@@ -315,6 +314,7 @@ function AdminCreateDepartment(){
                         Cancelar
                     </Button>
                     <Button
+                        disabled = { !departmentInfo.code || !departmentInfo?.propietary?.personId || !departmentInfo?.resident?.personId }
                         type="submit"
                         onClick={handleSubmit}
                         variant="contained"

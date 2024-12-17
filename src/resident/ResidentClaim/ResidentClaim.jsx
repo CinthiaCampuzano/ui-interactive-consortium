@@ -206,16 +206,18 @@ const ResidentClaim = () => {
         } catch (exception) {
             setPostCreated(false);
 
-            switch (exception.response?.status) {
-                case 409:
-                    setText('No se realizó la carga porque ya existe un espacio común con ese nombre en este consorcio');
-                    break;
-                case 404:
-                    setText('No se realizó la carga porque el consorcio no fue encontrado');
-                    break;
-                default:
-                    setText('No se realizó la carga debido a un error de datos');
-            }
+            // switch (exception.response?.status) {
+            //     case 409:
+            //         setText('No se realizó la carga porque ya existe un espacio común con ese nombre en este consorcio');
+            //         break;
+            //     case 404:
+            //         setText('No se realizó la carga porque el consorcio no fue encontrado');
+            //         break;
+            //     default:
+            //         setText('No se realizó la carga debido a un error de datos');
+            // }
+
+            setText(exception.response?.data)
         } finally {
             handleOpenAlert();
             getAllClaimByConsortiumAndPerson();

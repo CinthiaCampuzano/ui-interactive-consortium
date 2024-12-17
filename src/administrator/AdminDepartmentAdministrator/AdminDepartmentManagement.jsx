@@ -833,6 +833,7 @@ function AdminDepartmentManagement(){
                         Cancelar
                     </Button>
                     <Button
+                        disabled={ !departmentInfo.code || !departmentInfo?.propietary?.personId || !departmentInfo?.resident?.personId }
                         type="submit"
                         color="primary"
                         onClick={handleSubmit}
