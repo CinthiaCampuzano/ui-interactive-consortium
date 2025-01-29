@@ -2,7 +2,18 @@ import {useContext, useEffect, useState} from "react";
 import axios from "axios";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add.js";
-import {Alert, Box, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Snackbar, TextField} from "@mui/material";
+import {
+    Alert,
+    Box,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle, FormControlLabel,
+    Grid, Radio,
+    RadioGroup,
+    Snackbar,
+    TextField
+} from "@mui/material";
 import Paper from "@mui/material/Paper";
 import MenuItem from "@mui/material/MenuItem";
 import {SuperAdminManageConsortiumContext} from "./SuperAdminManageConsortiumContext.jsx";
@@ -23,6 +34,7 @@ function SuperAdminCreateConsortium(){
     const [openAlert, setOpenAlert] = useState(false)
     const [states, setStates] = useState('')
     const [cities, setCities] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const validateFields = () => {
         const addressRegex = /^[A-Za-z\s]+\s\d+$/;
@@ -81,20 +93,25 @@ function SuperAdminCreateConsortium(){
                 }
             }));
         } else {
+            // Verificar si el campo es numérico y convertirlo
+            const numericFields = ["functionalUnits", "floors", "apartmentsPerFloor"];
+            const parsedValue = numericFields.includes(name) ? parseInt(value, 10) || 0 : value;
+
             setConsortiumInfo(prevState => ({
                 ...prevState,
-                [name]: value
+                [name]: parsedValue
             }));
         }
-    }
+    };
 
     const handleStateChange = (event) => {
         const { name, value } = event.target;
 
         setConsortiumInfo(prevState => ({
             ...prevState,
-            state: value
+            province: value
         }));
+        console.log("Estado :", consortiumInfo);
     }
 
     const handleCityChange = (event) => {
@@ -104,6 +121,7 @@ function SuperAdminCreateConsortium(){
             ...prevState,
             city: value
         }));
+        console.log("City:", consortiumInfo);
     }
 
     useEffect(() => {
@@ -111,10 +129,11 @@ function SuperAdminCreateConsortium(){
     }, []);
 
     useEffect(() => {
-        if (consortiumInfo.state) {
-            getAllCities(consortiumInfo.state)
+        if (!isSubmitting && consortiumInfo.province) {
+            console.log("Cambie de nuevo :", consortiumInfo);
+            getAllCities(consortiumInfo.province);
         }
-    }, [consortiumInfo.state]);
+    }, [consortiumInfo.province, isSubmitting]);
 
     const getAllStates = async () => {
         const token = localStorage.getItem('token'); // Obtén el token almacenado
@@ -192,6 +211,8 @@ function SuperAdminCreateConsortium(){
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setIsSubmitting(true);
+
 
         // Obtén el token almacenado en el localStorage
         const token = localStorage.getItem('token');
@@ -219,7 +240,10 @@ function SuperAdminCreateConsortium(){
                 try {
                     let request = consortiumInfo;
                     request.city = {id: consortiumInfo.city};
-                    request.province = {id: consortiumInfo.state};
+                    request.province = {id: consortiumInfo.province};
+
+                    console.log("Consortium Info final:", consortiumInfo);
+                    console.log("Request:", request);
 
                     // Realiza la solicitud POST para crear el consorcio, pasando el token en los headers
                     await axios.post(url, request, {
@@ -242,6 +266,7 @@ function SuperAdminCreateConsortium(){
                             setText('No se realizó la carga, error de datos!');
                     }
                 } finally {
+                    setIsSubmitting(false);
                     handleOpenAlert();
                     getAllConsortium(); // Llama la función para obtener todos los consorcios
                 }
@@ -364,8 +389,8 @@ function SuperAdminCreateConsortium(){
                                         label="Seleccione una Provincia"
                                         variant="outlined"
                                         size="small"
-                                        name="state"
-                                        value={consortiumInfo?.state || ''}
+                                        name="province"
+                                        value={consortiumInfo?.province || ''}
                                         onChange={handleStateChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
@@ -465,7 +490,122 @@ function SuperAdminCreateConsortium(){
                                         ))}
                                     </TextField>
                                 </Grid>
+                                <Grid item xs={12}>
+                                    <Box>
+
+                                        <RadioGroup
+                                            row
+                                            name="consortiumType"
+                                            value={consortiumInfo.consortiumType}
+                                            onChange={handleChange}
+                                        >
+                                            <FormControlLabel
+                                                value="BUILDING"
+                                                control={<Radio sx={{ color: '#028484', '&.Mui-checked': { color: '#028484' } }} />}
+                                                label="Edificio"
+                                            />
+                                            <FormControlLabel
+                                                value="NEIGHBORHOOD"
+                                                control={<Radio sx={{ color: '#028484', '&.Mui-checked': { color: '#028484' } }} />}
+                                                label="Barrio Privado"
+                                            />
+                                        </RadioGroup>
+                                    </Box>
+                                </Grid>
+
+                                {/* Input: Total de Unidades Funcionales */}
+                                <Grid item xs={12}>
+                                    <TextField
+                                        label="Total de Unidades Funcionales"
+                                        variant="outlined"
+                                        size="small"
+                                        type="number"
+                                        name="functionalUnits"
+                                        value={consortiumInfo.functionalUnits}
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484',
+                                            },
+                                        }}
+                                        fullWidth
+                                    />
+                                </Grid>
+
+                                {/* Inputs condicionales: Cantidad de pisos y departamentos por piso */}
+                                {consortiumInfo.consortiumType === "BUILDING" && (
+                                    <>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                label="Cantidad de pisos"
+                                                variant="outlined"
+                                                size="small"
+                                                type="number"
+                                                name="floors"
+                                                value={consortiumInfo.floors}
+                                                onChange={handleChange}
+                                                sx={{
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                        '&:hover fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                        '&.Mui-focused fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                    },
+                                                    '& label.Mui-focused': {
+                                                        color: '#028484',
+                                                    },
+                                                }}
+                                                fullWidth
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                label="Cantidad de departamentos por piso"
+                                                variant="outlined"
+                                                size="small"
+                                                type="number"
+                                                name="apartmentsPerFloor"
+                                                value={consortiumInfo.apartmentsPerFloor}
+                                                onChange={handleChange}
+                                                sx={{
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                        '&:hover fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                        '&.Mui-focused fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                    },
+                                                    '& label.Mui-focused': {
+                                                        color: '#028484',
+                                                    },
+                                                }}
+                                                fullWidth
+                                            />
+                                        </Grid>
+                                    </>
+                                )}
                             </Grid>
+
                         </Box>
                     </Paper>
                 </DialogContent>
