@@ -46,7 +46,11 @@ export function SuperAdminManageConsortiumContextProvider(props){
                     administratorId: administrator.administratorId || '',
                     fullName: administrator.name && administrator.lastName
                         ? `${administrator.name} ${administrator.lastName}`
-                        : ''
+                        : '',
+                    consortiumType: consortium.consortiumType,
+                    functionalUnits: consortium.functionalUnits,
+                    floors: consortium.floors,
+                    apartmentsPerFloor: consortium.apartmentsPerFloor
                 };
             }));
         } catch (exception) {

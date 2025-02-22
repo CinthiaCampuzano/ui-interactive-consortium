@@ -47,7 +47,7 @@ function SuperAdminManagesConsortia(){
     const [consortiumProvince, setConsortiumProvince] = useState('')
     const [consortiumNameAdmin, setConsortiumNameAdmin] = useState('');
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(10);
+    const [rowsPerPage, setRowsPerPage] = React.useState(5);
     const [open, setOpen] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
     const [idConsortiumToDelete, setIdConsortiumToDelete] = useState(null);
