@@ -18,10 +18,11 @@ import Paper from "@mui/material/Paper";
 import MenuItem from "@mui/material/MenuItem";
 import {SuperAdminManageConsortiumContext} from "./SuperAdminManageConsortiumContext.jsx";
 import {jwtDecode} from "jwt-decode";
+import MapComponent from "../../component/MapComponent.jsx";
 
 
-function SuperAdminCreateConsortium(){
-    const { allAdministrator, getAllConsortium, getAllAdministrator} = useContext(SuperAdminManageConsortiumContext)
+function SuperAdminCreateConsortium() {
+    const {allAdministrator, getAllConsortium, getAllAdministrator} = useContext(SuperAdminManageConsortiumContext)
     const [open, setOpen] = useState(false);
     const [text, setText] = useState('')
     const [errors, setErrors] = useState({
@@ -29,12 +30,44 @@ function SuperAdminCreateConsortium(){
         province: false
     })
 
-    const [consortiumInfo, setConsortiumInfo] = useState({})
+    // const [consortiumInfo, setConsortiumInfo] = useState({consortiumType: ''});
+    const [consortiumInfo, setConsortiumInfo] = useState({
+        name: '',
+        administrator: { administratorId: '' },
+        consortiumType: '',
+        functionalUnits: 0,
+        floors: 0,
+        apartmentsPerFloor: 0,
+        province: '',
+        city: '',
+        address: ''
+    });
     const [consortiumCreated, setConsortiumCreated] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
-    const [states, setStates] = useState('')
+    const [provinces, setProvinces] = useState('')
     const [cities, setCities] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const MAP_URL = "https://apis.datos.gob.ar/georef/api"
+
+    const fetchProvinces = async () => {
+        const response = await fetch(
+            `${MAP_URL}/provincias?&max=100`
+        );
+        const data = await response.json();
+
+        let fetchedProvinces = data?.provincias
+            .map(provincia => ({
+                provinceId: provincia.nombre,
+                provinceName: provincia.nombre
+            }))
+            .sort((a, b) => a.provinceName.localeCompare(b.provinceName));
+        setProvinces(fetchedProvinces);
+    };
+
+    useEffect(() => {
+        fetchProvinces();
+    }, [])
 
     const validateFields = () => {
         const addressRegex = /^[A-Za-z\s]+\s\d+$/;
@@ -46,7 +79,7 @@ function SuperAdminCreateConsortium(){
         })
 
         return (
-            addressRegex.test(consortiumInfo.address)&&
+            addressRegex.test(consortiumInfo.address) &&
             provinceRegex.test(consortiumInfo.province)
         )
     }
@@ -67,7 +100,7 @@ function SuperAdminCreateConsortium(){
         setConsortiumInfo({})
     }
 
-    const handleCloseAlert= (event, reason) => {
+    const handleCloseAlert = (event, reason) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -75,14 +108,14 @@ function SuperAdminCreateConsortium(){
     };
 
     useEffect(() => {
-        if (open){
+        if (open) {
             getAllAdministrator()
         }
 
     }, [open]);
 
     const handleChange = (event) => {
-        const { name, value } = event.target;
+        const {name, value} = event.target;
 
         if (name === "administratorId") {
             setConsortiumInfo(prevState => ({
@@ -104,38 +137,32 @@ function SuperAdminCreateConsortium(){
         }
     };
 
-    const handleStateChange = (event) => {
-        const { name, value } = event.target;
+    const handleProvinceChange = (event) => {
+        const {name, value} = event.target;
 
         setConsortiumInfo(prevState => ({
             ...prevState,
             province: value
         }));
-        console.log("Estado :", consortiumInfo);
     }
 
     const handleCityChange = (event) => {
-        const { name, value } = event.target;
+        const {name, value} = event.target;
 
         setConsortiumInfo(prevState => ({
             ...prevState,
             city: value
         }));
-        console.log("City:", consortiumInfo);
     }
 
     useEffect(() => {
-        getAllStates()
-    }, []);
-
-    useEffect(() => {
-        if (!isSubmitting && consortiumInfo.province) {
-            console.log("Cambie de nuevo :", consortiumInfo);
-            getAllCities(consortiumInfo.province);
+        if (consortiumInfo.province) {
+            getAllCities(consortiumInfo.province)
         }
     }, [consortiumInfo.province, isSubmitting]);
 
-    const getAllStates = async () => {
+
+    const getAllCities = async (provinceId) => {
         const token = localStorage.getItem('token'); // Obtén el token almacenado
 
         if (!token) {
@@ -153,55 +180,19 @@ function SuperAdminCreateConsortium(){
                 return; // No continúa si no es SuperAdmin
             }
 
-            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/consortiums/states`, {
+            const res = await axios.get(`${MAP_URL}/departamentos?provincia=${provinceId}&max=200`, {
                 headers: {
                     Authorization: `Bearer ${token}` // Se incluye el token en el encabezado de la solicitud
                 }
             });
 
-            const states = res.data || [];
-            setStates(
-                states.map(state => ({
-                    stateId: state.id,
-                    stateName: state.displayName
-                }))
-            );
-        } catch (error) {
-            console.error("Error al obtener las provincias:", error);
-            alert("Ocurrió un error al obtener las provincias. Intenta nuevamente.");
-        }
-    };
-
-    const getAllCities = async (stateId) => {
-        const token = localStorage.getItem('token'); // Obtén el token almacenado
-
-        if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // No continúa si no hay token
-        }
-
-        try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
-            const decodedToken = jwtDecode(token);
-            const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
-
-            if (!isSuperAdmin) {
-                alert("No tienes permisos para acceder a esta página.");
-                return; // No continúa si no es SuperAdmin
-            }
-
-            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/consortiums/states/${stateId}/cities`, {
-                headers: {
-                    Authorization: `Bearer ${token}` // Se incluye el token en el encabezado de la solicitud
-                }
-            });
-
-            const cities = res.data;
             setCities(
-                cities.map(city => ({
-                    cityId: city.id,
-                    cityName: city.displayName
-                }))
+                res.data.departamentos
+                    .map(city => ({
+                        cityId: city.nombre,
+                        cityName: city.nombre
+                    }))
+                    .sort((a, b) => a.cityName.localeCompare(b.cityName))
             );
         } catch (error) {
             console.error("Error al obtener las ciudades:", error);
@@ -234,16 +225,10 @@ function SuperAdminCreateConsortium(){
 
             // Valida los campos del formulario
             if (validateFields()) {
-                console.log(consortiumInfo);
                 let url = `${import.meta.env.VITE_API_BASE_URL}/consortiums`;
 
                 try {
                     let request = consortiumInfo;
-                    request.city = {id: consortiumInfo.city};
-                    request.province = {id: consortiumInfo.province};
-
-                    console.log("Consortium Info final:", consortiumInfo);
-                    console.log("Request:", request);
 
                     // Realiza la solicitud POST para crear el consorcio, pasando el token en los headers
                     await axios.post(url, request, {
@@ -281,7 +266,7 @@ function SuperAdminCreateConsortium(){
         <>
             <Button
                 variant="contained"
-                startIcon={<AddIcon />} // Icono de añadir
+                startIcon={<AddIcon/>} // Icono de añadir
                 onClick={handleClickOpen}
                 sx={{
                     backgroundColor: '#B2675E', // Color personalizado
@@ -304,14 +289,16 @@ function SuperAdminCreateConsortium(){
                 Nuevo
             </Button>
 
-                <Dialog
-                    open={open}
-                    onClose={(event, reason) => {
-                        if (reason !== 'backdropClick') {
-                            handleClose();
-                        }
-                    }}
-                >
+            <Dialog
+                open={open}
+                onClose={(event, reason) => {
+                    if (reason !== 'backdropClick') {
+                        handleClose();
+                    }
+                }}
+                maxWidth={'md'}
+                fullWidth={true}
+            >
                 <DialogTitle sx={{
                     backgroundColor: '#E5E5E5',
                     color: '#002776',
@@ -319,12 +306,12 @@ function SuperAdminCreateConsortium(){
                     padding: '20px 30px',
                     borderBottom: '2px solid #028484',
                     fontWeight: 'bold',
-                }}>Nuevo Edificio</DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
-                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px' }}>
-                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2}}>
+                }}>Nuevo Consorcio</DialogTitle>
+                <DialogContent sx={{backgroundColor: '#F9F9F9'}}>
+                    <Paper elevation={3} sx={{padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px'}}>
+                        <Box component="form" onSubmit={handleSubmit} sx={{mt: 2}}>
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12}>
                                     <TextField
                                         id="outlined-basic"
                                         label="Nombre"
@@ -351,110 +338,6 @@ function SuperAdminCreateConsortium(){
                                             },
                                         }}
                                     />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        id="outlined-basic"
-                                        label="Dirección"
-                                        variant="outlined"
-                                        size="small"
-                                        type="text"
-                                        name="address"
-                                        value={consortiumInfo.address || ""}
-                                        onChange={handleChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: errors.address ? 'red' : '#028484',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: errors.address ? 'red' : '#028484',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: errors.address ? 'red' : '#028484',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: errors.address ? 'red' : '#028484', // Cambia el color del label al enfocarse
-                                            },
-                                        }}
-                                        error={errors.address}
-                                        helperText={errors.address ? 'EL formato de la dirección es: Nombre de la calle + número' : ''}
-                                        fullWidth
-                                    />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        select
-                                        label="Seleccione una Provincia"
-                                        variant="outlined"
-                                        size="small"
-                                        name="province"
-                                        value={consortiumInfo?.province || ''}
-                                        onChange={handleStateChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-
-                                        {states ? states.map(state => (
-                                            <MenuItem key={state.stateId} value={state.stateId}>
-                                                {state.stateName}
-                                            </MenuItem>
-                                        )) : (
-                                            <MenuItem disabled>No hay provincias disponibles</MenuItem>
-                                        )}
-                                    </TextField>
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        select
-                                        label="Seleccione una Ciudad"
-                                        variant="outlined"
-                                        size="small"
-                                        name="city"
-                                        value={consortiumInfo?.city || ''}
-                                        onChange={handleCityChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-                                        {cities ? cities.map(city => (
-                                            <MenuItem key={city.cityId} value={city.cityId}>
-                                                {city.cityName}
-                                            </MenuItem>
-                                        )) : (
-                                            <MenuItem disabled>No hay provincias disponibles</MenuItem>
-                                        )}
-                                    </TextField>
                                 </Grid>
                                 <Grid item xs={12}>
                                     <TextField
@@ -484,7 +367,8 @@ function SuperAdminCreateConsortium(){
                                         fullWidth
                                     >
                                         {allAdministrator.map(administrator => (
-                                            <MenuItem key={administrator.administratorId} value={administrator.administratorId}>
+                                            <MenuItem key={administrator.administratorId}
+                                                      value={administrator.administratorId}>
                                                 {administrator.fullName}
                                             </MenuItem>
                                         ))}
@@ -492,7 +376,6 @@ function SuperAdminCreateConsortium(){
                                 </Grid>
                                 <Grid item xs={12}>
                                     <Box>
-
                                         <RadioGroup
                                             row
                                             name="consortiumType"
@@ -501,12 +384,14 @@ function SuperAdminCreateConsortium(){
                                         >
                                             <FormControlLabel
                                                 value="BUILDING"
-                                                control={<Radio sx={{ color: '#028484', '&.Mui-checked': { color: '#028484' } }} />}
+                                                control={<Radio
+                                                    sx={{color: '#028484', '&.Mui-checked': {color: '#028484'}}}/>}
                                                 label="Edificio"
                                             />
                                             <FormControlLabel
                                                 value="NEIGHBORHOOD"
-                                                control={<Radio sx={{ color: '#028484', '&.Mui-checked': { color: '#028484' } }} />}
+                                                control={<Radio
+                                                    sx={{color: '#028484', '&.Mui-checked': {color: '#028484'}}}/>}
                                                 label="Barrio Privado"
                                             />
                                         </RadioGroup>
@@ -604,12 +489,128 @@ function SuperAdminCreateConsortium(){
                                         </Grid>
                                     </>
                                 )}
-                            </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        select
+                                        label="Seleccione una Provincia"
+                                        variant="outlined"
+                                        size="small"
+                                        name="province"
+                                        value={consortiumInfo?.province || ''}
+                                        onChange={handleProvinceChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    >
 
+                                        {provinces ? provinces.map(province => (
+                                            <MenuItem key={province.provinceId} value={province.provinceId}>
+                                                {province.provinceName}
+                                            </MenuItem>
+                                        )) : (
+                                            <MenuItem disabled>No hay provincias disponibles</MenuItem>
+                                        )}
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        select
+                                        label="Seleccione una Ciudad"
+                                        variant="outlined"
+                                        size="small"
+                                        name="city"
+                                        value={consortiumInfo?.city || ''}
+                                        disabled={!consortiumInfo.province}
+                                        onChange={handleCityChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    >
+                                        {cities ? cities.map(city => (
+                                            <MenuItem key={city.cityId} value={city.cityId}>
+                                                {city.cityName}
+                                            </MenuItem>
+                                        )) : (
+                                            <MenuItem disabled>No hay provincias disponibles</MenuItem>
+                                        )}
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        id="outlined-basic"
+                                        label="Dirección"
+                                        variant="outlined"
+                                        size="small"
+                                        type="text"
+                                        name="address"
+                                        value={consortiumInfo.address || ""}
+                                        disabled={!consortiumInfo.city}
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: errors.address ? 'red' : '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: errors.address ? 'red' : '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: errors.address ? 'red' : '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: errors.address ? 'red' : '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        error={errors.address}
+                                        helperText={errors.address ? 'EL formato de la dirección es: Nombre de la calle + número' : ''}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    {true ?
+                                        <MapComponent
+                                            provincia={consortiumInfo.province}
+                                            departamento={consortiumInfo.city}
+                                            direccion={consortiumInfo.address}
+                                        />
+                                        : <></>
+                                    }
+                                </Grid>
+
+                            </Grid>
                         </Box>
                     </Paper>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#F9F9F9' }}>
+                <DialogActions sx={{backgroundColor: '#F9F9F9'}}>
                     <Button onClick={handleClose} variant="contained" sx={{
                         backgroundColor: '#B2675E',
                         '&:hover': {
@@ -630,14 +631,15 @@ function SuperAdminCreateConsortium(){
                                 borderRadius: '25px',
                                 padding: '8px 20px',
                                 transition: 'background-color 0.3s ease',
-                            }} >
+                            }}>
                         Guardar
                     </Button>
 
                 </DialogActions>
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
-                <Alert onClose={handleCloseAlert} severity={consortiumCreated ? "success" : "error"} sx={{width: '100%'}}>
+                <Alert onClose={handleCloseAlert} severity={consortiumCreated ? "success" : "error"}
+                       sx={{width: '100%'}}>
                     {text}
                 </Alert>
             </Snackbar>
@@ -645,4 +647,5 @@ function SuperAdminCreateConsortium(){
     )
 
 }
+
 export default SuperAdminCreateConsortium

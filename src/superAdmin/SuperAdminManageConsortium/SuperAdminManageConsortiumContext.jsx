@@ -34,8 +34,7 @@ export function SuperAdminManageConsortiumContextProvider(props){
                 }
             });
 
-            const consortiums = res.data.content;
-            setAllConsortia(consortiums.map(consortium => {
+            const consortiums = res.data.content.map(consortium => {
                 const administrator = consortium.administrator || {};
                 return {
                     consortiumId: consortium.consortiumId,
@@ -52,7 +51,8 @@ export function SuperAdminManageConsortiumContextProvider(props){
                     floors: consortium.floors,
                     apartmentsPerFloor: consortium.apartmentsPerFloor
                 };
-            }));
+            });
+            setAllConsortia(consortiums);
         } catch (exception) {
             console.error('Error al obtener los consorcios:', exception);
             alert("Hubo un error al cargar los consorcios.");

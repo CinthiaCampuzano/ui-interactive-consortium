@@ -5,7 +5,7 @@ import {
     DialogActions,
     DialogContent,
     DialogContentText,
-    DialogTitle, Grid, Snackbar,
+    DialogTitle, FormControlLabel, Grid, Radio, RadioGroup, Snackbar,
     TablePagination,
     TextField
 } from "@mui/material";
@@ -29,7 +29,9 @@ import Typography from "@mui/material/Typography";
 import {jwtDecode} from "jwt-decode";
 import SearchIcon from '@mui/icons-material/Search';
 import SuperAdminSidebar from "../../SuperAdminSidebar.jsx";
+import MapComponent from "../../component/MapComponent.jsx";
 
+const MAP_URL = "https://apis.datos.gob.ar/georef/api"
 
 const columns = [
     { id: 'name', label: 'Edificio', minWidth: 100 },
@@ -53,12 +55,16 @@ function SuperAdminManagesConsortia(){
     const [idConsortiumToDelete, setIdConsortiumToDelete] = useState(null);
     const [editConsortiumId, setEditConsortiumId] = useState(null)
     const [editConsortiumName, setEditConsortiumName ] = useState('')
+    const [editConsortiumType, setEditConsortiumType ] = useState('')
+    const [editFunctionalUnits, setEditFunctionalUnits ] = useState('')
+    const [editFloors, setEditFloors ] = useState('')
+    const [editApartmentsPerFloor, setEditApartmentsPerFloor ] = useState('')
     const [editConsortiumAddress, setEditConsortiumAddress] = useState('')
     const [editConsortiumCity, setEditConsortiumCity] = useState('')
     const [editConsortiumProvince, setEditConsortiumProvince ] = useState('')
     const [editConsortiumAdministratorId, setEditConsortiumAdministratorId] = useState(null)
     const [text, setText] = useState('')
-    const [states, setStates] = useState('')
+    const [provinces, setProvinces] = useState('')
     const [cities, setCities] = useState('')
 
     const [errors, setErrors] = useState({
@@ -68,9 +74,13 @@ function SuperAdminManagesConsortia(){
     const [consortiumInfo, setConsortiumInfo] = useState({
         consortiumId: null,
         name: "",
+        consortiumType: '',
+        functionalUnits: 0,
+        floors: 0,
+        apartmentsPerFloor: 0,
         address: "",
         city: "",
-        province: "",
+        province: '',
         administrator: {
             administratorId: null,
         }})
@@ -98,54 +108,32 @@ function SuperAdminManagesConsortia(){
         )
     }
 
-    useEffect(() => {
-        getAllStates()
-    }, []);
+    const fetchProvinces = async () => {
+        const response = await fetch(
+            `${MAP_URL}/provincias?&max=100`
+        );
+        const data = await response.json();
 
-    useEffect(() => {
-        if (consortiumInfo?.province?.id) {
-            getAllCities(consortiumInfo.province.id)
-        }
-    }, [consortiumInfo?.province?.id]);
-
-    const getAllStates = async () => {
-        const token = localStorage.getItem('token'); // Obtén el token almacenado
-
-        if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // No continúa si no hay token
-        }
-
-        try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
-            const decodedToken = jwtDecode(token);
-            const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
-
-            if (!isSuperAdmin) {
-                alert("No tienes permisos para acceder a esta página.");
-                return; // No continúa si no es SuperAdmin
-            }
-
-            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/consortiums/states`, {
-                headers: {
-                    Authorization: `Bearer ${token}` // Se incluye el token en el encabezado de la solicitud
-                }
-            });
-
-            const states = res.data || [];
-            setStates(
-                states.map(state => ({
-                    stateId: state.id,
-                    stateName: state.displayName
-                }))
-            );
-        } catch (error) {
-            console.error("Error al obtener las provincias:", error);
-            alert("Ocurrió un error al obtener las provincias. Intenta nuevamente.");
-        }
+        let fetchedProvinces = data?.provincias
+            .map(provincia => ({
+                provinceId: provincia.nombre,
+                provinceName: provincia.nombre
+            }))
+            .sort((a, b) => a.provinceName.localeCompare(b.provinceName));
+        setProvinces(fetchedProvinces);
     };
 
-    const getAllCities = async (stateId) => {
+    useEffect(() => {
+        fetchProvinces();
+    }, [])
+
+    useEffect(() => {
+        if (consortiumInfo?.province) {
+            getAllCities(consortiumInfo.province)
+        }
+    }, [consortiumInfo.province]);
+
+    const getAllCities = async (provinceId) => {
         const token = localStorage.getItem('token'); // Obtén el token almacenado
 
         if (!token) {
@@ -163,7 +151,7 @@ function SuperAdminManagesConsortia(){
                 return; // No continúa si no es SuperAdmin
             }
 
-            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/consortiums/states/${stateId}/cities`, {
+            const res = await axios.get(`${MAP_URL}/departamentos?provincia=${provinceId}&max=200`, {
                 headers: {
                     Authorization: `Bearer ${token}` // Se incluye el token en el encabezado de la solicitud
                 }
@@ -171,10 +159,12 @@ function SuperAdminManagesConsortia(){
 
             const cities = res.data;
             setCities(
-                cities.map(city => ({
-                    cityId: city.id,
-                    cityName: city.displayName
-                }))
+                res.data.departamentos
+                    .map(city => ({
+                        cityId: city.nombre,
+                        cityName: city.nombre
+                    }))
+                    .sort((a, b) => a.cityName.localeCompare(b.cityName))
             );
         } catch (error) {
             console.error("Error al obtener las ciudades:", error);
@@ -186,9 +176,13 @@ function SuperAdminManagesConsortia(){
         setIdConsortiumToDelete(idConsortiumToDelete)
         setOpen(true)
     };
-    const handleClickOpenEdit = (idConsortiumToEdit, consortiumNameEdit, consortiumAddressEdit, consortiumCityEdit, consortiumProvinceEdit, administratorIdEdit) => {
+    const handleClickOpenEdit = (idConsortiumToEdit, consortiumNameEdit, consortiumTypeEdit, functionalUnitsEdit, floorsEdit, apartmentsPerFloorEdit, consortiumAddressEdit, consortiumCityEdit, consortiumProvinceEdit, administratorIdEdit) => {
         setEditConsortiumId(idConsortiumToEdit)
         setEditConsortiumName(consortiumNameEdit)
+        setEditConsortiumType(consortiumTypeEdit)
+        setEditFunctionalUnits(functionalUnitsEdit)
+        setEditFloors(floorsEdit)
+        setEditApartmentsPerFloor(apartmentsPerFloorEdit)
         setEditConsortiumAddress(consortiumAddressEdit)
         setEditConsortiumCity(consortiumCityEdit)
         setEditConsortiumProvince(consortiumProvinceEdit)
@@ -210,6 +204,10 @@ function SuperAdminManagesConsortia(){
         setConsortiumInfo({
             consortiumId: null,
             name: "",
+            consortiumType: '',
+            functionalUnits: 0,
+            floors: 0,
+            apartmentsPerFloor: 0,
             address: "",
             city: "",
             province: "",
@@ -219,12 +217,12 @@ function SuperAdminManagesConsortia(){
         })
     }
 
-    const handleStateChange = (event) => {
-        const { name, value } = event.target;
+    const handleProvinceChange = (event) => {
+        const {name, value} = event.target;
 
         setConsortiumInfo(prevState => ({
             ...prevState,
-            province: {id: value}
+            province: value
         }));
     }
 
@@ -253,7 +251,7 @@ function SuperAdminManagesConsortia(){
         if (reason === 'clickaway') {
             return;
         }
-        setOpenAlert(false);
+        handleCloseEdit();
     };
 
     useEffect(() => {
@@ -261,6 +259,10 @@ function SuperAdminManagesConsortia(){
             const consortium = {
                 consortiumId: editConsortiumId,
                 name: editConsortiumName || "",
+                consortiumType: editConsortiumType || "",
+                functionalUnits: editFunctionalUnits || "",
+                floors: editFloors || 0,
+                apartmentsPerFloor: editApartmentsPerFloor || 0,
                 address: editConsortiumAddress || "",
                 city: editConsortiumCity || "",
                 province: editConsortiumProvince || "",
@@ -270,7 +272,7 @@ function SuperAdminManagesConsortia(){
             };
             setConsortiumInfo(consortium);
         }
-    }, [openEdit, editConsortiumId, editConsortiumName, editConsortiumAddress, editConsortiumCity, editConsortiumProvince, editConsortiumAdministratorId]);
+    }, [openEdit, editConsortiumId, editConsortiumName, editConsortiumType, editFunctionalUnits, editFloors, editApartmentsPerFloor, editConsortiumAddress, editConsortiumCity, editConsortiumProvince, editConsortiumAdministratorId]);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
@@ -313,7 +315,6 @@ function SuperAdminManagesConsortia(){
 
             // Continúa con la lógica si el usuario está autorizado
             if (validateFields()) {
-                console.log(consortiumInfo);
                 let url = `${import.meta.env.VITE_API_BASE_URL}/consortiums`;
 
                 try {
@@ -483,257 +484,261 @@ function SuperAdminManagesConsortia(){
     };
 
     return (
-    <div>
-        <Box
-            sx={{
-                display: 'flex',
-                minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
-            }}
-        >
-        <SuperAdminSidebar/>
-        <Box
-            component="main"
-            sx={{
-                flexGrow: 1, // Permite que este componente ocupe el espacio restante
-                padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
-                marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
-                transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
-            }}
-        >
+        <div>
             <Box
                 sx={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
+                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
                 }}
             >
-            {/* Título */}
-            <Typography
-                variant="h6"
-                component="h1"
-                sx={{
-                    fontWeight: 'bold',
-                    color: '#003366',
-                    fontSize: { xs: '1.5rem', md: '2rem' },
-                    marginBottom: '20px',
-                }}
-            >
-                Consorcios
-            </Typography>
-
-            {/* Filtros */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '16px',
-                    justifyContent: 'center',
-                    marginBottom: '20px',
-                    width: '100%',
-                    maxWidth: '800px',
-                }}
-            >
-                <TextField
-                    label="Nombre"
-                    variant="outlined"
-                    size="small"
-                    value={consortiumName}
-                    onChange={(e) => setConsortiumName(e.target.value)}
+                <SuperAdminSidebar/>
+                <Box
+                    component="main"
                     sx={{
-                        ...textFieldStyles,
-                        flex: 1, // Esto asegura que los inputs se distribuyan uniformemente en el espacio disponible
-                    }}
-                />
-                <TextField
-                    label="Provincia"
-                    variant="outlined"
-                    size="small"
-                    value={consortiumProvince.id}
-                    onChange={(e) => setConsortiumProvince(e.target.value)}
-                    sx={{
-                        ...textFieldStyles,
-                        flex: 1,
-                    }}
-                />
-                <TextField
-                    label="Ciudad"
-                    variant="outlined"
-                    size="small"
-                    value={consortiumCity.id}
-                    onChange={(e) => setConsortiumCity(e.target.value)}
-                    sx={{
-                        ...textFieldStyles,
-                        flex: 1,
-                    }}
-                />
-                <TextField
-                    label="Administrador"
-                    variant="outlined"
-                    size="small"
-                    value={consortiumNameAdmin}
-                    onChange={(e) => setConsortiumNameAdmin(e.target.value)}
-                    sx={{
-                        ...textFieldStyles,
-                        flex: 1,
-                    }}
-                />
-            </Box>
-
-            {/* Botones */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: '10px',
-                    marginBottom: '20px',
-                }}
-            >
-                <Button
-                    variant="contained"
-                    sx={{
-                        backgroundColor: '#B2675E', // Color personalizado
-                        color: '#FFFFFF',
-                        fontWeight: 'bold',
-                        textTransform: 'none',
-                        borderRadius: '30px', // Bordes redondeados
-                        padding: '10px 20px',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para efecto de profundidad
-                        transition: 'all 0.3s ease', // Transición suave
-                        '&:hover': {
-                            backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
-                            boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
-                        },
-                        '&:active': {
-                            backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
-                        },
-                    }}
-                    onClick={getAllConsortiumByFilter}
-                    startIcon={<SearchIcon />} // Icono dentro del botón
-                >
-                    Buscar
-                </Button>
-                <SuperAdminCreateConsortium/>
-            </Box>
-
-            {/* Tabla */}
-            <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
-                <TableContainer
-                    sx={{
-                        maxHeight: 600,
-                        overflowX: 'auto',
-                        borderRadius: '10px', // Redondea solo las esquinas del contenedor
-                        border: '1px solid #002776',
+                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
+                        padding: {xs: '16px', sm: '24px'}, // Espaciado variable según el tamaño de la pantalla
+                        marginLeft: {xs: 0, sm: '240px'}, // Evita que el contenido se superponga al SuperAdminSidebar
+                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
                     }}
                 >
-                    <Table
-                        stickyHeader
+                    <Box
                         sx={{
-                            borderCollapse: 'separate',
-                            borderSpacing: '0', // Evita que las celdas se superpongan
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
                         }}
                     >
-                        <TableHead>
-                            <TableRow>
-                                {columns.map((column, index) => (
-                                    <TableCell
-                                        key={column.id}
-                                        align={column.align}
-                                        sx={{
-                                            ...tableHeadCellStyles,
-                                            ...(index === 0 && {
-                                                borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
-                                            })
-                                        }}
-                                    >
-                                        {column.label}
-                                    </TableCell>
-                                ))}
-                                {/* Solo redondear la celda "Acciones" */}
-                                <TableCell
-                                    align="center"
+                        {/* Título */}
+                        <Typography
+                            variant="h6"
+                            component="h1"
+                            sx={{
+                                fontWeight: 'bold',
+                                color: '#003366',
+                                fontSize: {xs: '1.5rem', md: '2rem'},
+                                marginBottom: '20px',
+                            }}
+                        >
+                            Consorcios
+                        </Typography>
+
+                        {/* Filtros */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: '16px',
+                                justifyContent: 'center',
+                                marginBottom: '20px',
+                                width: '100%',
+                                maxWidth: '800px',
+                            }}
+                        >
+                            <TextField
+                                label="Nombre"
+                                variant="outlined"
+                                size="small"
+                                value={consortiumName}
+                                onChange={(e) => setConsortiumName(e.target.value)}
+                                sx={{
+                                    ...textFieldStyles,
+                                    flex: 1, // Esto asegura que los inputs se distribuyan uniformemente en el espacio disponible
+                                }}
+                            />
+                            <TextField
+                                label="Provincia"
+                                variant="outlined"
+                                size="small"
+                                value={consortiumProvince.id}
+                                onChange={(e) => setConsortiumProvince(e.target.value)}
+                                sx={{
+                                    ...textFieldStyles,
+                                    flex: 1,
+                                }}
+                            />
+                            <TextField
+                                label="Ciudad"
+                                variant="outlined"
+                                size="small"
+                                value={consortiumCity.id}
+                                onChange={(e) => setConsortiumCity(e.target.value)}
+                                sx={{
+                                    ...textFieldStyles,
+                                    flex: 1,
+                                }}
+                            />
+                            <TextField
+                                label="Administrador"
+                                variant="outlined"
+                                size="small"
+                                value={consortiumNameAdmin}
+                                onChange={(e) => setConsortiumNameAdmin(e.target.value)}
+                                sx={{
+                                    ...textFieldStyles,
+                                    flex: 1,
+                                }}
+                            />
+                        </Box>
+
+                        {/* Botones */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                gap: '10px',
+                                marginBottom: '20px',
+                            }}
+                        >
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#B2675E', // Color personalizado
+                                    color: '#FFFFFF',
+                                    fontWeight: 'bold',
+                                    textTransform: 'none',
+                                    borderRadius: '30px', // Bordes redondeados
+                                    padding: '10px 20px',
+                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para efecto de profundidad
+                                    transition: 'all 0.3s ease', // Transición suave
+                                    '&:hover': {
+                                        backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
+                                        boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                                    },
+                                    '&:active': {
+                                        backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                                    },
+                                }}
+                                onClick={getAllConsortiumByFilter}
+                                startIcon={<SearchIcon/>} // Icono dentro del botón
+                            >
+                                Buscar
+                            </Button>
+                            <SuperAdminCreateConsortium/>
+                        </Box>
+
+                        {/* Tabla */}
+                        <Box sx={{width: '100%', maxWidth: '900px', marginLeft: {xs: '40px', sm: '80px'}}}>
+                            <TableContainer
+                                sx={{
+                                    maxHeight: 600,
+                                    overflowX: 'auto',
+                                    borderRadius: '10px', // Redondea solo las esquinas del contenedor
+                                    border: '1px solid #002776',
+                                }}
+                            >
+                                <Table
+                                    stickyHeader
                                     sx={{
-                                        ...tableHeadCellStyles,
-                                        borderTopRightRadius: '10px', // Redondeo solo en la celda "Acciones"
+                                        borderCollapse: 'separate',
+                                        borderSpacing: '0', // Evita que las celdas se superpongan
                                     }}
                                 >
-
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {allConsortia
-                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                .map((consortium) => (
-                                    <TableRow
-                                        hover
-                                        key={consortium.name}
-                                        sx={{
-                                            backgroundColor: '#FFFFFF',
-                                            '&:hover': { backgroundColor: '#F6EFE5' },
-                                        }}
-                                    >
-                                        {columns.map((column) => (
+                                    <TableHead>
+                                        <TableRow>
+                                            {columns.map((column, index) => (
+                                                <TableCell
+                                                    key={column.id}
+                                                    align={column.align}
+                                                    sx={{
+                                                        ...tableHeadCellStyles,
+                                                        ...(index === 0 && {
+                                                            borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
+                                                        })
+                                                    }}
+                                                >
+                                                    {column.label}
+                                                </TableCell>
+                                            ))}
+                                            {/* Solo redondear la celda "Acciones" */}
                                             <TableCell
-                                                key={column.id}
-                                                align={column.align}
-                                                sx={{ ...tableCellStyles }} // Las celdas no tienen borderRadius
+                                                align="center"
+                                                sx={{
+                                                    ...tableHeadCellStyles,
+                                                    borderTopRightRadius: '10px', // Redondeo solo en la celda "Acciones"
+                                                }}
                                             >
-                                                { (column.id === 'city' || column.id === 'province') ? consortium[column.id].displayName : consortium[column.id] }
+
                                             </TableCell>
-                                        ))}
-                                        <TableCell align="center" sx={tableCellStyles}>
-                                            <IconButton
-                                                aria-label="edit"
-                                                onClick={() =>
-                                                    handleClickOpenEdit(
-                                                        consortium.consortiumId,
-                                                        consortium.name,
-                                                        consortium.address,
-                                                        consortium.city,
-                                                        consortium.province,
-                                                        consortium.administratorId
-                                                    )
-                                                }
-                                                sx={{ color: '#002776' }}
-                                            >
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                            <IconButton
-                                                aria-label="delete"
-                                                onClick={() => handleClickOpen(consortium.consortiumId)}
-                                                sx={{ color: '#B2675E' }}
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-                <TablePagination
-                    rowsPerPageOptions={[5]}
-                    component="div"
-                    count={allConsortia.length}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                    labelRowsPerPage="Filas por página"
-                    sx={{ backgroundColor: '#FFFFFF', color: '#002776', fontWeight: 'bold' }}
-                />
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {allConsortia
+                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                            .map((consortium) => (
+                                                <TableRow
+                                                    hover
+                                                    key={consortium.name}
+                                                    sx={{
+                                                        backgroundColor: '#FFFFFF',
+                                                        '&:hover': {backgroundColor: '#F6EFE5'},
+                                                    }}
+                                                >
+                                                    {columns.map((column) => (
+                                                        <TableCell
+                                                            key={column.id}
+                                                            align={column.align}
+                                                            sx={{...tableCellStyles}} // Las celdas no tienen borderRadius
+                                                        >
+                                                            {consortium[column.id]}
+                                                        </TableCell>
+                                                    ))}
+                                                    <TableCell align="center" sx={tableCellStyles}>
+                                                        <IconButton
+                                                            aria-label="edit"
+                                                            onClick={() =>
+                                                                handleClickOpenEdit(
+                                                                    consortium.consortiumId,
+                                                                    consortium.name,
+                                                                    consortium.consortiumType,
+                                                                    consortium.functionalUnits,
+                                                                    consortium.floors,
+                                                                    consortium.apartmentsPerFloor,
+                                                                    consortium.address,
+                                                                    consortium.city,
+                                                                    consortium.province,
+                                                                    consortium.administratorId
+                                                                )
+                                                            }
+                                                            sx={{color: '#002776'}}
+                                                        >
+                                                            <EditIcon fontSize="small"/>
+                                                        </IconButton>
+                                                        <IconButton
+                                                            aria-label="delete"
+                                                            onClick={() => handleClickOpen(consortium.consortiumId)}
+                                                            sx={{color: '#B2675E'}}
+                                                        >
+                                                            <DeleteIcon fontSize="small"/>
+                                                        </IconButton>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            <TablePagination
+                                rowsPerPageOptions={[5]}
+                                component="div"
+                                count={allConsortia.length}
+                                rowsPerPage={rowsPerPage}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                labelRowsPerPage="Filas por página"
+                                sx={{backgroundColor: '#FFFFFF', color: '#002776', fontWeight: 'bold'}}
+                            />
+                        </Box>
+                    </Box>
+                </Box>
             </Box>
-        </Box>
-        </Box>
-        </Box>
-                <Dialog
-                    open={open}
-                    onClose={(event, reason) => {
-                        if (reason !== 'backdropClick') {
-                            handleClose();
-                        }
-                    }}
-                >
+            <Dialog
+                open={open}
+                onClose={(event, reason) => {
+                    if (reason !== 'backdropClick') {
+                        handleClose();
+                    }
+                }}
+            >
                 <DialogTitle id="alert-dialog-title" sx={{
                     backgroundColor: '#E5E5E5',
                     color: '#002776',
@@ -744,12 +749,12 @@ function SuperAdminManagesConsortia(){
                 }}>
                     {"Desea eliminar este Consorcio ?"}
                 </DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
+                <DialogContent sx={{backgroundColor: '#F9F9F9'}}>
                     <DialogContentText id="alert-dialog-description">
                         Si acepta se eliminara el consorcio deseado.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions  sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                <DialogActions sx={{backgroundColor: '#F9F9F9', padding: '10px 20px'}}>
                     <Button onClick={handleClose} variant="contained" sx={{
                         backgroundColor: '#B2675E',
                         '&:hover': {
@@ -776,14 +781,14 @@ function SuperAdminManagesConsortia(){
                     </Button>
                 </DialogActions>
             </Dialog>
-                <Dialog
-                    open={openEdit}
-                    onClose={(event, reason) => {
-                        if (reason !== 'backdropClick') {
-                            handleCloseEdit();
-                        }
-                    }}
-                >
+            <Dialog
+                open={openEdit}
+                onClose={(event, reason) => {
+                    if (reason !== 'backdropClick') {
+                        handleCloseEdit();
+                    }
+                }}
+            >
                 <DialogTitle sx={{
                     backgroundColor: '#E5E5E5',
                     color: '#002776',
@@ -792,9 +797,9 @@ function SuperAdminManagesConsortia(){
                     borderBottom: '2px solid #028484',
                     fontWeight: 'bold',
                 }}>Actualizar Consorcio</DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
-                    <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px' }}>
-                        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2}}>
+                <DialogContent sx={{backgroundColor: '#F9F9F9'}}>
+                    <Paper elevation={3} sx={{padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px'}}>
+                        <Box component="form" onSubmit={handleSubmit} sx={{mt: 2}}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} sm={6}>
                                     <TextField
@@ -824,7 +829,230 @@ function SuperAdminManagesConsortia(){
                                         }}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        select
+                                        label="Seleccione un Administrador"
+                                        variant="outlined"
+                                        size="small"
+                                        name="administratorId"
+                                        value={consortiumInfo.administrator?.administratorId || ""}
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    >
+                                        {allAdministrator?.map(administrator => (
+                                            <MenuItem key={administrator.administratorId}
+                                                      value={administrator.administratorId}>
+                                                {administrator.fullName}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <Box>
+                                        <RadioGroup
+                                            row
+                                            name="consortiumType"
+                                            value={consortiumInfo.consortiumType !== undefined ? consortiumInfo.consortiumType : editConsortiumType || ''}
+                                            onChange={handleChange}
+                                        >
+                                            <FormControlLabel
+                                                value="BUILDING"
+                                                control={<Radio
+                                                    sx={{color: '#028484', '&.Mui-checked': {color: '#028484'}}}/>}
+                                                label="Edificio"
+                                            />
+                                            <FormControlLabel
+                                                value="NEIGHBORHOOD"
+                                                control={<Radio
+                                                    sx={{color: '#028484', '&.Mui-checked': {color: '#028484'}}}/>}
+                                                label="Barrio Privado"
+                                            />
+                                        </RadioGroup>
+                                    </Box>
+                                </Grid>
+
+                                {/* Input: Total de Unidades Funcionales */}
+                                <Grid item xs={12}>
+                                    <TextField
+                                        label="Total de Unidades Funcionales"
+                                        variant="outlined"
+                                        size="small"
+                                        type="number"
+                                        name="functionalUnits"
+                                        value={consortiumInfo.functionalUnits}
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484',
+                                            },
+                                        }}
+                                        fullWidth
+                                    />
+                                </Grid>
+
+                                {/* Inputs condicionales: Cantidad de pisos y departamentos por piso */}
+                                {consortiumInfo.consortiumType === "BUILDING" && (
+                                    <>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                label="Cantidad de pisos"
+                                                variant="outlined"
+                                                size="small"
+                                                type="number"
+                                                name="floors"
+                                                value={consortiumInfo.floors}
+                                                onChange={handleChange}
+                                                sx={{
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                        '&:hover fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                        '&.Mui-focused fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                    },
+                                                    '& label.Mui-focused': {
+                                                        color: '#028484',
+                                                    },
+                                                }}
+                                                fullWidth
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                label="Cantidad de departamentos por piso"
+                                                variant="outlined"
+                                                size="small"
+                                                type="number"
+                                                name="apartmentsPerFloor"
+                                                value={consortiumInfo.apartmentsPerFloor}
+                                                onChange={handleChange}
+                                                sx={{
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '& fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                        '&:hover fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                        '&.Mui-focused fieldset': {
+                                                            borderColor: '#028484',
+                                                        },
+                                                    },
+                                                    '& label.Mui-focused': {
+                                                        color: '#028484',
+                                                    },
+                                                }}
+                                                fullWidth
+                                            />
+                                        </Grid>
+                                    </>
+                                )}
+                                <Grid item xs={12}>
+                                    <TextField
+                                        select
+                                        label="Seleccione una Provincia"
+                                        variant="outlined"
+                                        size="small"
+                                        name="state"
+                                        value={consortiumInfo.province || ''}
+                                        onChange={handleProvinceChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    >
+
+                                        {provinces ? provinces.map(province => (
+                                            <MenuItem key={province.provinceId} value={province.provinceId}>
+                                                {province.provinceName}
+                                            </MenuItem>
+                                        )) : (
+                                            <MenuItem disabled>No hay provincias disponibles</MenuItem>
+                                        )}
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        select
+                                        label="Seleccione una Ciudad"
+                                        variant="outlined"
+                                        size="small"
+                                        name="city"
+                                        value={consortiumInfo?.city || ''}
+                                        onChange={handleCityChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    >
+                                        {cities ? cities.map(city => (
+                                            <MenuItem key={city.cityId} value={city.cityId}>
+                                                {city.cityName}
+                                            </MenuItem>
+                                        )) : (
+                                            <MenuItem disabled>No hay provincias disponibles</MenuItem>
+                                        )}
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12}>
                                     <TextField
                                         id="outlined-basic"
                                         label="Dirección"
@@ -856,117 +1084,20 @@ function SuperAdminManagesConsortia(){
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
-                                    <TextField
-                                        select
-                                        label="Seleccione una Provincia"
-                                        variant="outlined"
-                                        size="small"
-                                        name="state"
-                                        value={consortiumInfo?.province.id || ''}
-                                        onChange={handleStateChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-
-                                        {states ? states.map(state => (
-                                            <MenuItem key={state.stateId} value={state.stateId}>
-                                                {state.stateName}
-                                            </MenuItem>
-                                        )) : (
-                                            <MenuItem disabled>No hay provincias disponibles</MenuItem>
-                                        )}
-                                    </TextField>
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        select
-                                        label="Seleccione una Ciudad"
-                                        variant="outlined"
-                                        size="small"
-                                        name="city"
-                                        value={consortiumInfo?.city.id || ''}
-                                        onChange={handleCityChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-                                        {cities ? cities.map(city => (
-                                            <MenuItem key={city.cityId} value={city.cityId}>
-                                                {city.cityName}
-                                            </MenuItem>
-                                        )) : (
-                                            <MenuItem disabled>No hay provincias disponibles</MenuItem>
-                                        )}
-                                    </TextField>
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        select
-                                        label="Seleccione un Administrador"
-                                        variant="outlined"
-                                        size="small"
-                                        name="administratorId"
-                                        value={consortiumInfo.administrator?.administratorId || ""}
-                                        onChange={handleChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-                                        {allAdministrator?.map(administrator => (
-                                            <MenuItem key={administrator.administratorId} value={administrator.administratorId}>
-                                                {administrator.fullName}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
+                                    {true ?
+                                        <MapComponent
+                                            provincia={consortiumInfo.province}
+                                            departamento={consortiumInfo.city}
+                                            direccion={consortiumInfo.address}
+                                        />
+                                        : <></>
+                                    }
                                 </Grid>
                             </Grid>
                         </Box>
                     </Paper>
                 </DialogContent>
-                <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
+                <DialogActions sx={{backgroundColor: '#F9F9F9', padding: '10px 20px'}}>
                     <Button onClick={handleCloseEdit} variant="contained" sx={{
                         backgroundColor: '#B2675E',
                         '&:hover': {
@@ -978,7 +1109,8 @@ function SuperAdminManagesConsortia(){
                     }}>
                         Cancelar
                     </Button>
-                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!validateFields} variant="contained"
+                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!validateFields}
+                            variant="contained"
                             sx={{
                                 backgroundColor: '#028484',
                                 '&:hover': {
@@ -994,7 +1126,8 @@ function SuperAdminManagesConsortia(){
                 </DialogActions>
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
-                <Alert onClose={handleCloseAlert} severity={consortiumCreated ? "success" : "error"} sx={{width: '100%'}}>
+                <Alert onClose={handleCloseAlert} severity={consortiumCreated ? "success" : "error"}
+                       sx={{width: '100%'}}>
                     {text}
                 </Alert>
             </Snackbar>
