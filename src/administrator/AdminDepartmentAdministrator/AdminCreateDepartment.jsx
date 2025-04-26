@@ -2,16 +2,32 @@ import React, {useContext, useEffect, useState} from "react";
 import axios from "axios";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add.js";
-import {Alert, Box, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Snackbar, TextField} from "@mui/material";
+import {
+    Alert,
+    Autocomplete, Backdrop,
+    Box, CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Grid,
+    Snackbar,
+    TextField
+} from "@mui/material";
 import Paper from "@mui/material/Paper";
 import MenuItem from "@mui/material/MenuItem";
 import {AdminManageContext} from "../AdminManageContext.jsx";
 import {jwtDecode} from "jwt-decode";
+import IconButton from "@mui/material/IconButton";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import AdminCreatePerson from "../AdminUserAdministrator/AdminCreatePerson.jsx";
 
 
 function AdminCreateDepartment(){
-    const {consortiumIdState, allPersons, setAllPersons,allDepartments, setAllDepartments, getAllDepartmentsByConsortium,
-        getAllPersons} = useContext(AdminManageContext)
+    const {consortiumIdState, allPersons, getAllDepartmentsByConsortium,
+        getAllPersons, setOpenDniDialog, newPersonDpto,
+        setPersonCreationType, newResidentDpto, totalDepartments, aConsortiumByIdConsortium} = useContext(AdminManageContext)
     const [open, setOpen] = useState(false);
     const [text, setText] = useState('')
     const [departmentInfo, setDepartmentInfo] = useState({
@@ -22,6 +38,9 @@ function AdminCreateDepartment(){
     const [departmentCreated, setDepartmentCreated] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
     const [departmentNew, setDepartmentNew] = useState(true);
+    const [selectedPerson, setSelectedPerson] = useState(null);
+    const [selectedResident, setSelectedResident] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -38,6 +57,9 @@ function AdminCreateDepartment(){
                 consortiumId: consortiumIdState // Asegúrate de mantener consortiumId al resetear
             }
         });
+        setSelectedPerson(null)
+        setSelectedResident(null)
+
     };
 
     const handleCloseAlert= (event, reason) => {
@@ -106,6 +128,7 @@ function AdminCreateDepartment(){
         }
 
         try {
+            setLoading(true)
             // Decodifica el token para verificar el rol
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
@@ -130,42 +153,101 @@ function AdminCreateDepartment(){
             handleClose();
 
         } catch (exception) {
-            // Manejo de errores más detallado según las excepciones del backend
-            // if (exception.response) {
-            //     switch (exception.response.status) {
-            //         case 404:
-            //             if (exception.response.data.message.includes('Consorcio no encontrado')) {
-            //                 setText('El consorcio especificado no se encontró.');
-            //             } else if (exception.response.data.message.includes('Propietario no encontrado')) {
-            //                 setText('El propietario especificado no se encontró.');
-            //             } else if (exception.response.data.message.includes('Residente no encontrado')) {
-            //                 setText('El residente especificado no se encontró.');
-            //             }
-            //             break;
-            //         case 409:
-            //             if (exception.response.data.message.includes('Ya existe un departamento en ese piso con ese identificador')) {
-            //                 setText('Ya existe un departamento en ese piso con ese identificador.');
-            //             } else {
-            //                 setText('Conflicto al crear el departamento: datos duplicados.');
-            //             }
-            //             break;
-            //         default:
-            //             setText('No se realizó la carga, error de datos!!');
-            //     }
-            // }
             setText(exception.response.data)
             setDepartmentCreated(false);
         } finally {
+            setLoading(false)
             handleOpenAlert();
             getAllDepartmentsByConsortium(consortiumIdState);
+            
         }
     };
+
+    const handleOpenDniDialog = () => {
+        setOpenDniDialog(true);
+    }
+
+    const handlePersonChange = (_, newValue) => {
+        if (typeof newValue === "string") {
+            // Si el usuario escribe algo que no existe, permitir creación
+            setSelectedPerson({ fullName: newValue, personId: null });
+        } else if (newValue && newValue.personId) {
+            // Si elige una persona existente, guardar su ID en departmentInfo
+            setSelectedPerson(newValue);
+            setDepartmentInfo((prev) => ({
+                ...prev,
+                propietary: { personId: newValue.personId },
+            }));
+        } else {
+            setSelectedPerson(null);
+            setDepartmentInfo((prev) => ({
+                ...prev,
+                propietary: { personId: "" },
+            }));
+        }
+    };
+
+    useEffect(() => {
+        if (newPersonDpto) {
+            handlePersonCreated(newPersonDpto);
+        }
+    }, [newPersonDpto]);
+
+    const handlePersonCreated = (newPerson) => {
+        console.log(newPerson)
+        // Asignar la nueva persona creada al input
+        setSelectedPerson(newPerson);
+        setDepartmentInfo((prev) => ({
+            ...prev,
+            propietary: { personId: newPerson.personId },
+        }));
+    };
+
+    useEffect(() => {
+        if (newResidentDpto) {
+            handleResidentCreated(newResidentDpto);
+        }
+    }, [newResidentDpto]);
+
+    const handleResidentCreated = (newResident) => {
+        // Asignar la nueva persona creada al input de residente
+        setSelectedResident(newResident);
+        setDepartmentInfo((prev) => ({
+            ...prev,
+            resident: { personId: newResident.personId },
+        }));
+    };
+
+    const handleResidentChange = (_, newValue) => {
+        if (typeof newValue === "string") {
+            // Si el usuario escribe algo que no existe, permitir creación
+            setSelectedResident({ fullName: newValue, personId: null });
+
+        } else if (newValue && newValue.personId) {
+            // Si elige una persona existente, guardar su ID en departmentInfo
+            setSelectedResident(newValue);
+            setDepartmentInfo((prev) => ({
+                ...prev,
+                resident: { personId: newValue.personId },
+            }));
+        } else {
+            setSelectedResident(null);
+            setDepartmentInfo((prev) => ({
+                ...prev,
+                resident: { personId: "" },
+            }));
+        }
+    };
+
+
+
     return (
         <>
             <Button
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={handleClickOpen}
+                disabled={aConsortiumByIdConsortium.functionalUnits === totalDepartments}
                 sx={{
                     backgroundColor: '#B2675E', // Color personalizado
                     color: '#FFFFFF',
@@ -192,6 +274,14 @@ function AdminCreateDepartment(){
                 onClose={(event, reason) => {
                     if (reason !== 'backdropClick') {
                         handleClose();
+                    }
+                }}
+                fullWidth
+                maxWidth="sm" // Fija el ancho del diálogo, puedes ajustar a "sm", "md", "lg" según necesidad
+                sx={{
+                    "& .MuiDialog-paper": {
+                        minHeight: "100px",  // Altura mínima para evitar cambios
+                        maxHeight: "400px",  // Evita que crezca demasiado
                     }
                 }}
             >
@@ -231,72 +321,90 @@ function AdminCreateDepartment(){
                                     />
                                 </Grid>
                                 <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        select
-                                        label="Seleccione un Propietario"
-                                        variant="outlined"
-                                        size="small"
-                                        name="propietaryId"
-                                        value={departmentInfo.propietary?.personId || ""}
-                                        onChange={handleChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#002776',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#002776',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#002776',
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-                                        {allPersons.map(person => (
-                                            <MenuItem key={person.personId} value={person.personId}>
-                                                {person.fullName}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
+                                    <Grid container spacing={1} alignItems="center">
+                                        <Grid item xs>
+                                            <Autocomplete
+                                                freeSolo
+                                                options={allPersons}
+                                                getOptionLabel={(option) => option.fullName || ""}
+                                                value={selectedPerson}
+                                                onChange={handlePersonChange}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        label="Seleccione o escriba un propietario"
+                                                        variant="outlined"
+                                                        size="small"
+                                                        sx={{
+                                                            "& .MuiOutlinedInput-root": {
+                                                                "& fieldset": { borderColor: "#002776" },
+                                                                "&:hover fieldset": { borderColor: "#002776" },
+                                                                "&.Mui-focused fieldset": { borderColor: "#002776" },
+                                                            },
+                                                            "& label.Mui-focused": { color: "#002776" },
+                                                        }}
+                                                        fullWidth
+                                                    />
+                                                )}
+                                            />
+
+                                        </Grid>
+                                        <Grid item>
+                                            <IconButton
+                                                color="primary"
+                                                onClick={() =>{
+                                                    handleOpenDniDialog()
+                                                    setPersonCreationType("owner")}}
+                                                sx={{ color: "#002776" }}
+                                            >
+                                                <PersonAddIcon fontSize="medium" />
+                                            </IconButton>
+                                            <AdminCreatePerson/>
+                                        </Grid>
+                                    </Grid>
                                 </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        select
-                                        label="Seleccione un Residente"
-                                        variant="outlined"
-                                        size="small"
-                                        name="residentId"
-                                        value={departmentInfo.resident?.personId || ""}
-                                        onChange={handleChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#002776',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#002776',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#002776',
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-                                        {allPersons.map(person => (
-                                            <MenuItem key={person.personId} value={person.personId}>
-                                                {person.fullName}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
+
+                                <Grid item xs={12} sm={6}>
+                                    <Grid container spacing={1} alignItems="center">
+                                        <Grid item xs>
+                                            <Autocomplete
+                                                freeSolo
+                                                options={allPersons}
+                                                getOptionLabel={(option) => option.fullName || ""}
+                                                value={selectedResident}
+                                                onChange={handleResidentChange}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        label="Seleccione o escriba un residente"
+                                                        variant="outlined"
+                                                        size="small"
+                                                        sx={{
+                                                            "& .MuiOutlinedInput-root": {
+                                                                "& fieldset": { borderColor: "#002776" },
+                                                                "&:hover fieldset": { borderColor: "#002776" },
+                                                                "&.Mui-focused fieldset": { borderColor: "#002776" },
+                                                            },
+                                                            "& label.Mui-focused": { color: "#002776" },
+                                                        }}
+                                                        fullWidth
+                                                    />
+                                                )}
+                                            />
+                                        </Grid>
+                                        <Grid item>
+                                            <IconButton
+                                                color="primary"
+                                                onClick={() =>{
+                                                    handleOpenDniDialog()
+                                                    setPersonCreationType("resident")}}
+                                                sx={{ color: "#002776" }}
+                                            >
+                                                <PersonAddIcon fontSize="medium" />
+                                            </IconButton>
+                                            <AdminCreatePerson/>
+                                        </Grid>
+                                    </Grid>
                                 </Grid>
                             </Grid>
                         </Box>
@@ -310,11 +418,12 @@ function AdminCreateDepartment(){
                             backgroundColor: '#B2675E',
                             '&:hover': { backgroundColor: '#9C5A4D' },
                         }}
+                        disabled={loading}
                     >
                         Cancelar
                     </Button>
                     <Button
-                        disabled = { !departmentInfo.code || !departmentInfo?.propietary?.personId || !departmentInfo?.resident?.personId }
+                        disabled = {!departmentInfo.code || loading}
                         type="submit"
                         onClick={handleSubmit}
                         variant="contained"
@@ -326,6 +435,22 @@ function AdminCreateDepartment(){
                         Guardar
                     </Button>
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={departmentCreated ? "success" : "error"} sx={{width: '100%'}}>

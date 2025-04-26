@@ -45,6 +45,7 @@ function AdminAmenitiesManagement(){
     const [openEdit, setOpenEdit] = useState(false)
     const [editName, setEditName] = useState('')
     const [editMaxBooking, setEditMaxBooking] = useState('')
+    const [editCostOfUse, setEditCostOfUse] = useState('')
     const [idAmenityCreated, setIdAmenityCreated] = useState(null)
     const [open, setOpen] = useState(false)
     const [text, setText] = useState('')
@@ -54,10 +55,11 @@ function AdminAmenitiesManagement(){
     const [uploadedImages, setUploadedImages] = useState({}); // Estado para manejar las imágenes subidas
 
 
-    const handleClickOpenEdit = (idAmenityToEdit, amenityNameEdit, amenityMaxBookingEdit) => {
+    const handleClickOpenEdit = (idAmenityToEdit, amenityNameEdit, amenityMaxBookingEdit, amenityCostOfUseEdit) => {
         setIdAmenityUpdate(idAmenityToEdit)
         setEditName(amenityNameEdit)
         setEditMaxBooking(amenityMaxBookingEdit)
+        setEditCostOfUse(amenityCostOfUseEdit)
         setOpenEdit(true)
     }
 
@@ -93,13 +95,14 @@ function AdminAmenitiesManagement(){
                 amenityId: idAmenityUpdate,
                 name: editName || "",
                 maxBookings: editMaxBooking || "",
+                costOfUse: editCostOfUse || "",
                 consortium: {
                     consortiumId: consortiumIdState
                 }
             })
         }
 
-    }, [idAmenityUpdate, editName, editMaxBooking]);
+    }, [idAmenityUpdate, editName, editMaxBooking, editCostOfUse]);
 
     useEffect(() => {
         if (allAmenities.length > 0) {
@@ -384,7 +387,8 @@ function AdminAmenitiesManagement(){
                                                     handleClickOpenEdit(
                                                         amenity.amenityId,
                                                         amenity.name,
-                                                        amenity.maxBookings
+                                                        amenity.maxBookings,
+                                                        amenity.costOfUse
                                                     )
                                                 }
                                             >
@@ -506,12 +510,41 @@ function AdminAmenitiesManagement(){
                                 <Grid item xs={12} sm={6}>
                                     <TextField
                                         id="outlined-basic"
-                                        label="Máximas Reservas"
+                                        label="Cantidad máxima de Reservas"
                                         variant="outlined"
                                         size="small"
                                         type="text"
                                         name="maxBookings"
                                         value={amenitytInfo.maxBookings !== undefined ? amenitytInfo.maxBookings : editMaxBooking || ''}
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        id="outlined-basic"
+                                        label="Costo por uso"
+                                        variant="outlined"
+                                        size="small"
+                                        type="text"
+                                        name="costOfUse"
+                                        value={amenitytInfo.costOfUse !== undefined ? amenitytInfo.costOfUse : editCostOfUse || ''}
                                         onChange={handleChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {

@@ -8,9 +8,10 @@ import {AdminManageContext} from "../AdminManageContext.jsx";
 import {jwtDecode} from "jwt-decode";
 
 function AdminCreatePerson(){
-    const {getAllPersons, consortiumIdState} = useContext(AdminManageContext)
+    let {getAllPersons, consortiumIdState, openDniDialog, setOpenDniDialog, newPersonDpto, setNewPersonDpto,
+        personCreationType, newResidentDpto, setNewResidentDpto } = useContext(AdminManageContext)
     const [open, setOpen] = useState(false);
-    const [openDniDialog, setOpenDniDialog] = useState(false);
+    // const [openDniDialog, setOpenDniDialog] = useState(false);
     const [dni, setDni] = useState('');
     const [text, setText] = useState('')
     const [errors, setErrors] = useState({
@@ -46,9 +47,9 @@ function AdminCreatePerson(){
     }
 
     // Abre el diálogo para ingresar el DNI
-    const handleOpenDniDialog = () => {
-        setOpenDniDialog(true);
-    };
+    // const handleOpenDniDialog = () => {
+    //     setOpenDniDialog(true);
+    // };
 
     // Cierra el diálogo para ingresar el DNI
     const handleCloseDniDialog = () => {
@@ -131,11 +132,24 @@ function AdminCreatePerson(){
 
                     // Crear la URL para el segundo POST y enviar los parámetros
                     const consortiumPersonUrlWithParams = `${consortiumPersonUrl}?idConsortium=${consortiumIdState}&idPerson=${idPerson}`;
+                    //TODO guardar la resp de esto para cargar en el modal
                     await axios.post(consortiumPersonUrlWithParams, {}, {
                         headers: {
                             Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
                         },
                     });
+
+                    if (personCreationType === 'owner') {
+                        setNewPersonDpto({
+                            personId: personResponse.data.personId,
+                            fullName: `${personResponse.data.name} ${personResponse.data.lastName}`,
+                        });
+                    } else {
+                        setNewResidentDpto({
+                            personId: personResponse.data.personId,
+                            fullName: `${personResponse.data.name} ${personResponse.data.lastName}`,
+                        });
+                    }
 
                     setText('Se realizó la carga correctamente');
                     setPersonCreated(true);
@@ -249,29 +263,29 @@ function AdminCreatePerson(){
 
     return (
         <>
-            <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleOpenDniDialog}
-                sx={{
-                    backgroundColor: '#B2675E', // Color personalizado
-                    color: '#FFFFFF',
-                    fontWeight: 'bold',
-                    textTransform: 'none',
-                    borderRadius: '30px', // Bordes redondeados
-                    padding: '10px 20px',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para profundidad
-                    transition: 'all 0.3s ease', // Transición suave
-                    '&:hover': {
-                        backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
-                        boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
-                    },
-                    '&:active': {
-                        backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
-                    },
-                }}>
-                Nuevo
-            </Button>
+            {/*<Button*/}
+            {/*    variant="contained"*/}
+            {/*    startIcon={<AddIcon />}*/}
+            {/*    onClick={handleOpenDniDialog}*/}
+            {/*    sx={{*/}
+            {/*        backgroundColor: '#B2675E', // Color personalizado*/}
+            {/*        color: '#FFFFFF',*/}
+            {/*        fontWeight: 'bold',*/}
+            {/*        textTransform: 'none',*/}
+            {/*        borderRadius: '30px', // Bordes redondeados*/}
+            {/*        padding: '10px 20px',*/}
+            {/*        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para profundidad*/}
+            {/*        transition: 'all 0.3s ease', // Transición suave*/}
+            {/*        '&:hover': {*/}
+            {/*            backgroundColor: '#A15D50', // Cambio de color al pasar el cursor*/}
+            {/*            boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente*/}
+            {/*        },*/}
+            {/*        '&:active': {*/}
+            {/*            backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona*/}
+            {/*        },*/}
+            {/*    }}>*/}
+            {/*    Nuevo*/}
+            {/*</Button>*/}
 
             {/* Diálogo para ingresar el DNI */}
             <Dialog open={openDniDialog} onClose={handleCloseDniDialog}>
