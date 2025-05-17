@@ -18,6 +18,15 @@ export function AdminManageContextProvider(props){
     const [period , setPeriod] = useState(null)
     const [allMaintenanceFeesPayment , setAllMaintenanceFeesPayment] = useState([])
     const [allClaims , setAllClaims] = useState([])
+    const [departmentStats, setDepartmentStats] = useState({
+        occupied: 0,
+        free: 0,
+        onlyResident: 0,
+        onlyOwner: 0
+    });
+    const [totalDepartments, setTotalDepartments] = useState(0);
+    const [openDniDialog, setOpenDniDialog] = useState(false);
+
     const navigate = useNavigate();
 
     const statusMapping = {
@@ -28,6 +37,17 @@ export function AdminManageContextProvider(props){
         UNDER_REVIEW: "En Revisión",
         FINISHED : "Resuelto"
     };
+
+    const [newPersonDpto,   setNewPersonDpto] =  useState( {
+        personId: null,
+        fullName: null,
+    })
+    const [personCreationType, setPersonCreationType] = useState(null);
+
+    const [newResidentDpto, setNewResidentDpto] =  useState( {
+        personId: null,
+        fullName: null,
+    })
 
 
     function formatDate(dateString) {
@@ -123,21 +143,48 @@ export function AdminManageContextProvider(props){
 
             // Acceder a los datos de los departamentos y actualizar el estado
             const departments = res.data.content;
-            console.log(departments);
-            setAllDepartments(departments.map(department => {
+            const total = departments.length;
+            let occupied = 0;
+            let free = 0;
+            let onlyResident = 0;
+            let onlyOwner = 0;
+
+            const formattedDepartments = departments.map(department => {
+                const hasOwner = department.propietary?.personId;
+                const hasResident = department.resident?.personId;
+
+                if (hasOwner && hasResident) {
+                    occupied++; // Tiene ambos
+                } else if (!hasOwner && !hasResident) {
+                    free++; // No tiene ninguno
+                } else if (hasResident) {
+                    onlyResident++; // Solo residente
+                } else if (hasOwner) {
+                    onlyOwner++; // Solo propietario
+                }
+
                 return {
                     departmentId: department.departmentId,
                     code: department.code,
-                    personIdP: department.propietary.personId,
-                    fullNameP: department.propietary.name && department.propietary.lastName
+                    personIdP: hasOwner ? department.propietary.personId : null,
+                    fullNameP: hasOwner
                         ? `${department.propietary.name} ${department.propietary.lastName}`
-                        : '',
-                    personIdR: department.resident.personId,
-                    fullNameR: department.resident.name && department.resident.lastName
+                        : "NO ASIGNADO",  // Muestra "LIBRE" cuando no hay propietario
+                    personIdR: hasResident ? department.resident.personId : null,
+                    fullNameR: hasResident
                         ? `${department.resident.name} ${department.resident.lastName}`
-                        : ''
+                        : "NO ASIGNADO"  // Muestra "LIBRE" cuando no hay residente
                 };
-            }));
+            });
+
+            setAllDepartments(formattedDepartments);
+            setDepartmentStats({
+                occupied,
+                free,
+                onlyResident,
+                onlyOwner
+            });
+            setTotalDepartments(total)
 
         } catch (error) {
             console.error("Error al obtener los departamentos:", error);
@@ -191,7 +238,8 @@ export function AdminManageContextProvider(props){
                 name: consortium.name,
                 address: consortium.address,
                 city: consortium.city,
-                province: consortium.province
+                province: consortium.province,
+                functionalUnits: consortium.functionalUnits
             });
 
         } catch (error) {
@@ -241,6 +289,7 @@ export function AdminManageContextProvider(props){
                         amenityId: amenity.amenityId,
                         name: amenity.name,
                         maxBookings: amenity.maxBookings,
+                        costOfUse: amenity.costOfUse,
                         imagePath: amenity.imagePath,
                     };
                 })
@@ -470,6 +519,12 @@ export function AdminManageContextProvider(props){
          allMaintenanceFeesPayment , setAllMaintenanceFeesPayment,
          allClaims , setAllClaims,
          statusMapping,
+         departmentStats, setDepartmentStats,
+         totalDepartments, setTotalDepartments,
+         openDniDialog, setOpenDniDialog,
+         newPersonDpto, setNewPersonDpto,
+         personCreationType, setPersonCreationType,
+         newResidentDpto, setNewResidentDpto,
          getAllPersons,
          getAllDepartmentsByConsortium,
          getAConsortiumByIdConsortium,

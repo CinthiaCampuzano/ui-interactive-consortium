@@ -1,8 +1,8 @@
 import Button from "@mui/material/Button";
 import AddIcon from '@mui/icons-material/Add';
 import {
-    Alert,
-    Box,
+    Alert, Backdrop,
+    Box, CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -10,7 +10,7 @@ import {
     Grid, Snackbar,
     TextField
 } from "@mui/material";
-import {useContext, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import Paper from "@mui/material/Paper";
 import axios from "axios";
 import {SuperAdminManagesAdministratorContext} from "./SuperAdminManagesAdministratorContext.jsx";
@@ -29,6 +29,8 @@ function SuperAdminCreateAdministrator(){
     const [adminInfo, setAdminInfo] = useState({})
     const [adminCreated, setAdminCreated] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
+    const [isFormWellComplete, setIsFormWellComplete] = useState(false);
+    const [loading, setLoading] = useState(false);
     const validateFields = () => {
         const nameRegex = /^[A-Za-z]+$/
         const mailRegex = /.+@.+\..+/
@@ -48,6 +50,24 @@ function SuperAdminCreateAdministrator(){
             dniRegex.test(adminInfo.dni)
         )
     }
+    const areFieldsComplete = () => {
+        const {
+            name,
+            lastName,
+            mail,
+            dni
+        } = adminInfo;
+
+        if (!name || !lastName || !mail || !dni ) {
+            return false;
+        }
+        return true;
+    };
+
+    useEffect(() => {
+        setIsFormWellComplete(areFieldsComplete());
+    }, [adminInfo]);
+
     const handleClickOpen = () => {
         setOpen(true);
     }
@@ -82,22 +102,24 @@ function SuperAdminCreateAdministrator(){
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setLoading(true);
 
         const token = localStorage.getItem('token'); // Obtén el token almacenado
 
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
+            setLoading(false)
             return; // Detiene la ejecución si no hay token
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
             const decodedToken = jwtDecode(token);
             const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
 
             if (!isSuperAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detiene la ejecución si no es SuperAdmin
+                setLoading(false);
+                return;
             }
 
             if (validateFields()) {
@@ -107,7 +129,7 @@ function SuperAdminCreateAdministrator(){
                 try {
                     await axios.post(url, adminInfo, {
                         headers: {
-                            Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                            Authorization: `Bearer ${token}`
                         }
                     });
 
@@ -131,26 +153,28 @@ function SuperAdminCreateAdministrator(){
         } catch (error) {
             console.error("Error en la validación del token o la solicitud:", error);
             alert("Ocurrió un error al intentar realizar la acción. Por favor, inténtalo nuevamente.");
+        }finally {
+            setLoading(false);
         }
     };
 
     return (
         <>
             <Button variant="contained" startIcon={<AddIcon />} onClick={handleClickOpen} sx={{
-                backgroundColor: '#B2675E', // Color personalizado
+                backgroundColor: '#B2675E',
                 color: '#FFFFFF',
                 fontWeight: 'bold',
                 textTransform: 'none',
-                borderRadius: '30px', // Bordes redondeados
+                borderRadius: '30px',
                 padding: '10px 20px',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para profundidad
-                transition: 'all 0.3s ease', // Transición suave
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
                 '&:hover': {
-                    backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
-                    boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                    backgroundColor: '#A15D50',
+                    boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)',
                 },
                 '&:active': {
-                    backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                    backgroundColor: '#8A4A3D',
                 },
             }}>
                 Nuevo
@@ -187,6 +211,7 @@ function SuperAdminCreateAdministrator(){
                                         name="name"
                                         value={adminInfo.name || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 50 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -200,7 +225,7 @@ function SuperAdminCreateAdministrator(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                         error={errors.name}
@@ -218,6 +243,7 @@ function SuperAdminCreateAdministrator(){
                                         name="lastName"
                                         value={adminInfo.lastName || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 50 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -231,7 +257,7 @@ function SuperAdminCreateAdministrator(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#002776', // Cambia el color del label al enfocarse
+                                                color: '#002776',
                                             },
                                         }}
                                         error={errors.lastName}
@@ -249,6 +275,7 @@ function SuperAdminCreateAdministrator(){
                                         name="mail"
                                         value={adminInfo.mail || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 50 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -262,7 +289,7 @@ function SuperAdminCreateAdministrator(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                         error={errors.mail}
@@ -280,6 +307,7 @@ function SuperAdminCreateAdministrator(){
                                         name="dni"
                                         value={adminInfo.dni || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 8 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -293,7 +321,7 @@ function SuperAdminCreateAdministrator(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484', 
                                             },
                                         }}
                                         error={errors.dni}
@@ -314,10 +342,12 @@ function SuperAdminCreateAdministrator(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>
+                    }}
+                            disabled={loading}
+                    >
                         Cancelar
                     </Button>
-                    <Button type="submit" onClick={handleSubmit} disabled={!validateFields} variant="contained"
+                    <Button type="submit" onClick={handleSubmit} disabled={!validateFields || !isFormWellComplete || loading } variant="contained"
                             sx={{
                                 backgroundColor: '#028484',
                                 '&:hover': {
@@ -331,6 +361,22 @@ function SuperAdminCreateAdministrator(){
                     </Button>
 
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
     <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
         <Alert onClose={handleCloseAlert} severity={adminCreated ? "success" : "error"} sx={{width: '100%'}}>

@@ -180,12 +180,41 @@ function AdminCreateAmenity(){
                                 <Grid item xs={12} sm={6}>
                                     <TextField
                                         id="outlined-basic"
-                                        label="Reservas Máximas"
+                                        label="Cantidad máxima de Reservas"
                                         variant="outlined"
                                         size="small"
                                         type="text"
                                         name="maxBookings"
                                         value={amenityInfo.maxBookings || ""}
+                                        onChange={handleChange}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&:hover fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                                '&.Mui-focused fieldset': {
+                                                    borderColor: '#028484',
+                                                },
+                                            },
+                                            '& label.Mui-focused': {
+                                                color: '#028484', // Cambia el color del label al enfocarse
+                                            },
+                                        }}
+                                        fullWidth
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        id="outlined-basic"
+                                        label="Costo por uso"
+                                        variant="outlined"
+                                        size="small"
+                                        type="text"
+                                        name="costOfUse"
+                                        value={amenityInfo.costOfUse || ""}
                                         onChange={handleChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {

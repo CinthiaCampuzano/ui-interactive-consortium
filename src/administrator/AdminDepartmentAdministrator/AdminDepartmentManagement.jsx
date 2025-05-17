@@ -4,7 +4,7 @@ import React, {useContext, useEffect, useState} from "react";
 import {AdminManageContext} from "../AdminManageContext.jsx";
 import axios from "axios";
 import {
-    Alert,
+    Alert, Autocomplete, Backdrop, Card, CardContent, Chip, CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -24,12 +24,16 @@ import TableBody from "@mui/material/TableBody";
 import IconButton from "@mui/material/IconButton";
 import EditIcon from "@mui/icons-material/Edit.js";
 import DeleteIcon from "@mui/icons-material/Delete";
-import MenuItem from "@mui/material/MenuItem";
 import AdminCreateDepartment from "./AdminCreateDepartment.jsx";
 import {jwtDecode} from "jwt-decode";
 import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
 import SearchIcon from "@mui/icons-material/Search.js";
-
+import HomeWorkIcon from '@mui/icons-material/HomeWork';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import {deepPurple, green, pink, yellow} from "@mui/material/colors";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+import PersonAddIcon from "@mui/icons-material/PersonAdd.js";
+import AdminCreatePerson from "../AdminUserAdministrator/AdminCreatePerson.jsx";
 
 const columns = [
     { id: 'code', label: 'Identificación', minWidth: 100 },
@@ -38,16 +42,19 @@ const columns = [
 ];
 
 function AdminDepartmentManagement(){
-    const {consortiumIdState, setConsortiumIdState, allPersons, setAllPersons,allDepartments, setAllDepartments, getAllDepartmentsByConsortium,
-        getAllPersons, getAConsortiumByIdConsortium, consortiumName, } = useContext(AdminManageContext)
-    // const [allDepartments, setAllDepartments] = useState([])
-    // const [consortiumName, setConsortiumName] = useState(""); // Nuevo estado para el nombre del consorcio
+    const {consortiumIdState, allPersons,allDepartments, setAllDepartments, getAllDepartmentsByConsortium,
+        getAllPersons, getAConsortiumByIdConsortium, consortiumName,
+        departmentStats, totalDepartments, setTotalDepartments,
+        setOpenDniDialog, newPersonDpto,
+        setNewPersonDpto,  personCreationType, setPersonCreationType,
+        newResidentDpto, setNewResidentDpto, aConsortiumByIdConsortium } = useContext(AdminManageContext)
+
     const [departmentCode, setDepartmentCode] = useState('')
     const [proprietor, setProprietor] = useState('')
     const [resident, setResident] = useState('')
     const [personDni, setPersonDni] = useState('')
     const [page, setPage] = React.useState(0)
-    const [rowsPerPage, setRowsPerPage] = React.useState(10)
+    const [rowsPerPage, setRowsPerPage] = React.useState(5)
     const [idDepartmentUpdate, setIdDepartmentUpdate] = useState(null)
     const [openEdit, setOpenEdit] = useState(false)
     const [editCode, setEditCode] = useState('')
@@ -71,7 +78,9 @@ function AdminDepartmentManagement(){
             personId: null
         }
     })
-
+    const [selectedPerson, setSelectedPerson] = useState(null);
+    const [selectedResident, setSelectedResident] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -83,6 +92,7 @@ function AdminDepartmentManagement(){
     };
 
     const handleClickOpenEdit = (idDepartmentToEdit, departmentCodeEdit, departmentPropietaryIdEdit, departmentResidentIdEdit) => {
+
         setIdDepartmentUpdate(idDepartmentToEdit)
         setEditCode(departmentCodeEdit)
         setEditPropietaryId(departmentPropietaryIdEdit)
@@ -108,6 +118,10 @@ function AdminDepartmentManagement(){
             }
         })
     }
+
+    useEffect(() => {
+        setTotalDepartments(allDepartments.length);
+    }, [allDepartments]);
 
     const handleClickOpen = (idPersonToDelete) => {
         setIdPersonCreated(idPersonToDelete)
@@ -136,23 +150,22 @@ function AdminDepartmentManagement(){
     }, [departmentCode, proprietor, resident, consortiumIdState])
 
     useEffect(() => {
-        if (openEdit){
+        if (openEdit && allPersons.length > 0){
             setDepartmentInfo({
                 departmentId: idDepartmentUpdate,
                 code: editCode || "",
                 consortium: {
                     consortiumId: consortiumIdState
                 },
-                propietary: {
-                    personId: editPropietaryId
-                },
-                resident:{
-                    personId: editResidentId
-                }
+
+                propietary: allPersons.find(person => person.personId === editPropietaryId) || null,
+                
+                resident: allPersons.find(person => person.personId === editResidentId) || null,
+
             });
         }
 
-    }, [idDepartmentUpdate, editCode, editPropietaryId, editResidentId]);
+    }, [openEdit, allPersons, idDepartmentUpdate, editCode, editPropietaryId, editResidentId]);
 
 
     // Efecto para cargar los datos del consorcio al montar el componente
@@ -214,6 +227,7 @@ function AdminDepartmentManagement(){
         }
 
         try {
+            setLoading(true)
             // Decodifica el token para verificar el rol
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
@@ -263,6 +277,7 @@ function AdminDepartmentManagement(){
                 }
             }
         } finally {
+            setLoading(false)
             handleOpenAlert();
             getAllDepartmentsByConsortium(consortiumIdState);
         }
@@ -316,14 +331,14 @@ function AdminDepartmentManagement(){
                     return {
                         departmentId: department.departmentId,
                         code: department.code,
-                        personIdP: department.propietary.personId,
-                        fullNameP: department.propietary.name && department.propietary.lastName
+                        personIdP: department.propietary?.personId ? department.propietary.personId : null,
+                        fullNameP: department.propietary?.personId
                             ? `${department.propietary.name} ${department.propietary.lastName}`
-                            : '',
-                        personIdR: department.resident.personId,
-                        fullNameR: department.resident.name && department.resident.lastName
+                            : "LIBRE",  // Muestra "LIBRE" cuando no hay propietario
+                        personIdR:department.resident?.personId ? department.resident.personId : null,
+                        fullNameR: department.resident?.personId
                             ? `${department.resident.name} ${department.resident.lastName}`
-                            : ''
+                            : "LIBRE"  // Muestra "LIBRE" cuando no hay residente
                     };
                 }));
             }
@@ -394,6 +409,83 @@ function AdminDepartmentManagement(){
         padding: '8px',
     };
 
+    const handleOpenDniDialog = () => {
+        setOpenDniDialog(true);
+    }
+
+    const handlePersonChange = (_, newValue) => {
+        if (typeof newValue === "string") {
+            // Si el usuario escribe algo que no existe, permitir creación
+            setSelectedPerson({ fullName: newValue, personId: null });
+        } else if (newValue?.personId) {
+            // Si elige una persona existente, guardar su ID en departmentInfo
+            setSelectedPerson(newValue);
+            setDepartmentInfo((prev) => ({
+                ...prev,
+                propietary: { personId: newValue.personId },
+            }));
+        } else {
+            // Si elige "Ningún propietario" (null), establecer propietario en null
+            setSelectedPerson(null);
+            setDepartmentInfo((prev) => ({
+                ...prev,
+                propietary: null, // Dejarlo como null en lugar de { personId: "" }
+            }));
+        }
+    };
+
+    useEffect(() => {
+        if (newPersonDpto) {
+            handlePersonCreated(newPersonDpto);
+        }
+    }, [newPersonDpto]);
+
+    const handlePersonCreated = (newPerson) => {
+        console.log(newPerson)
+        // Asignar la nueva persona creada al input
+        setSelectedPerson(newPerson);
+        setDepartmentInfo((prev) => ({
+            ...prev,
+            propietary: { personId: newPerson.personId },
+        }));
+    };
+
+    useEffect(() => {
+        if (newResidentDpto) {
+            handleResidentCreated(newResidentDpto);
+        }
+    }, [newResidentDpto]);
+
+    const handleResidentCreated = (newResident) => {
+        console.log(newResident);
+        // Asignar la nueva persona creada al input de residente
+        setSelectedResident(newResident);
+        setDepartmentInfo((prev) => ({
+            ...prev,
+            resident: { personId: newResident.personId },
+        }));
+    };
+
+    const handleResidentChange = (_, newValue) => {
+        if (typeof newValue === "string") {
+            // Si el usuario escribe algo que no existe, permitir creación
+            setSelectedResident({ fullName: newValue, personId: null });
+        } else if (newValue?.personId) {
+            // Si elige una persona existente, guardar su ID en departmentInfo
+            setSelectedResident(newValue);
+            setDepartmentInfo((prev) => ({
+                ...prev,
+                resident: { personId: newValue.personId },
+            }));
+        } else {
+            // Si elige "Ningún residente" (null), establecer residente en null
+            setSelectedResident(null);
+            setDepartmentInfo((prev) => ({
+                ...prev,
+                resident: null, // Ahora es null en vez de { personId: "" }
+            }));
+        }
+    };
 
     return (
         <div>
@@ -434,6 +526,268 @@ function AdminDepartmentManagement(){
                 >
                     Departamentos del Consorcio {consortiumName} {/* Aquí mostramos el nombre del consorcio */}
                 </Typography>
+
+                        <Grid item xs={2.26}>
+                            <Card
+                                sx={{
+                                    height: 135,
+                                    maxHeight: 150,
+                                    minWidth: 250,
+                                    borderRadius: 3, // Bordes redondeados
+                                    boxShadow: "0px 3px 10px rgba(0, 0, 0, 0.1)",
+                                    transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                                    "&:hover": {
+                                        transform: "translateY(-4px)",
+                                        boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.15)",
+                                    },
+                                    backgroundColor: "white",
+                                    textAlign: "center",
+                                    p: 0,
+
+                                }}
+                            >
+                                <CardContent>
+                                    {/* Ícono y Título */}
+                                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 1 }}>
+                                        <ApartmentIcon  sx={{ fontSize: 30, color: "#003366" }} />
+                                        <Typography variant="subtitle1" sx={{ fontWeight: "bold", color: "#003366" }}>
+                                            Unidades Funcionales
+                                        </Typography>
+                                    </Box>
+
+                                    {/* Valores con Descripción */}
+                                    <Box sx={{ display: "flex", justifyContent: "center", gap: 3 }}>
+                                        {/* Creadas */}
+                                        <Box sx={{ textAlign: "center" }}>
+                                            <Typography variant="h5" >
+                                                {totalDepartments}
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                                Creadas
+                                            </Typography>
+                                        </Box>
+
+                                        {/* Separador */}
+                                        <Typography variant="h6" >
+                                            /
+                                        </Typography>
+
+                                        {/* Permitidas */}
+                                        <Box sx={{ textAlign: "center" }}>
+                                            <Typography variant="h5">
+                                                {aConsortiumByIdConsortium.functionalUnits}
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                                Permitidas
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+
+                        <Box
+                            sx={{
+                                width: '100%',
+                                maxWidth: '1100px',
+                                marginLeft: { xs: '40px', sm: '80px' },
+                            }}
+                        >
+                            {/* Tabla de resumen */}
+                            <Box sx={{ flexGrow: 1, p: 3 }}>
+                                <Grid container spacing={2}>
+                                    {/* PENDING Card */}
+                                    <Grid item xs={3}>
+                                        <Card
+                                            sx={{
+                                                maxHeight: 115,
+                                                boxShadow:
+                                                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                                                transition:
+                                                    'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    boxShadow:
+                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+                                                },
+                                            }}
+                                        >
+                                            <CardContent>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <ApartmentIcon   sx={{ color: 'info.main' }} />
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            color="info.main"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        >
+                                                            OCUPADOS
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        CANTIDAD
+                                                    </Typography>
+                                                    <Typography variant="h5" component="div">
+                                                        {departmentStats.occupied}
+                                                    </Typography>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+
+                                    {/* En Revisión Card */}
+                                    <Grid item xs={3}>
+                                        <Card
+                                            sx={{
+                                                maxHeight: 115,
+                                                boxShadow:
+                                                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                                                transition:
+                                                    'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    boxShadow:
+                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+                                                },
+                                            }}
+                                        >
+                                            <CardContent>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <MeetingRoomIcon sx={{ color: 'warning.main' }} />
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            color="warning.main"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        >
+                                                            LIBRES
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        CANTIDAD
+                                                    </Typography>
+                                                    <Typography variant="h5" component="div">
+                                                        {departmentStats.free}
+                                                    </Typography>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+
+                                    {/* PAGADAS Card */}
+                                    <Grid item xs={3}>
+                                        <Card
+                                            sx={{
+                                                maxHeight: 115,
+                                                boxShadow:
+                                                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                                                transition:
+                                                    'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    boxShadow:
+                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+                                                },
+                                            }}
+                                        >
+                                            <CardContent>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <HomeWorkIcon  sx={{ color: green[700] }} />
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            sx={{ fontWeight: 'bold', color: green[700] }}
+                                                        >
+                                                            SIN PROPIETARIOS
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        CANTIDAD
+                                                    </Typography>
+                                                    <Typography variant="h5" component="div">
+                                                        {departmentStats.onlyResident}
+                                                    </Typography>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+
+                                    <Grid item xs={3}>
+                                        <Card
+                                            sx={{
+                                                maxHeight: 115,
+                                                boxShadow:
+                                                    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+                                                transition:
+                                                    'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'translateY(-4px)',
+                                                    boxShadow:
+                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+                                                },
+                                            }}
+                                        >
+                                            <CardContent>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <HomeWorkIcon sx={{ color: deepPurple[500] }} />
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            sx={{ fontWeight: 'bold', color: deepPurple[500]  }}
+                                                        >
+                                                            SIN RESIDENTES
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box sx={{ mb: 2 }}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        CANTIDAD
+                                                    </Typography>
+                                                    <Typography variant="h5" component="div">
+                                                        {departmentStats.onlyOwner}
+                                                    </Typography>
+                                                </Box>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+
+                                </Grid>
+                            </Box>
+                        </Box>
 
                         {/* Filtros */}
                         <Box
@@ -576,11 +930,16 @@ function AdminDepartmentManagement(){
                                                 >
                                                     {columns.map((column) => {
                                                         const value = department[column.id];
+                                                        const isNotAssigned = value === "NO ASIGNADO"
                                                         return (
                                                             <TableCell
                                                                 key={column.id}
                                                                 align={column.align}
-                                                                sx={{ ...tableCellStyles }} // Las celdas no tienen borderRadius
+                                                                sx={{ ...tableCellStyles,
+                                                                    fontWeight: isNotAssigned ? "bold" : "normal"}} // Las celdas no tienen borderRadius
+
+
+
                                                             >
                                                                 {value}
                                                             </TableCell>
@@ -698,6 +1057,14 @@ function AdminDepartmentManagement(){
                         handleCloseEdit();
                     }
                 }}
+                fullWidth
+                maxWidth="sm" // Fija el ancho del diálogo, puedes ajustar a "sm", "md", "lg" según necesidad
+                sx={{
+                    "& .MuiDialog-paper": {
+                        minHeight: "100px",  // Altura mínima para evitar cambios
+                        maxHeight: "400px",  // Evita que crezca demasiado
+                    }
+                }}
             >
                 <DialogTitle
                     sx={{
@@ -745,72 +1112,93 @@ function AdminDepartmentManagement(){
                                     />
                                 </Grid>
                                 <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        select
-                                        label="Selecciones un Propietario"
-                                        variant="outlined"
-                                        size="small"
-                                        name="propietaryId"
-                                        value={departmentInfo.propietary?.personId || ""}
-                                        onChange={handleChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#028484',
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-                                        {allPersons.map(person => (
-                                            <MenuItem key={person.personId} value={person.personId}>
-                                                {person.fullName}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
+                                    <Grid container spacing={1} alignItems="center">
+                                        <Grid item xs>
+                                            <Autocomplete
+                                                freeSolo
+                                                options={[{ personId: null, fullName: "NO ASIGNADO" }, ...allPersons]} // Agrega opción null
+                                                getOptionLabel={(option) => option.fullName || ""}
+                                                value={allPersons.find((person) => person.personId === departmentInfo.propietary?.personId) || null}
+                                                onChange={(event, newValue) => {
+                                                    handlePersonChange(event, newValue?.personId ? newValue : null); // Si es null, actualiza propietario a null
+                                                }}
+                                                renderInput={(params) => (
+                                                    <TextField
+                                                        {...params}
+                                                        label="Seleccione o escriba un propietario"
+                                                        variant="outlined"
+                                                        size="small"
+                                                        sx={{
+                                                            "& .MuiOutlinedInput-root": {
+                                                                "& fieldset": { borderColor: "#002776" },
+                                                                "&:hover fieldset": { borderColor: "#002776" },
+                                                                "&.Mui-focused fieldset": { borderColor: "#002776" },
+                                                            },
+                                                            "& label.Mui-focused": { color: "#002776" },
+                                                        }}
+                                                        fullWidth
+                                                    />
+                                                )}
+                                            />
+                                        </Grid>
+                                        <Grid item>
+                                            <IconButton
+                                                color="primary"
+                                                onClick={() =>{
+                                                    handleOpenDniDialog()
+                                                    setPersonCreationType("owner")}}
+                                                sx={{ color: "#002776" }}
+                                            >
+                                                <PersonAddIcon fontSize="medium" />
+                                            </IconButton>
+                                            <AdminCreatePerson/>
+                                        </Grid>
+                                    </Grid>
                                 </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        select
-                                        label="Seleccione un Residente"
-                                        variant="outlined"
-                                        size="small"
-                                        name="residentId"
-                                        value={departmentInfo.resident?.personId || ""}
-                                        onChange={handleChange}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#028484',
-                                                },
-                                            },
-                                            '& label.Mui-focused': {
-                                                color: '#028484',
-                                            },
-                                        }}
-                                        fullWidth
-                                    >
-                                        {allPersons.map(person => (
-                                            <MenuItem key={person.personId} value={person.personId}>
-                                                {person.fullName}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
+
+                                <Grid item xs={12} sm={6}>
+                                    <Grid container spacing={1} alignItems="center">
+                                        <Grid item xs>
+                                            <Autocomplete
+                                                freeSolo
+                                                options={[{ personId: null, fullName: "NO ASIGNADO" }, ...allPersons]} // Agrega opción null
+                                                getOptionLabel={(option) => option.fullName || ""}
+                                                value={allPersons.find((person) => person.personId === departmentInfo.resident?.personId) || null}
+                                                onChange={(event, newValue) => {
+                                                handleResidentChange(event, newValue?.personId ? newValue : null); // Si es null, actualiza residente a null
+                                            }}
+                                                renderInput={(params) => (
+                                                <TextField
+                                                    {...params}
+                                                    label="Seleccione o escriba un residente"
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{
+                                                        "& .MuiOutlinedInput-root": {
+                                                            "& fieldset": { borderColor: "#002776" },
+                                                            "&:hover fieldset": { borderColor: "#002776" },
+                                                            "&.Mui-focused fieldset": { borderColor: "#002776" },
+                                                        },
+                                                        "& label.Mui-focused": { color: "#002776" },
+                                                    }}
+                                                    fullWidth
+                                                />
+                                                )}
+                                            />
+                                        </Grid>
+                                        <Grid item>
+                                            <IconButton
+                                                color="primary"
+                                                onClick={() =>{
+                                                    handleOpenDniDialog()
+                                                    setPersonCreationType("resident")}}
+                                                sx={{ color: "#002776" }}
+                                            >
+                                                <PersonAddIcon fontSize="medium" />
+                                            </IconButton>
+                                            <AdminCreatePerson/>
+                                        </Grid>
+                                    </Grid>
                                 </Grid>
                             </Grid>
                         </Box>
@@ -829,11 +1217,11 @@ function AdminDepartmentManagement(){
                             padding: '8px 20px',
                             transition: 'background-color 0.3s ease',
                         }}
+                        disabled={loading}
                     >
                         Cancelar
                     </Button>
                     <Button
-                        disabled={ !departmentInfo.code || !departmentInfo?.propietary?.personId || !departmentInfo?.resident?.personId }
                         type="submit"
                         color="primary"
                         onClick={handleSubmit}
@@ -847,10 +1235,28 @@ function AdminDepartmentManagement(){
                             padding: '8px 20px',
                             transition: 'background-color 0.3s ease',
                         }}
+                        disabled={loading}
                     >
                         Guardar
+
                     </Button>
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={departmentUpdate ? "success" : "error"} sx={{width: '100%'}}>

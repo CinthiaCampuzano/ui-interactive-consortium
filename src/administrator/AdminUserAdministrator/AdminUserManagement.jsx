@@ -29,6 +29,7 @@ import AdminCreatePerson from "./AdminCreatePerson.jsx";
 import {jwtDecode} from "jwt-decode";
 import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
 import SearchIcon from "@mui/icons-material/Search.js";
+import AddIcon from "@mui/icons-material/Add";
 
 const columns = [
     { id: 'name', label: 'Nombre', minWidth: 100 },
@@ -40,7 +41,7 @@ const columns = [
 
 function AdminUserManagement(){
     const {consortiumIdState, setConsortiumIdState, allPersons, setAllPersons, getAllPersons, getAConsortiumByIdConsortium, consortiumName,
-        setConsortiumName} = useContext(AdminManageContext)
+        setConsortiumName, openDniDialog, setOpenDniDialog} = useContext(AdminManageContext)
     const [personName, setPersonName] = useState('')
     const [personLastName, setPersonLastName] = useState('')
     const [personMail, setPersonMail] = useState('')
@@ -363,6 +364,10 @@ function AdminUserManagement(){
         padding: '8px',
     };
 
+    const handleOpenDniDialog = () => {
+        setOpenDniDialog(true);
+    };
+
     return (
         <div>
             <Box
@@ -498,6 +503,29 @@ function AdminUserManagement(){
                     >
                         Buscar
                     </Button>
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={handleOpenDniDialog}
+                                sx={{
+                                    backgroundColor: '#B2675E', // Color personalizado
+                                    color: '#FFFFFF',
+                                    fontWeight: 'bold',
+                                    textTransform: 'none',
+                                    borderRadius: '30px', // Bordes redondeados
+                                    padding: '10px 20px',
+                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para profundidad
+                                    transition: 'all 0.3s ease', // Transición suave
+                                    '&:hover': {
+                                        backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
+                                        boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                                    },
+                                    '&:active': {
+                                        backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                                    },
+                                }}>
+                                Nuevo
+                            </Button>
                     <AdminCreatePerson/>
                 </Box>
 
