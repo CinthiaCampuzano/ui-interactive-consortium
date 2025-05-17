@@ -1,6 +1,6 @@
 import {
-    Alert,
-    Box,
+    Alert, Backdrop,
+    Box, CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -66,7 +66,8 @@ function SuperAdminManagesConsortia(){
     const [text, setText] = useState('')
     const [provinces, setProvinces] = useState('')
     const [cities, setCities] = useState('')
-
+    const [loading, setLoading] = useState(false);
+    const [isFormWellComplete, setIsFormWellComplete] = useState(false);
     const [errors, setErrors] = useState({
         address: false,
         province: false
@@ -86,8 +87,13 @@ function SuperAdminManagesConsortia(){
         }})
     const [consortiumCreated, setConsortiumCreated] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
-    // const [allAdministrator , setAllAdministrator] = useState([])
 
+    const ERROR_TYPES = {
+        REQUIRED: 'REQUIRED',
+        INVALID_FORMAT: 'INVALID_FORMAT',
+        POSITIVE_NUMBER: 'POSITIVE_NUMBER',
+        FU_CAPACITY_EXCEEDED: 'FU_CAPACITY_EXCEEDED',
+    };
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -96,17 +102,82 @@ function SuperAdminManagesConsortia(){
         setRowsPerPage(+event.target.value);
         setPage(0);
     };
+
     const validateFields = () => {
+        const newErrors = {};
+        const {
+            name,
+            consortiumType,
+            functionalUnits,
+            province,
+            city,
+            address
+        } = consortiumInfo;
+
         const addressRegex = /^[A-Za-z\s]+\s\d+$/;
+        const provinceRegex = /^[A-Za-zÀ-ÿ\s]+$/;
+        const getTrimmedString = (value) => (typeof value === 'string' ? value.trim() : '');
 
-        setErrors({
-            address: !addressRegex.test(consortiumInfo.address),
-        })
 
-        return (
-            addressRegex.test(consortiumInfo.address)
-        )
-    }
+        if (getTrimmedString(name) === '') {
+            newErrors.name = ERROR_TYPES.REQUIRED;
+        }
+
+        const currentConsortiumType = getTrimmedString(consortiumType);
+        if (currentConsortiumType === '') {
+            newErrors.consortiumType = ERROR_TYPES.REQUIRED;
+        }
+
+        const numFunctionalUnits = Number(functionalUnits);
+        if (isNaN(numFunctionalUnits) || numFunctionalUnits <= 0) {
+            newErrors.functionalUnits = ERROR_TYPES.POSITIVE_NUMBER;
+        }
+
+        const trimmedProvince = getTrimmedString(province);
+        if (trimmedProvince === '') {
+            newErrors.province = ERROR_TYPES.REQUIRED;
+        } else if (!provinceRegex.test(trimmedProvince)) {
+            newErrors.province = ERROR_TYPES.INVALID_FORMAT;
+        }
+
+        if (getTrimmedString(city) === '') {
+            newErrors.city = ERROR_TYPES.REQUIRED;
+        }
+
+        const trimmedAddress = getTrimmedString(address);
+        if (trimmedAddress === '') {
+            newErrors.address = ERROR_TYPES.REQUIRED;
+        } else if (!addressRegex.test(trimmedAddress)) {
+            newErrors.address = ERROR_TYPES.INVALID_FORMAT;
+        }
+
+        setErrors(newErrors);
+        return newErrors;
+    };
+
+    const areFieldsComplete = () => {
+        const {
+            name,
+            administrator,
+            consortiumType,
+            functionalUnits,
+            province,
+            city,
+            address
+        } = consortiumInfo;
+
+        console.log(consortiumInfo.name)
+
+        if (!name || !administrator?.administratorId || !consortiumType || !functionalUnits || !province || !city || !address) {
+            return false;
+        }
+
+        return true;
+    };
+
+    useEffect(() => {
+        setIsFormWellComplete(areFieldsComplete());
+    }, [consortiumInfo]);
 
     const fetchProvinces = async () => {
         const response = await fetch(
@@ -142,7 +213,6 @@ function SuperAdminManagesConsortia(){
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
             const decodedToken = jwtDecode(token);
             const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
 
@@ -196,6 +266,7 @@ function SuperAdminManagesConsortia(){
         setIdConsortiumToDelete(null)
     };
     const handleCloseEdit = () => {
+
         setOpenEdit(false)
         setErrors({
             address: false,
@@ -251,7 +322,7 @@ function SuperAdminManagesConsortia(){
         if (reason === 'clickaway') {
             return;
         }
-        handleCloseEdit();
+        setOpenAlert(false)
     };
 
     useEffect(() => {
@@ -296,76 +367,90 @@ function SuperAdminManagesConsortia(){
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        // Verifica si el usuario tiene permisos
-        const token = localStorage.getItem('token'); // Obtiene el token almacenado
+        const token = localStorage.getItem('token');
         if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detiene la ejecución si no hay token
+            setText("No estás autorizado. Por favor, inicia sesión.");
+            handleOpenAlert();
+            return;
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
             const decodedToken = jwtDecode(token);
             const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
 
             if (!isSuperAdmin) {
-                alert("No tienes permisos para realizar esta acción.");
-                return; // Detiene la ejecución si no es SuperAdmin
+                setText("No tienes permisos para realizar esta acción.");
+                handleOpenAlert();
+                return;
             }
 
-            // Continúa con la lógica si el usuario está autorizado
-            if (validateFields()) {
-                let url = `${import.meta.env.VITE_API_BASE_URL}/consortiums`;
+            const validationErrors = validateFields();
+            const formIsValid = Object.keys(validationErrors).length === 0;
 
+            if (formIsValid) {
+                let url = `${import.meta.env.VITE_API_BASE_URL}/consortiums`;
                 try {
+                    setLoading(true);
+
                     await axios.put(url, consortiumInfo, {
                         headers: {
-                            Authorization: `Bearer ${token}` // Incluye el token en la solicitud
+                            Authorization: `Bearer ${token}`
                         }
                     });
-
-                    setText('Se realizó la carga correctamente');
+                    setText('Se realizó la modificación correctamente');
                     setConsortiumCreated(true);
                     handleCloseEdit();
                 } catch (exception) {
                     setConsortiumCreated(false);
-                    switch (exception.response?.status) {
-                        case 404:
-                            setText('No se encontró el administrador ingresado');
-                            break;
-                        default:
-                            setText('No se realizó la carga, error de datos!!');
+                    let errorText = 'No se realizó la modificación, error de datos!';
+                    if (exception.response?.status === 404) {
+                        errorText = 'No se encontró el consorcio a modificar o el administrador no es válido.';
                     }
+                    setText(errorText);
                 } finally {
                     handleOpenAlert();
                     getAllConsortium();
                 }
+
+            } else {
+                setConsortiumCreated(false);
+                console.warn('Formulario inválido. Errores detectados:', validationErrors);
+
+                if (validationErrors.functionalUnits === ERROR_TYPES.FU_CAPACITY_EXCEEDED) {
+                    setText("Error: La multiplicación de pisos por departamentos no puede superar el total de unidades funcionales.");
+                } else {
+                    setText('Por favor, corrige los errores indicados en el formulario.');
+                }
+                handleOpenAlert();
             }
-        } catch (error) {
-            console.error("Error al validar el usuario o procesar la solicitud:", error);
-            alert("Ocurrió un error. Por favor, inténtalo nuevamente.");
+        } catch (error) { // Captura errores de jwtDecode u otros síncronos
+            setConsortiumCreated(false);
+            console.error("Error durante la preparación del envío o validación del token:", error);
+            setText(`Ocurrió un error: ${error.message || "Por favor, inténtalo nuevamente."}`);
+            handleOpenAlert();
+        } finally {
+            setLoading(false);
         }
     };
 
+
+
     const getAllConsortiumByFilter = async () => {
-        const token = localStorage.getItem('token'); // Obtiene el token almacenado
+        const token = localStorage.getItem('token');
 
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detiene la ejecución si no hay token
+            return;
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
             const decodedToken = jwtDecode(token);
             const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
 
             if (!isSuperAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detiene la ejecución si no es SuperAdmin
+                return;
             }
-
-            // Lógica principal de la función
             const handleEmptyValues = (value) => {
                 return value === '' ? null : value;
             };
@@ -389,7 +474,7 @@ function SuperAdminManagesConsortia(){
                     `${import.meta.env.VITE_API_BASE_URL}/consortiums/filterBy?${queryParams}`,
                     {
                         headers: {
-                            Authorization: `Bearer ${token}` // Incluye el token en la solicitud
+                            Authorization: `Bearer ${token}`
                         }
                     }
                 );
@@ -419,24 +504,26 @@ function SuperAdminManagesConsortia(){
     }
 
     const deleteConsortium = async (idConsortiumToDelete) =>{
+        setLoading(true);
         const token = localStorage.getItem('token'); // Obtén el token almacenado
 
         if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detiene la ejecución si no hay token
+            setText("No estás autorizado. Por favor, inicia sesión.");
+            handleOpenAlert();
+            setLoading(false);
+            return;
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
             const decodedToken = jwtDecode(token);
             const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
 
             if (!isSuperAdmin) {
-                alert("No tienes permisos para realizar esta acción.");
-                return; // Detiene la ejecución si no es SuperAdmin
+                setText("No tienes permisos para realizar esta acción.");
+                handleOpenAlert();
+                setLoading(false);
+                return;
             }
-
-            // Continúa con la eliminación si el usuario está autorizado
             await axios.delete(
                 `${import.meta.env.VITE_API_BASE_URL}/consortiums/${idConsortiumToDelete}`,
                 {
@@ -446,13 +533,18 @@ function SuperAdminManagesConsortia(){
                 }
             );
 
-            // Actualiza la lista de consorcios después de eliminar
             setAllConsortia(allConsortia.filter(consortium => consortium.consortiumId !== idConsortiumToDelete));
-
-            alert("Consorcio eliminado correctamente.");
+            setConsortiumCreated(true);
+            setText("Consorcio eliminado correctamente.");
+            handleOpenAlert();
         } catch (error) {
+            setConsortiumCreated(false);
             console.error("Error al eliminar el consorcio:", error);
-            alert("Ocurrió un error al intentar eliminar el consorcio. Por favor, inténtalo nuevamente.");
+            setText("Ocurrió un error al intentar eliminar el consorcio. Por favor, inténtalo nuevamente.");
+            handleOpenAlert();
+        } finally {
+            setLoading(false);
+            handleClose();
         }
     };
 
@@ -488,17 +580,17 @@ function SuperAdminManagesConsortia(){
             <Box
                 sx={{
                     display: 'flex',
-                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
+                    minHeight: '100vh',
                 }}
             >
                 <SuperAdminSidebar/>
                 <Box
                     component="main"
                     sx={{
-                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
-                        padding: {xs: '16px', sm: '24px'}, // Espaciado variable según el tamaño de la pantalla
-                        marginLeft: {xs: 0, sm: '240px'}, // Evita que el contenido se superponga al SuperAdminSidebar
-                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
+                        flexGrow: 1,
+                        padding: {xs: '16px', sm: '24px'},
+                        marginLeft: {xs: 0, sm: '240px'},
+                        transition: 'margin-left 0.3s ease',
                     }}
                 >
                     <Box
@@ -508,7 +600,6 @@ function SuperAdminManagesConsortia(){
                             alignItems: 'center',
                         }}
                     >
-                        {/* Título */}
                         <Typography
                             variant="h6"
                             component="h1"
@@ -522,7 +613,6 @@ function SuperAdminManagesConsortia(){
                             Consorcios
                         </Typography>
 
-                        {/* Filtros */}
                         <Box
                             sx={{
                                 display: 'flex',
@@ -542,7 +632,7 @@ function SuperAdminManagesConsortia(){
                                 onChange={(e) => setConsortiumName(e.target.value)}
                                 sx={{
                                     ...textFieldStyles,
-                                    flex: 1, // Esto asegura que los inputs se distribuyan uniformemente en el espacio disponible
+                                    flex: 1,
                                 }}
                             />
                             <TextField
@@ -579,8 +669,6 @@ function SuperAdminManagesConsortia(){
                                 }}
                             />
                         </Box>
-
-                        {/* Botones */}
                         <Box
                             sx={{
                                 display: 'flex',
@@ -592,24 +680,24 @@ function SuperAdminManagesConsortia(){
                             <Button
                                 variant="contained"
                                 sx={{
-                                    backgroundColor: '#B2675E', // Color personalizado
+                                    backgroundColor: '#B2675E',
                                     color: '#FFFFFF',
                                     fontWeight: 'bold',
                                     textTransform: 'none',
-                                    borderRadius: '30px', // Bordes redondeados
+                                    borderRadius: '30px',
                                     padding: '10px 20px',
-                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para efecto de profundidad
-                                    transition: 'all 0.3s ease', // Transición suave
+                                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                    transition: 'all 0.3s ease',
                                     '&:hover': {
-                                        backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
-                                        boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                                        backgroundColor: '#A15D50',
+                                        boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)',
                                     },
                                     '&:active': {
-                                        backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                                        backgroundColor: '#8A4A3D',
                                     },
                                 }}
                                 onClick={getAllConsortiumByFilter}
-                                startIcon={<SearchIcon/>} // Icono dentro del botón
+                                startIcon={<SearchIcon/>}
                             >
                                 Buscar
                             </Button>
@@ -622,7 +710,7 @@ function SuperAdminManagesConsortia(){
                                 sx={{
                                     maxHeight: 600,
                                     overflowX: 'auto',
-                                    borderRadius: '10px', // Redondea solo las esquinas del contenedor
+                                    borderRadius: '10px',
                                     border: '1px solid #002776',
                                 }}
                             >
@@ -630,7 +718,7 @@ function SuperAdminManagesConsortia(){
                                     stickyHeader
                                     sx={{
                                         borderCollapse: 'separate',
-                                        borderSpacing: '0', // Evita que las celdas se superpongan
+                                        borderSpacing: '0',
                                     }}
                                 >
                                     <TableHead>
@@ -642,19 +730,19 @@ function SuperAdminManagesConsortia(){
                                                     sx={{
                                                         ...tableHeadCellStyles,
                                                         ...(index === 0 && {
-                                                            borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
+                                                            borderTopLeftRadius: '10px',
                                                         })
                                                     }}
                                                 >
                                                     {column.label}
                                                 </TableCell>
                                             ))}
-                                            {/* Solo redondear la celda "Acciones" */}
+
                                             <TableCell
                                                 align="center"
                                                 sx={{
                                                     ...tableHeadCellStyles,
-                                                    borderTopRightRadius: '10px', // Redondeo solo en la celda "Acciones"
+                                                    borderTopRightRadius: '10px',
                                                 }}
                                             >
 
@@ -677,7 +765,7 @@ function SuperAdminManagesConsortia(){
                                                         <TableCell
                                                             key={column.id}
                                                             align={column.align}
-                                                            sx={{...tableCellStyles}} // Las celdas no tienen borderRadius
+                                                            sx={{...tableCellStyles}}
                                                         >
                                                             {consortium[column.id]}
                                                         </TableCell>
@@ -751,7 +839,7 @@ function SuperAdminManagesConsortia(){
                 </DialogTitle>
                 <DialogContent sx={{backgroundColor: '#F9F9F9'}}>
                     <DialogContentText id="alert-dialog-description">
-                        Si acepta se eliminara el consorcio deseado.
+                        Si acepta se eliminará el consorcio deseado.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{backgroundColor: '#F9F9F9', padding: '10px 20px'}}>
@@ -763,7 +851,11 @@ function SuperAdminManagesConsortia(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>Rechazar</Button>
+                    }}
+                            disabled={loading}
+                    >
+                        Cancelar
+                    </Button>
                     <Button variant="contained" sx={{
                         backgroundColor: '#028484',
                         '&:hover': {
@@ -774,12 +866,28 @@ function SuperAdminManagesConsortia(){
                         transition: 'background-color 0.3s ease',
                     }} onClick={() => {
                         deleteConsortium(idConsortiumToDelete)
-                        handleClose()
-                    }
-                    }>
+                    }}
+                            disabled={loading}
+                    >
                         Aceptar
                     </Button>
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Dialog
                 open={openEdit}
@@ -811,6 +919,7 @@ function SuperAdminManagesConsortia(){
                                         name="name"
                                         value={consortiumInfo.name !== undefined ? consortiumInfo.name : editConsortiumName || ''}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 50 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -824,7 +933,7 @@ function SuperAdminManagesConsortia(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                     />
@@ -851,7 +960,7 @@ function SuperAdminManagesConsortia(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                         fullWidth
@@ -869,18 +978,21 @@ function SuperAdminManagesConsortia(){
                                         <RadioGroup
                                             row
                                             name="consortiumType"
-                                            value={consortiumInfo.consortiumType !== undefined ? consortiumInfo.consortiumType : editConsortiumType || ''}
-                                            onChange={handleChange}
+                                            value={consortiumInfo.consortiumType || ''}
                                         >
                                             <FormControlLabel
                                                 value="BUILDING"
-                                                control={<Radio
+                                                control={
+                                                <Radio
+                                                    disabled={true}
                                                     sx={{color: '#028484', '&.Mui-checked': {color: '#028484'}}}/>}
                                                 label="Edificio"
                                             />
                                             <FormControlLabel
                                                 value="NEIGHBORHOOD"
-                                                control={<Radio
+                                                control={
+                                                <Radio
+                                                    disabled={true}
                                                     sx={{color: '#028484', '&.Mui-checked': {color: '#028484'}}}/>}
                                                 label="Barrio Privado"
                                             />
@@ -888,7 +1000,6 @@ function SuperAdminManagesConsortia(){
                                     </Box>
                                 </Grid>
 
-                                {/* Input: Total de Unidades Funcionales */}
                                 <Grid item xs={12}>
                                     <TextField
                                         label="Total de Unidades Funcionales"
@@ -918,67 +1029,6 @@ function SuperAdminManagesConsortia(){
                                     />
                                 </Grid>
 
-                                {/* Inputs condicionales: Cantidad de pisos y departamentos por piso */}
-                                {consortiumInfo.consortiumType === "BUILDING" && (
-                                    <>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                label="Cantidad de pisos"
-                                                variant="outlined"
-                                                size="small"
-                                                type="number"
-                                                name="floors"
-                                                value={consortiumInfo.floors}
-                                                onChange={handleChange}
-                                                sx={{
-                                                    '& .MuiOutlinedInput-root': {
-                                                        '& fieldset': {
-                                                            borderColor: '#028484',
-                                                        },
-                                                        '&:hover fieldset': {
-                                                            borderColor: '#028484',
-                                                        },
-                                                        '&.Mui-focused fieldset': {
-                                                            borderColor: '#028484',
-                                                        },
-                                                    },
-                                                    '& label.Mui-focused': {
-                                                        color: '#028484',
-                                                    },
-                                                }}
-                                                fullWidth
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                label="Cantidad de departamentos por piso"
-                                                variant="outlined"
-                                                size="small"
-                                                type="number"
-                                                name="apartmentsPerFloor"
-                                                value={consortiumInfo.apartmentsPerFloor}
-                                                onChange={handleChange}
-                                                sx={{
-                                                    '& .MuiOutlinedInput-root': {
-                                                        '& fieldset': {
-                                                            borderColor: '#028484',
-                                                        },
-                                                        '&:hover fieldset': {
-                                                            borderColor: '#028484',
-                                                        },
-                                                        '&.Mui-focused fieldset': {
-                                                            borderColor: '#028484',
-                                                        },
-                                                    },
-                                                    '& label.Mui-focused': {
-                                                        color: '#028484',
-                                                    },
-                                                }}
-                                                fullWidth
-                                            />
-                                        </Grid>
-                                    </>
-                                )}
                                 <Grid item xs={12}>
                                     <TextField
                                         select
@@ -1001,7 +1051,7 @@ function SuperAdminManagesConsortia(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                         fullWidth
@@ -1038,7 +1088,7 @@ function SuperAdminManagesConsortia(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                         fullWidth
@@ -1062,6 +1112,7 @@ function SuperAdminManagesConsortia(){
                                         name="address"
                                         value={consortiumInfo.address !== undefined ? consortiumInfo.address : editConsortiumAddress || ''}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 50 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -1075,7 +1126,7 @@ function SuperAdminManagesConsortia(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: errors.address ? 'red' : '#002776', // Cambia el color del label al enfocarse
+                                                color: errors.address ? 'red' : '#002776',
                                             },
                                         }}
                                         error={errors.address}
@@ -1106,10 +1157,12 @@ function SuperAdminManagesConsortia(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>
+                    }}
+                            disabled={loading}
+                    >
                         Cancelar
                     </Button>
-                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!validateFields}
+                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!isFormWellComplete || loading}
                             variant="contained"
                             sx={{
                                 backgroundColor: '#028484',
@@ -1124,6 +1177,23 @@ function SuperAdminManagesConsortia(){
                     </Button>
 
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
+
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={consortiumCreated ? "success" : "error"}

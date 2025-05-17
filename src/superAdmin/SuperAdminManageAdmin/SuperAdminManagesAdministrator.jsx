@@ -1,6 +1,6 @@
 import {
-    Alert,
-    Box, Dialog,
+    Alert, Backdrop,
+    Box, CircularProgress, Dialog,
     DialogActions,
     DialogContent,
     DialogContentText,
@@ -63,6 +63,8 @@ function SuperAdminManagesAdministrator(){
         mail: false,
         dni: false
     })
+    const [loading, setLoading] = useState(false);
+    const [isFormWellComplete, setIsFormWellComplete] = useState(false);
     const validateFields = () => {
         const nameRegex = /^[A-Za-z]+$/
         const mailRegex = /.+@.+\..+/
@@ -82,6 +84,24 @@ function SuperAdminManagesAdministrator(){
             dniRegex.test(adminInfo.dni)
         )
     }
+
+    const areFieldsComplete = () => {
+        const {
+            name,
+            lastName,
+            mail,
+            dni
+        } = adminInfo;
+
+        if (!name || !lastName || !mail || !dni ) {
+            return false;
+        }
+        return true;
+    };
+
+    useEffect(() => {
+        setIsFormWellComplete(areFieldsComplete());
+    }, [adminInfo]);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -163,21 +183,20 @@ function SuperAdminManagesAdministrator(){
     }, [administratorName, administratorLastName, administratorMail, administratorDni]);
 
     const getAllAdministratorByFilter = async () => {
-        const token = localStorage.getItem('token'); // Obtén el token almacenado
+        const token = localStorage.getItem('token');
 
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detiene la ejecución si no hay token
+            return;
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
             const decodedToken = jwtDecode(token);
             const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
 
             if (!isSuperAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detiene la ejecución si no es SuperAdmin
+                return;
             }
 
             const handleEmptyValues = (value) => {
@@ -196,14 +215,14 @@ function SuperAdminManagesAdministrator(){
             if (dni !== null) params.dni = dni;
 
             if (Object.keys(params).length === 0) {
-                getAllAdministrator(); // Si no hay filtros, llama a la función general
+                getAllAdministrator();
             } else {
                 const queryParams = new URLSearchParams(params).toString();
                 const res = await axios.get(
                     `${import.meta.env.VITE_API_BASE_URL}/administrators/filtersBy?${queryParams}`,
                     {
                         headers: {
-                            Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                            Authorization: `Bearer ${token}`
                         }
                     }
                 );
@@ -227,32 +246,31 @@ function SuperAdminManagesAdministrator(){
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setLoading(true);
 
-        // Obtiene el token almacenado en el localStorage
         const token = localStorage.getItem('token');
 
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detiene la ejecución si no hay token
+            setLoading(false)
+            return;
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
             const decodedToken = jwtDecode(token);
             const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
 
             if (!isSuperAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detiene la ejecución si no es SuperAdmin
+                setLoading(false)
+                return;
             }
 
-            // Si el token es válido y tiene el rol adecuado, continúa con el proceso
             if (validateFields()) {
                 console.log(adminInfo);
                 let url = `${import.meta.env.VITE_API_BASE_URL}/administrators`;
 
                 try {
-                    // Realiza la actualización
                     await axios.put(url, adminInfo, {
                         headers: {
                             Authorization: `Bearer ${token}` // Incluye el token en los encabezados de la solicitud
@@ -273,45 +291,56 @@ function SuperAdminManagesAdministrator(){
                     }
                 } finally {
                     handleOpenAlert();
-                    getAllAdministrator(); // Obtén nuevamente la lista de administradores después de la actualización
+                    getAllAdministrator();
                 }
             }
         } catch (error) {
             console.error("Error al validar el token o realizar la solicitud:", error);
             alert("Ocurrió un error al intentar realizar la acción. Por favor, inténtalo nuevamente.");
+        }finally {
+            setLoading(false);
         }
     };
 
     const deleteAdministrator = async (idAdministratorToDelete) =>{
-        const token = localStorage.getItem('token'); // Obtén el token almacenado
-
+        const token = localStorage.getItem('token');
+        setLoading(true);
         if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // No continúa si no hay token
+            setText("No estás autorizado. Por favor, inicia sesión.");
+            handleOpenAlert();
+            return;
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol de SuperAdmin
             const decodedToken = jwtDecode(token);
             const isSuperAdmin = decodedToken?.role?.includes('ROLE_ROOT');
 
             if (!isSuperAdmin) {
-                alert("No tienes permisos para realizar esta acción.");
-                return; // No continúa si no es SuperAdmin
+                setText("No tienes permisos para realizar esta acción.");
+                handleOpenAlert();
+                setLoading(false);
+                return;
             }
 
-            // Si el token es válido y tiene el rol adecuado, continúa con el proceso de eliminación
             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/administrators/${idAdministratorToDelete}`, {
                 headers: {
-                    Authorization: `Bearer ${token}` // Incluye el token en los encabezados de la solicitud
+                    Authorization: `Bearer ${token}`
                 }
             });
 
             setAllAdministrator(allAdministrator.filter(administrator => administrator.administratorId !== idAdministratorToDelete));
+            setAdminUpdate(true);
+            setText("Administrador eliminado correctamente.");
+            handleOpenAlert();
 
         } catch (error) {
+            setAdminUpdate(false);
             console.error("Error al eliminar el administrador:", error);
-            alert("Ocurrió un error al intentar eliminar el administrador. Por favor, inténtelo nuevamente.");
+            setText("Ocurrió un error al intentar eliminar el administrador. Por favor, inténtalo nuevamente.");
+            handleOpenAlert();
+        } finally {
+            setLoading(false);
+            handleClose();
         }
     };
 
@@ -347,17 +376,17 @@ function SuperAdminManagesAdministrator(){
             <Box
                 sx={{
                     display: 'flex',
-                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
+                    minHeight: '100vh',
                 }}
             >
                 <SuperAdminSidebar/>
             <Box
                 component="main"
                 sx={{
-                flexGrow: 1, // Permite que este componente ocupe el espacio restante
-                padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
-                marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
-                transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
+                flexGrow: 1,
+                padding: { xs: '16px', sm: '24px' },
+                marginLeft: { xs: 0, sm: '240px' },
+                transition: 'margin-left 0.3s ease',
             }}
                 >
             <Box
@@ -367,7 +396,7 @@ function SuperAdminManagesAdministrator(){
                     alignItems: 'center',
                 }}
             >
-                {/* Título */}
+
                 <Typography
                     variant="h6"
                     component="h1"
@@ -381,7 +410,6 @@ function SuperAdminManagesAdministrator(){
                     Administradores
                 </Typography>
 
-                {/* Filtros */}
                 <Box
                     sx={{
                         display: 'flex',
@@ -402,7 +430,7 @@ function SuperAdminManagesAdministrator(){
                         onChange={(e) => setAdministratorName(e.target.value)}
                         sx={{
                             ...textFieldStyles,
-                            flex: 1, // Esto asegura que los inputs se distribuyan uniformemente en el espacio disponible
+                            flex: 1,
                         }}
                     />
 
@@ -445,7 +473,6 @@ function SuperAdminManagesAdministrator(){
                         }}
                     />
                 </Box>
-                {/* Botones */}
                 <Box
                     sx={{
                         display: 'flex',
@@ -457,20 +484,20 @@ function SuperAdminManagesAdministrator(){
                     <Button
                         variant="contained"
                         sx={{
-                            backgroundColor: '#B2675E', // Color personalizado
+                            backgroundColor: '#B2675E',
                             color: '#FFFFFF',
                             fontWeight: 'bold',
                             textTransform: 'none',
-                            borderRadius: '30px', // Bordes redondeados
+                            borderRadius: '30px',
                             padding: '10px 20px',
-                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para efecto de profundidad
-                            transition: 'all 0.3s ease', // Transición suave
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            transition: 'all 0.3s ease',
                             '&:hover': {
-                                backgroundColor: '#A15D50', // Cambio de color al pasar el cursor
-                                boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente
+                                backgroundColor: '#A15D50',
+                                boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)',
                             },
                             '&:active': {
-                                backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona
+                                backgroundColor: '#8A4A3D',
                             },
                         }}
                         onClick={getAllAdministratorByFilter}
@@ -486,12 +513,12 @@ function SuperAdminManagesAdministrator(){
                         <TableContainer sx={{
                             maxHeight: 600,
                             overflowX: 'auto',
-                            borderRadius: '10px', // Redondea solo las esquinas del contenedor
+                            borderRadius: '10px',
                             border: '1px solid #002776',
                         }}>
                             <Table stickyHeader sx={{
                                 borderCollapse: 'separate',
-                                borderSpacing: '0', // Evita que las celdas se superpongan
+                                borderSpacing: '0',
                             }}>
                                 <TableHead>
                                     <TableRow sx={{ height: '24px' }}>
@@ -502,7 +529,7 @@ function SuperAdminManagesAdministrator(){
                                                 sx={{
                                                     ...tableHeadCellStyles,
                                                     ...(index === 0 && {
-                                                        borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
+                                                        borderTopLeftRadius: '10px',
                                                     })
                                                 }}
                                             >
@@ -511,7 +538,7 @@ function SuperAdminManagesAdministrator(){
                                         ))}
                                         <TableCell align="center"  sx={{
                                             ...tableHeadCellStyles,
-                                            borderTopRightRadius: '10px', // Redondeo solo en la celda "Acciones"
+                                            borderTopRightRadius: '10px',
                                         }}>
 
                                         </TableCell>
@@ -602,7 +629,11 @@ function SuperAdminManagesAdministrator(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>Cancelar</Button>
+                    }}
+                            disabled={loading}
+                    > Cancelar
+                    </Button>
+
                     <Button variant="contained" sx={{
                         backgroundColor: '#028484',
                         '&:hover': {
@@ -613,12 +644,28 @@ function SuperAdminManagesAdministrator(){
                         transition: 'background-color 0.3s ease',
                     }} onClick={() => {
                         deleteAdministrator(idAdministratorCreated)
-                        handleClose()
-                    }
-                    }>
+                    }}
+                            disabled={loading}
+                    >
                         Aceptar
                     </Button>
                 </DialogActions>
+                    {loading && (
+                        <Backdrop
+                            open={true}
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                zIndex: 10,
+                                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            }}
+                        >
+                            <CircularProgress color="primary" />
+                        </Backdrop>
+                    )}
             </Dialog>
                 <Dialog
                     open={openEdit}
@@ -663,7 +710,7 @@ function SuperAdminManagesAdministrator(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
                                         error={errors.name}
@@ -694,7 +741,7 @@ function SuperAdminManagesAdministrator(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: errors.address ? 'red' : '#028484', // Cambia el color del label al enfocarse
+                                                color: errors.address ? 'red' : '#028484',
                                             },
                                         }}
                                         error={errors.lastName}
@@ -725,7 +772,7 @@ function SuperAdminManagesAdministrator(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: errors.province ? 'red' : '#028484', // Cambia el color del label al enfocarse
+                                                color: errors.province ? 'red' : '#028484',
                                             },
                                         }}
                                         error={errors.mail}
@@ -744,7 +791,7 @@ function SuperAdminManagesAdministrator(){
                                         value={adminInfo.dni}
                                         // onChange={handleChange}
                                         InputProps={{
-                                            readOnly: true,  // Esto hace que el campo sea solo de lectura
+                                            readOnly: true,
                                         }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
@@ -759,11 +806,9 @@ function SuperAdminManagesAdministrator(){
                                                 },
                                             },
                                             '& label.Mui-focused': {
-                                                color: '#028484', // Cambia el color del label al enfocarse
+                                                color: '#028484',
                                             },
                                         }}
-                                        // error={errors.dni}
-                                        // helperText={errors.dni ? 'Solo números permitidos' : ''}
                                         fullWidth
                                     />
                                 </Grid>
@@ -780,10 +825,12 @@ function SuperAdminManagesAdministrator(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>
+                    }}
+                            disabled={loading}
+                    >
                         Cancelar
                     </Button>
-                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!validateFields} variant="contained"
+                    <Button type="submit" color="primary" onClick={handleSubmit} disabled={!validateFields || !isFormWellComplete || loading } variant="contained"
                             sx={{
                                 backgroundColor: '#028484',
                                 '&:hover': {
@@ -795,8 +842,23 @@ function SuperAdminManagesAdministrator(){
                             }}>
                         Guardar
                     </Button>
-
                 </DialogActions>
+                    {loading && (
+                        <Backdrop
+                            open={true}
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                zIndex: 10,
+                                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            }}
+                        >
+                            <CircularProgress color="primary" />
+                        </Backdrop>
+                    )}
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={adminUpdate ? "success" : "error"} sx={{width: '100%'}}>
