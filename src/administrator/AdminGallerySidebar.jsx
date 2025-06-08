@@ -59,6 +59,7 @@ const AdminGallerySidebar = () => {
         { title: 'Departamentos', icon: <ApartmentIcon />, path: '/admin/management/departamentos' },
         { title: 'Espacio Común', icon: <HomeIcon />, path: '/admin/management/espacio-comun' },
         { title: 'Expensas', icon: <ReceiptIcon />, path: '/admin/management/expensas' },
+        { title: 'Expensas2', icon: <ReceiptIcon />, path: '/admin/management/expensas2' },
         { title: 'Tablón de Anuncios', icon: <AnnouncementIcon />, path: '/admin/management/publicaciones' },
         { title: 'Reclamos', icon: <ReportIcon />, path: '/admin/management/reclamos' },
         { title: 'Reservas', icon: <CalendarTodayIcon />, path: '/admin/management/reservas' },
