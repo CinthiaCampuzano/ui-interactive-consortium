@@ -1,8 +1,19 @@
-import {useContext, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import axios from "axios";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add.js";
-import {Alert, Box, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Snackbar, TextField} from "@mui/material";
+import {
+    Alert,
+    Backdrop,
+    Box, CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Grid,
+    Snackbar,
+    TextField
+} from "@mui/material";
 import Paper from "@mui/material/Paper";
 import {AdminManageContext} from "../AdminManageContext.jsx";
 import {jwtDecode} from "jwt-decode";
@@ -14,7 +25,8 @@ function AdminCreateAmenity(){
     const [amenityInfo, setAmenityInfo] = useState({})
     const [amenityCreated, setAmenityCreated] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
-
+    const [loading, setLoading] = useState(false);
+    const [isFormWellComplete, setIsFormWellComplete] = useState(false);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -49,25 +61,42 @@ function AdminCreateAmenity(){
         }));
     };
 
+    const areFieldsComplete = () => {
+        const {
+            name,
+            maxBookings,
+            costOfUse
+        } = amenityInfo;
+
+        if (!name || !maxBookings || !costOfUse) {
+            return false;
+        }
+        return true;
+    };
+
+    useEffect(() => {
+        setIsFormWellComplete(areFieldsComplete());
+    }, [amenityInfo]);
+
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setLoading(true);
 
-        // Obtén el token almacenado
         const token = localStorage.getItem('token');
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detener la ejecución si no hay token
+            setLoading(false)
+            return;
         }
 
-        // Decodifica el token para verificar el rol
         const decodedToken = jwtDecode(token);
         const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
         if (!isAdmin) {
             alert("No tienes permisos para realizar esta acción.");
-            return; // Detener la ejecución si no es ROLE_ADMIN
+            setLoading(false)
+            return;
         }
 
-        // Si la validación es exitosa, proceder con la solicitud
         const amenityUrl = `${import.meta.env.VITE_API_BASE_URL}/Amenities`;
 
         try {
@@ -95,6 +124,7 @@ function AdminCreateAmenity(){
         } finally {
             handleOpenAlert();
             getAllAmenitiesByIdConsortium();
+            setLoading(false)
         }
     };
 
@@ -183,7 +213,7 @@ function AdminCreateAmenity(){
                                         label="Cantidad máxima de Reservas"
                                         variant="outlined"
                                         size="small"
-                                        type="text"
+                                        type="number"
                                         name="maxBookings"
                                         value={amenityInfo.maxBookings || ""}
                                         onChange={handleChange}
@@ -212,7 +242,7 @@ function AdminCreateAmenity(){
                                         label="Costo por uso"
                                         variant="outlined"
                                         size="small"
-                                        type="text"
+                                        type="number"
                                         name="costOfUse"
                                         value={amenityInfo.costOfUse || ""}
                                         onChange={handleChange}
@@ -248,10 +278,14 @@ function AdminCreateAmenity(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>
+                    }}
+                            disabled={loading}
+                    >
+
                         Cancelar
                     </Button>
-                    <Button type="submit" onClick={handleSubmit} variant="contained"   sx={{
+                    <Button type="submit" onClick={handleSubmit} variant="contained"  disabled={!isFormWellComplete || loading }
+                            sx={{
                         backgroundColor: '#028484',
                         '&:hover': {
                             backgroundColor: '#026F6B',
@@ -264,6 +298,22 @@ function AdminCreateAmenity(){
                     </Button>
 
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={amenityCreated ? "success" : "error"} sx={{width: '100%'}}>

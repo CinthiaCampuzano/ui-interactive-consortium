@@ -308,6 +308,7 @@ function SuperAdminManagesAdministrator(){
         if (!token) {
             setText("No estás autorizado. Por favor, inicia sesión.");
             handleOpenAlert();
+            setLoading(false);
             return;
         }
 

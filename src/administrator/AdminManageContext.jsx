@@ -143,6 +143,7 @@ export function AdminManageContextProvider(props){
 
             // Acceder a los datos de los departamentos y actualizar el estado
             const departments = res.data.content;
+            console.log(departments)
             const total = departments.length;
             let occupied = 0;
             let free = 0;
@@ -169,11 +170,12 @@ export function AdminManageContextProvider(props){
                     personIdP: hasOwner ? department.propietary.personId : null,
                     fullNameP: hasOwner
                         ? `${department.propietary.name} ${department.propietary.lastName}`
-                        : "NO ASIGNADO",  // Muestra "LIBRE" cuando no hay propietario
+                        : "NO ASIGNADO",
                     personIdR: hasResident ? department.resident.personId : null,
                     fullNameR: hasResident
                         ? `${department.resident.name} ${department.resident.lastName}`
-                        : "NO ASIGNADO"  // Muestra "LIBRE" cuando no hay residente
+                        : "NO ASIGNADO",
+                    active: department.active
                 };
             });
 

@@ -1,8 +1,19 @@
-import {useContext, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import axios from "axios";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add.js";
-import {Alert, Box, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Snackbar, TextField} from "@mui/material";
+import {
+    Alert,
+    Backdrop,
+    Box, CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Grid,
+    Snackbar,
+    TextField
+} from "@mui/material";
 import Paper from "@mui/material/Paper";
 import {AdminManageContext} from "../AdminManageContext.jsx";
 import {jwtDecode} from "jwt-decode";
@@ -24,6 +35,8 @@ function AdminCreatePerson(){
     const [personInfo, setPersonInfo] = useState({})
     const [personCreated, setPersonCreated] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
+    const [loading, setLoading] = useState(false);
+    const [isFormWellComplete, setIsFormWellComplete] = useState(false);
     const validateFields = () => {
         const nameRegex = /^[A-Za-z]+$/
         const mailRegex = /.+@.+\..+/
@@ -45,13 +58,26 @@ function AdminCreatePerson(){
             dniRegex.test(personInfo.phoneNumber)
         )
     }
+    const areFieldsComplete = () => {
+        const {
+            name,
+            lastName,
+            mail,
+            dni,
+            phoneNumber
+        } = personInfo;
 
-    // Abre el diálogo para ingresar el DNI
-    // const handleOpenDniDialog = () => {
-    //     setOpenDniDialog(true);
-    // };
+        if (!name || !lastName || !mail || !dni || !phoneNumber) {
+            return false;
+        }
+        return true;
+    };
 
-    // Cierra el diálogo para ingresar el DNI
+    useEffect(() => {
+        setIsFormWellComplete(areFieldsComplete());
+    }, [personInfo]);
+
+
     const handleCloseDniDialog = () => {
         setOpenDniDialog(false);
         setDni('');
@@ -99,22 +125,24 @@ function AdminCreatePerson(){
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setLoading(true);
 
         const token = localStorage.getItem('token'); // Obtén el token almacenado
 
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detiene la ejecución si no hay token
+            setLoading(false)
+            return;
         }
 
         try {
-            // Decodifica el token y verifica si tiene el rol ROLE_ADMIN
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
 
             if (!isAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detiene la ejecución si no es ROLE_ADMIN
+                setLoading(false)
+                return;
             }
 
             if (validateFields()) {
@@ -122,7 +150,6 @@ function AdminCreatePerson(){
                 const consortiumPersonUrl = `${import.meta.env.VITE_API_BASE_URL}/consortiums/consortiumPerson`;
 
                 try {
-                    // Crear la persona y obtener el ID generado
                     const personResponse = await axios.post(personUrl, personInfo, {
                         headers: {
                             Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
@@ -130,7 +157,6 @@ function AdminCreatePerson(){
                     });
                     const idPerson = personResponse.data.personId;
 
-                    // Crear la URL para el segundo POST y enviar los parámetros
                     const consortiumPersonUrlWithParams = `${consortiumPersonUrl}?idConsortium=${consortiumIdState}&idPerson=${idPerson}`;
                     //TODO guardar la resp de esto para cargar en el modal
                     await axios.post(consortiumPersonUrlWithParams, {}, {
@@ -170,6 +196,8 @@ function AdminCreatePerson(){
         } catch (error) {
             console.error("Error en la validación del token o la solicitud:", error);
             alert("Ocurrió un error al intentar realizar la acción. Por favor, inténtalo nuevamente.");
+        }finally {
+            setLoading(false);
         }
     };
 
@@ -220,7 +248,6 @@ function AdminCreatePerson(){
                         },
                     });
 
-                    // Comprobar si el idPerson existe en la lista de personas del consorcio
                     const isAssociated = consortiumCheckResponse.data.some(person => person.personId === idPerson);
 
                     if (isAssociated) {
@@ -263,31 +290,6 @@ function AdminCreatePerson(){
 
     return (
         <>
-            {/*<Button*/}
-            {/*    variant="contained"*/}
-            {/*    startIcon={<AddIcon />}*/}
-            {/*    onClick={handleOpenDniDialog}*/}
-            {/*    sx={{*/}
-            {/*        backgroundColor: '#B2675E', // Color personalizado*/}
-            {/*        color: '#FFFFFF',*/}
-            {/*        fontWeight: 'bold',*/}
-            {/*        textTransform: 'none',*/}
-            {/*        borderRadius: '30px', // Bordes redondeados*/}
-            {/*        padding: '10px 20px',*/}
-            {/*        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', // Sombra para profundidad*/}
-            {/*        transition: 'all 0.3s ease', // Transición suave*/}
-            {/*        '&:hover': {*/}
-            {/*            backgroundColor: '#A15D50', // Cambio de color al pasar el cursor*/}
-            {/*            boxShadow: '0 6px 10px rgba(0, 0, 0, 0.2)', // Sombra más prominente*/}
-            {/*        },*/}
-            {/*        '&:active': {*/}
-            {/*            backgroundColor: '#8A4A3D', // Cambio de color cuando se presiona*/}
-            {/*        },*/}
-            {/*    }}>*/}
-            {/*    Nuevo*/}
-            {/*</Button>*/}
-
-            {/* Diálogo para ingresar el DNI */}
             <Dialog open={openDniDialog} onClose={handleCloseDniDialog}>
                 <DialogTitle
                     id="alert-dialog-title"
@@ -309,6 +311,7 @@ function AdminCreatePerson(){
                         type="text"
                         value={dni}
                         onChange={handleDniChange}
+                        inputProps={{ maxLength: 8 }}
                         error={errors.dni}
                         helperText={errors.dni ? 'Solo números permitidos' : ''}
                         fullWidth
@@ -376,6 +379,7 @@ function AdminCreatePerson(){
                                         name="name"
                                         value={personInfo.name || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 50 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -407,6 +411,7 @@ function AdminCreatePerson(){
                                         name="lastName"
                                         value={personInfo.lastName || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 50 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -438,6 +443,7 @@ function AdminCreatePerson(){
                                         name="mail"
                                         value={personInfo.mail || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 50 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -469,6 +475,7 @@ function AdminCreatePerson(){
                                         name="dni"
                                         value={personInfo.dni || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 8 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -500,6 +507,7 @@ function AdminCreatePerson(){
                                         name="phoneNumber"
                                         value={personInfo.phoneNumber || ""}
                                         onChange={handleChange}
+                                        inputProps={{ maxLength: 10 }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -534,10 +542,14 @@ function AdminCreatePerson(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>
+                    }}
+                            disabled={loading}
+                    >
                         Cancelar
                     </Button>
-                    <Button type="submit" onClick={handleSubmit} disabled={!validateFields} variant="contained"   sx={{
+                    <Button type="submit" onClick={handleSubmit} disabled={!validateFields || !isFormWellComplete || loading }
+                            variant="contained"
+                            sx={{
                         backgroundColor: '#028484',
                         '&:hover': {
                             backgroundColor: '#026F6B',
@@ -548,8 +560,23 @@ function AdminCreatePerson(){
                     }} >
                         Guardar
                     </Button>
-
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={personCreated ? "success" : "error"} sx={{width: '100%'}}>

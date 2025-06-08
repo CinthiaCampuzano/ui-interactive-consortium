@@ -4,13 +4,13 @@ import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add.js";
 import {
     Alert,
-    Autocomplete, Backdrop,
+    Autocomplete, Avatar, Backdrop,
     Box, CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
-    Grid,
+    Grid, InputAdornment,
     Snackbar,
     TextField
 } from "@mui/material";
@@ -22,6 +22,8 @@ import IconButton from "@mui/material/IconButton";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import AdminCreatePerson from "../AdminUserAdministrator/AdminCreatePerson.jsx";
+import Typography from "@mui/material/Typography";
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined'
 
 
 function AdminCreateDepartment(){
@@ -292,9 +294,8 @@ function AdminCreateDepartment(){
                     <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#EDEDED', marginTop: '10px' }}>
                         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12} sm={4}>
                                     <TextField
-                                        id="outlined-basic"
                                         label="Identificación"
                                         variant="outlined"
                                         size="small"
@@ -302,52 +303,83 @@ function AdminCreateDepartment(){
                                         name="code"
                                         value={departmentInfo.code || ""}
                                         onChange={handleChange}
+                                        InputLabelProps={{ shrink: true }}
                                         sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    borderColor: '#002776',
-                                                },
-                                                '&:hover fieldset': {
-                                                    borderColor: '#002776',
-                                                },
-                                                '&.Mui-focused fieldset': {
-                                                    borderColor: '#002776',
-                                                },
+                                            "& .MuiOutlinedInput-root": {
+                                                "& fieldset": { borderColor: '#028484' },
+                                                "&:hover fieldset": { borderColor: '#028484' },
+                                                "&.Mui-focused fieldset": { borderColor: '#028484' },
                                             },
-                                            '& label.Mui-focused': {
-                                                color: '#002776',
-                                            },
+                                            "& label.Mui-focused": { color: '#028484' },
                                         }}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12} sm={8}>
                                     <Grid container spacing={1} alignItems="center">
                                         <Grid item xs>
                                             <Autocomplete
                                                 freeSolo
                                                 options={allPersons}
-                                                getOptionLabel={(option) => option.fullName || ""}
+                                                getOptionLabel={(option) => (typeof option === 'string' ? option : option.fullName || "")}
                                                 value={selectedPerson}
                                                 onChange={handlePersonChange}
                                                 renderInput={(params) => (
                                                     <TextField
                                                         {...params}
-                                                        label="Seleccione o escriba un propietario"
+                                                        label="Propietario"
                                                         variant="outlined"
                                                         size="small"
                                                         sx={{
                                                             "& .MuiOutlinedInput-root": {
-                                                                "& fieldset": { borderColor: "#002776" },
-                                                                "&:hover fieldset": { borderColor: "#002776" },
-                                                                "&.Mui-focused fieldset": { borderColor: "#002776" },
+                                                                "& fieldset": { borderColor: '#028484' },
+                                                                "&:hover fieldset": { borderColor: '#028484' },
+                                                                "&.Mui-focused fieldset": { borderColor: '#028484' },
                                                             },
-                                                            "& label.Mui-focused": { color: "#002776" },
+                                                            "& label.Mui-focused": { color: '#028484' },
+                                                        }}
+                                                        InputProps={{
+                                                            ...params.InputProps,
+                                                            startAdornment: (
+                                                                <InputAdornment position="start">
+                                                                    <PersonOutlineOutlinedIcon sx={{ color: '#028484' }} />
+                                                                </InputAdornment>
+                                                            ),
                                                         }}
                                                         fullWidth
                                                     />
                                                 )}
+                                                renderOption={(props, option) => (
+                                                    <Box
+                                                        component="li"
+                                                        sx={{
+                                                            padding: '10px 16px', // Espaciado interno más generoso para cada opción
+                                                            cursor: 'pointer',
+                                                            '&:hover': {
+                                                                backgroundColor: '#00277614', // Un hover sutil con el color primario
+                                                            },
+                                                        }}
+                                                        {...props}
+                                                        key={option.id || option.fullName}
+                                                    >
+                                                        <Typography variant="body1">
+                                                            {option.fullName}
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                                componentsProps={{
+                                                    paper: {
+                                                        sx: {
+                                                            borderRadius: '12px', // Bordes más pronunciados para el panel
+                                                            marginTop: '8px', // Espacio entre el input y el panel
+                                                            boxShadow: '0px 6px 24px rgba(0, 39, 118, 0.1)', // Sombra con color base, más suave
+                                                            border: '1px solid #00277630', // Borde sutil
+                                                            maxHeight: '250px', // Altura máxima antes de hacer scroll
+                                                        },
+                                                    },
+                                                }}
+                                                // Opcional: Personalizar el mensaje cuando no hay opciones
+                                                noOptionsText="No se encontraron propietarios"
                                             />
-
                                         </Grid>
                                         <Grid item>
                                             <IconButton
@@ -364,7 +396,7 @@ function AdminCreateDepartment(){
                                     </Grid>
                                 </Grid>
 
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12} sm={8}>
                                     <Grid container spacing={1} alignItems="center">
                                         <Grid item xs>
                                             <Autocomplete
@@ -376,16 +408,24 @@ function AdminCreateDepartment(){
                                                 renderInput={(params) => (
                                                     <TextField
                                                         {...params}
-                                                        label="Seleccione o escriba un residente"
+                                                        label="Residente"
                                                         variant="outlined"
                                                         size="small"
                                                         sx={{
                                                             "& .MuiOutlinedInput-root": {
-                                                                "& fieldset": { borderColor: "#002776" },
-                                                                "&:hover fieldset": { borderColor: "#002776" },
-                                                                "&.Mui-focused fieldset": { borderColor: "#002776" },
+                                                                "& fieldset": { borderColor: '#028484' },
+                                                                "&:hover fieldset": { borderColor: '#028484' },
+                                                                "&.Mui-focused fieldset": { borderColor: '#028484' },
                                                             },
-                                                            "& label.Mui-focused": { color: "#002776" },
+                                                            "& label.Mui-focused": { color: '#028484' },
+                                                        }}
+                                                        InputProps={{
+                                                            ...params.InputProps,
+                                                            startAdornment: (
+                                                                <InputAdornment position="start">
+                                                                    <PersonOutlineOutlinedIcon sx={{ color: '#028484' }} />
+                                                                </InputAdornment>
+                                                            ),
                                                         }}
                                                         fullWidth
                                                     />

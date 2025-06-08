@@ -1,12 +1,12 @@
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {
-    Alert, Card, CardActions, CardContent, CardMedia,
+    Alert, Backdrop, Card, CardActions, CardContent, CardMedia, Chip, CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
     DialogContentText,
-    DialogTitle, Grid, Snackbar,
+    DialogTitle, FormControlLabel, Grid, Snackbar, Switch,
     TablePagination,
     TextField
 } from "@mui/material";
@@ -32,7 +32,9 @@ import {Create} from "@mui/icons-material";
 
 const columns = [
     { id: 'name', label: 'Espacio Común', minWidth: 100 },
-    { id: 'maxBookings', label: 'Reservas Máximas', minWidth: 100 }
+    { id: 'maxBookings', label: 'Reservas Máximas', minWidth: 100 },
+    { id: 'costOfUse', label: 'Costo', minWidth: 100 }
+
 ]
 
 function AdminAmenitiesManagement(){
@@ -51,8 +53,10 @@ function AdminAmenitiesManagement(){
     const [text, setText] = useState('')
     const [amenityUpdate, setAmenityUpdate] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
-    const [amenitytInfo, setAmenitytInfo] = useState({})
-    const [uploadedImages, setUploadedImages] = useState({}); // Estado para manejar las imágenes subidas
+    const [amenityInfo, setAmenityInfo] = useState({})
+    const [uploadedImages, setUploadedImages] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [isFormWellComplete, setIsFormWellComplete] = useState(false);
 
 
     const handleClickOpenEdit = (idAmenityToEdit, amenityNameEdit, amenityMaxBookingEdit, amenityCostOfUseEdit) => {
@@ -66,7 +70,7 @@ function AdminAmenitiesManagement(){
     const handleCloseEdit = () => {
         setOpenEdit(false)
         setIdAmenityUpdate(null)
-        setAmenitytInfo({})
+        setAmenityInfo({})
     }
 
     const handleClickOpen = (idAmenityToDelete) => {
@@ -88,10 +92,26 @@ function AdminAmenitiesManagement(){
         }
         setOpenAlert(false);
     };
+    const areFieldsComplete = () => {
+        const {
+            name,
+            maxBookings,
+            costOfUse
+        } = amenityInfo;
+
+        if (!name || !maxBookings || !costOfUse) {
+            return false;
+        }
+        return true;
+    };
+
+    useEffect(() => {
+        setIsFormWellComplete(areFieldsComplete());
+    }, [amenityInfo]);
 
     useEffect( () => {
         if (openEdit){
-            setAmenitytInfo({
+            setAmenityInfo({
                 amenityId: idAmenityUpdate,
                 name: editName || "",
                 maxBookings: editMaxBooking || "",
@@ -147,34 +167,35 @@ function AdminAmenitiesManagement(){
     const handleChange = (event) => {
         const name = event.target.name
         const value = event.target.value
-        setAmenitytInfo(values => ({...values, [name]: value}))
+        setAmenityInfo(values => ({...values, [name]: value}))
     }
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setLoading(true);
 
-        // Obtén el token almacenado
+
         const token = localStorage.getItem('token');
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detener la ejecución si no hay token
+            setLoading(false)
+            return;
         }
 
-        // Decodifica el token para verificar el rol
         const decodedToken = jwtDecode(token);
         const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
         if (!isAdmin) {
             alert("No tienes permisos para realizar esta acción.");
-            return; // Detener la ejecución si no es ROLE_ADMIN
+            setLoading(false)
+            return;
         }
 
-        // Si la validación es exitosa, proceder con la solicitud
         const url = `${import.meta.env.VITE_API_BASE_URL}/Amenities`;
 
         try {
-            await axios.put(url, amenitytInfo, {
+            await axios.put(url, amenityInfo, {
                 headers: {
-                    Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                    Authorization: `Bearer ${token}`,
                 },
             });
             setText('Se realizó la actualización correctamente');
@@ -196,6 +217,7 @@ function AdminAmenitiesManagement(){
         } finally {
             handleOpenAlert();
             getAllAmenitiesByIdConsortium();
+            setLoading(false)
         }
     };
 
@@ -213,37 +235,44 @@ function AdminAmenitiesManagement(){
 
     const deleteAmenity = async (idAmenityToDelete) =>{
         const token = localStorage.getItem('token');
+        setLoading(true);
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detenemos la ejecución si no hay token
+            setLoading(false);
+            return;
         }
 
-        // Decodifica el token para verificar el rol
         const decodedToken = jwtDecode(token);
         const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
+
         if (!isAdmin) {
             alert("No tienes permisos para realizar esta acción.");
-            return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN
+            setLoading(false);
+            return;
         }
 
-        // Continúa con la eliminación si el usuario tiene permisos
         try {
-            console.log(idAmenityToDelete);
             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/Amenities/${idAmenityToDelete}`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Incluimos el token en los encabezados
                 },
             });
 
-            // Actualiza el estado local tras eliminar
             setAllAmenities(allAmenities.filter((amenity) => amenity.amenityId !== idAmenityToDelete));
+            setAmenityUpdate(true);
+            setText("Espacio común eliminado correctamente.");
+            handleOpenAlert();
         } catch (error) {
+            setAmenityUpdate(false);
             console.error("Error al eliminar el amenity:", error);
             if (error.response?.status === 403) {
-                alert("No tienes permiso para realizar esta acción.");
+                setText("No tienes permiso para realizar esta acción.");
             } else {
-                alert("Ocurrió un error al intentar eliminar el amenity.");
+                setText("Ocurrió un error al intentar eliminar el amenity.");
             }
+        }finally {
+            setLoading(false);
+            handleClose();
         }
     }
 
@@ -370,6 +399,22 @@ function AdminAmenitiesManagement(){
                                                         sx={{ color: '#B2675E' }}>
                                                 Máximas Reservas: {amenity.maxBookings}
                                             </Typography>
+                                            <Typography variant="body2"
+                                                        color="text.secondary"
+                                                        sx={{ color: '#002776' }}>
+                                                Costo: $ {amenity.costOfUse}
+                                            </Typography>
+                                            <Chip
+                                                label='Habilitado'
+                                                color='success'
+                                                size="small"
+                                                sx={{
+                                                    mt: 1,
+                                                    bgcolor:'#c8f7c5',
+                                                    color:'#028484',
+                                                    fontWeight: 'bold',
+                                                }}
+                                            />
                                         </CardContent>
                                         <CardActions sx={{ justifyContent: 'center' }}>
                                             <IconButton component="label">
@@ -440,7 +485,11 @@ function AdminAmenitiesManagement(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>Rechazar</Button>
+                    }}
+                            disabled={loading}
+                    >
+                        Cancelar
+                    </Button>
                     <Button variant="contained" sx={{
                         backgroundColor: '#028484',
                         '&:hover': {
@@ -451,12 +500,28 @@ function AdminAmenitiesManagement(){
                         transition: 'background-color 0.3s ease',
                     }} onClick={() => {
                         deleteAmenity(idAmenityCreated)
-                        handleClose()
-                    }
-                    }>
+                    }}
+                            disabled={loading}
+                    >
                         Aceptar
                     </Button>
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Dialog
                 open={openEdit}
@@ -486,7 +551,7 @@ function AdminAmenitiesManagement(){
                                         size="small"
                                         type="text"
                                         name="name"
-                                        value={amenitytInfo.name !== undefined ? amenitytInfo.name : editName || ''}
+                                        value={amenityInfo.name !== undefined ? amenityInfo.name : editName || ''}
                                         onChange={handleChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
@@ -515,7 +580,7 @@ function AdminAmenitiesManagement(){
                                         size="small"
                                         type="text"
                                         name="maxBookings"
-                                        value={amenitytInfo.maxBookings !== undefined ? amenitytInfo.maxBookings : editMaxBooking || ''}
+                                        value={amenityInfo.maxBookings !== undefined ? amenityInfo.maxBookings : editMaxBooking || ''}
                                         onChange={handleChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
@@ -544,7 +609,7 @@ function AdminAmenitiesManagement(){
                                         size="small"
                                         type="text"
                                         name="costOfUse"
-                                        value={amenitytInfo.costOfUse !== undefined ? amenitytInfo.costOfUse : editCostOfUse || ''}
+                                        value={amenityInfo.costOfUse !== undefined ? amenityInfo.costOfUse : editCostOfUse || ''}
                                         onChange={handleChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
@@ -565,6 +630,59 @@ function AdminAmenitiesManagement(){
                                         fullWidth
                                     />
                                 </Grid>
+                                <Grid item xs={12} sm={4} sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    minHeight: '40px',
+                                    paddingLeft: 1,
+                                }}>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            backgroundColor: '#F2F2F2',
+                                            borderRadius: '12px',
+                                            paddingX: 2, // horizontal padding
+                                            height: '40px', // igual o similar a la altura del botón
+                                        }}
+                                    >
+                                        <FormControlLabel
+                                            control={
+                                                <Switch
+                                                    size="small"
+                                                    name= "active"
+                                                    checked={true}
+                                                    //onChange={handleChange}
+                                                    sx={{
+                                                        '& .MuiSwitch-switchBase.Mui-checked': {
+                                                            color: '#028484',
+                                                            '& + .MuiSwitch-track': {
+                                                                backgroundColor: '#028484',
+                                                                opacity: 0.5,
+                                                            },
+                                                        },
+                                                    }}
+                                                />
+                                            }
+                                            label={
+                                                <Typography
+                                                    variant="body2" // O "subtitle2" si quieres un poco más de énfasis
+                                                    sx={{
+                                                        fontWeight: 'bold',
+                                                        color: '#002776',
+                                                        marginRight: 1,
+                                                    }}
+                                                >
+                                                    HABILITAR
+                                                </Typography>
+                                            }
+                                            labelPlacement="start" // El texto "HABILITAR" estará a la izquierda del switch
+                                            sx={{
+                                                margin: 0,
+                                            }}
+                                        />
+                                    </Box>
+                                </Grid>
                             </Grid>
                         </Box>
                     </Paper>
@@ -578,10 +696,13 @@ function AdminAmenitiesManagement(){
                         borderRadius: '25px',
                         padding: '8px 20px',
                         transition: 'background-color 0.3s ease',
-                    }}>
+                    }}
+                            disabled={loading}
+                    >
                         Cancelar
                     </Button>
-                    <Button type="submit" color="primary" onClick={handleSubmit} variant="contained"  sx={{
+                    <Button type="submit" color="primary" onClick={handleSubmit} variant="contained"  disabled={!isFormWellComplete || loading }
+                            sx={{
                         backgroundColor: '#028484',
                         '&:hover': {
                             backgroundColor: '#026F6B',
@@ -594,6 +715,22 @@ function AdminAmenitiesManagement(){
                     </Button>
 
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={amenityUpdate ? "success" : "error"} sx={{width: '100%'}}>

@@ -4,7 +4,7 @@ import React, {useContext, useEffect, useState} from "react";
 import {AdminManageContext} from "../AdminManageContext.jsx";
 import axios from "axios";
 import {
-    Alert,
+    Alert, Backdrop, CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -61,6 +61,8 @@ function AdminUserManagement(){
     const [text, setText] = useState('')
     const [personUpdate, setPersonUpdate] = useState(true);
     const [openAlert, setOpenAlert] = useState(false)
+    const [isFormWellComplete, setIsFormWellComplete] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({
         name: false,
         lastName: false,
@@ -90,6 +92,24 @@ function AdminUserManagement(){
         )
     }
 
+    const areFieldsComplete = () => {
+        const {
+            name,
+            lastName,
+            mail,
+            dni,
+            phoneNumber
+        } = personInfo;
+
+        if (!name || !lastName || !mail || !dni || !phoneNumber) {
+            return false;
+        }
+        return true;
+    };
+
+    useEffect(() => {
+        setIsFormWellComplete(areFieldsComplete());
+    }, [personInfo]);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -184,12 +204,13 @@ function AdminUserManagement(){
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-
+        setLoading(true);
         // Obtén el token almacenado
         const token = localStorage.getItem('token');
 
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
+            setLoading(false);
             return; // Detiene la ejecución si no hay token
         }
 
@@ -200,6 +221,7 @@ function AdminUserManagement(){
 
             if (!isAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
+                setLoading(false);
                 return; // Detiene la ejecución si no es ROLE_ADMIN
             }
 
@@ -236,6 +258,8 @@ function AdminUserManagement(){
         } catch (error) {
             console.error("Error al validar el token o realizar la solicitud:", error);
             alert("Ocurrió un error. Por favor, verifica tu conexión o intenta nuevamente.");
+        }finally {
+            setLoading(false);
         }
     }
 
@@ -300,41 +324,48 @@ function AdminUserManagement(){
         }
     };
 
-
     const deletePerson = async (idPersonToDelete) =>{
-        // Obtén el token almacenado
         const token = localStorage.getItem('token');
+        setLoading(true);
 
         if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detener la ejecución si no hay token
+            setText("No estás autorizado. Por favor, inicia sesión.");
+            handleOpenAlert();
+            setLoading(false);
+            return;
         }
 
         try {
-            // Decodifica el token para verificar el rol
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
 
             if (!isAdmin) {
-                alert("No tienes permisos para realizar esta acción.");
-                return; // Detener la ejecución si no es ROLE_ADMIN
+                setText("No tienes permisos para realizar esta acción.");
+                handleOpenAlert();
+                setLoading(false);
+                return;
             }
 
-            // Realizar la solicitud DELETE
             await axios.delete(
                 `${import.meta.env.VITE_API_BASE_URL}/consortiums/${consortiumIdState}/persons/${idPersonToDelete}`,
                 {
                     headers: {
-                        Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                        Authorization: `Bearer ${token}`
                     }
                 }
             );
-
-            // Actualizar la lista de personas después de eliminar
             setAllPersons(allPersons.filter(person => person.personId !== idPersonToDelete));
+            setPersonUpdate(true);
+            setText("Administrador eliminado correctamente.");
+            handleOpenAlert();
         } catch (error) {
+            setPersonUpdate(false);
             console.error("Error al eliminar la persona:", error);
-            alert("Hubo un problema al eliminar la persona. Por favor, intenta nuevamente.");
+            setText("Hubo un problema al eliminar la persona. Por favor, intenta nuevamente.");
+            handleOpenAlert();
+        }finally {
+            setLoading(false);
+            handleClose();
         }
     };
     const textFieldStyles = {
@@ -373,7 +404,7 @@ function AdminUserManagement(){
             <Box
                 sx={{
                     display: 'flex',
-                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
+                    minHeight: '100vh',
                 }}
             >
                 <AdminGallerySidebar/>
@@ -381,10 +412,10 @@ function AdminUserManagement(){
                 <Box
                     component="main"
                     sx={{
-                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
-                        padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
-                        marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
-                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
+                        flexGrow: 1,
+                        padding: { xs: '16px', sm: '24px' },
+                        marginLeft: { xs: 0, sm: '240px' },
+                        transition: 'margin-left 0.3s ease',
                     }}
                 >
                     <Box
@@ -679,6 +710,7 @@ function AdminUserManagement(){
                             padding: '8px 20px',
                             transition: 'background-color 0.3s ease',
                         }}
+                        disabled={loading}
                     >
                         Cancelar
                     </Button>
@@ -695,12 +727,28 @@ function AdminUserManagement(){
                         }}
                         onClick={() => {
                             deletePerson(idPersonCreated);
-                            handleClose();
                         }}
+                        disabled={loading}
                     >
                         Aceptar
                     </Button>
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
 
             <Dialog
@@ -828,6 +876,9 @@ function AdminUserManagement(){
                                         name="dni"
                                         value={personInfo.dni !== undefined ? personInfo.dni : editPersonDni || ''}
                                         onChange={handleChange}
+                                        InputProps={{
+                                            readOnly: true,
+                                        }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -897,6 +948,7 @@ function AdminUserManagement(){
                             padding: '8px 20px',
                             transition: 'background-color 0.3s ease',
                         }}
+                        disabled={loading}
                     >
                         Cancelar
                     </Button>
@@ -904,7 +956,7 @@ function AdminUserManagement(){
                         type="submit"
                         color="primary"
                         onClick={handleSubmit}
-                        disabled={!validateFields}
+                        disabled={!validateFields || !isFormWellComplete || loading }
                         variant="contained"
                         sx={{
                             backgroundColor: '#028484',
@@ -919,6 +971,22 @@ function AdminUserManagement(){
                         Guardar
                     </Button>
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={personUpdate ? "success" : "error"} sx={{width: '100%'}}>

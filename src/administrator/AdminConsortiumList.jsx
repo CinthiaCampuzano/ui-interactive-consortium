@@ -108,6 +108,8 @@ function AdminConsortiumList(){
             });
 
             const consortiums = res.data.content;
+            console.log(consortiums)
+
             setAllConsortiumByAdmin(consortiums.map(consortium => {
                 return {
                     consortiumId: consortium.consortiumId,
@@ -116,7 +118,9 @@ function AdminConsortiumList(){
                     city: consortium.city,
                     province: consortium.province
                 };
+
             }));
+
 
             // Create an array of promises for the image download requests
             const imagePromises = consortiums.map(async (consortium) => {
@@ -244,7 +248,7 @@ function AdminConsortiumList(){
                                                         sx={{ color: '#002776', display: 'flex', alignItems: 'center' }}
                                                     >
                                                         <LocationOn sx={{ fontSize: 20, color: '#002776', marginRight: '5px'}} />
-                                                        {`${consortium.address}, ${consortium.city.displayName}, ${consortium.province.displayName}`}
+                                                        {`${consortium.address}, ${consortium.city}, ${consortium.province}`}
                                                     </Typography>
                                                 </Box>
                                                 <IconButton component="label" onClick={(e) => e.stopPropagation()}>

@@ -4,14 +4,14 @@ import React, {useContext, useEffect, useState} from "react";
 import {AdminManageContext} from "../AdminManageContext.jsx";
 import axios from "axios";
 import {
-    Alert, Autocomplete, Backdrop, Card, CardContent, Chip, CircularProgress,
+    Alert, alpha, Autocomplete, Backdrop, Card, CardContent, Chip, CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
     DialogContentText,
-    DialogTitle, Grid, Snackbar,
-    TablePagination,
-    TextField
+    DialogTitle, FormControlLabel, Grid, Snackbar, Switch,
+    TablePagination, useTheme,
+    TextField, InputAdornment
 } from "@mui/material";
 import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
@@ -34,6 +34,7 @@ import {deepPurple, green, pink, yellow} from "@mui/material/colors";
 import ApartmentIcon from "@mui/icons-material/Apartment";
 import PersonAddIcon from "@mui/icons-material/PersonAdd.js";
 import AdminCreatePerson from "../AdminUserAdministrator/AdminCreatePerson.jsx";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined.js";
 
 const columns = [
     { id: 'code', label: 'Identificación', minWidth: 100 },
@@ -60,6 +61,7 @@ function AdminDepartmentManagement(){
     const [editCode, setEditCode] = useState('')
     const [editPropietaryId, setEditPropietaryId] = useState('')
     const [editResidentId, setEditResidentId] = useState('')
+    const [editActive, setEditActive] = useState(false)
     const [idPersonCreated, setIdPersonCreated] = useState(null)
     const [open, setOpen] = useState(false)
     const [text, setText] = useState('')
@@ -76,12 +78,13 @@ function AdminDepartmentManagement(){
         },
         resident:{
             personId: null
-        }
+        },
+        active : null
     })
     const [selectedPerson, setSelectedPerson] = useState(null);
     const [selectedResident, setSelectedResident] = useState(null);
     const [loading, setLoading] = useState(false);
-
+    const theme = useTheme()
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
@@ -91,15 +94,23 @@ function AdminDepartmentManagement(){
         setPage(0);
     };
 
-    const handleClickOpenEdit = (idDepartmentToEdit, departmentCodeEdit, departmentPropietaryIdEdit, departmentResidentIdEdit) => {
+    const handleClickOpenEdit = async (
+        idDepartmentToEdit,
+        departmentCodeEdit,
+        departmentPropietaryIdEdit,
+        departmentResidentIdEdit,
+        departmentActive
+    ) => {
+        await getAllPersons();
 
-        setIdDepartmentUpdate(idDepartmentToEdit)
-        setEditCode(departmentCodeEdit)
-        setEditPropietaryId(departmentPropietaryIdEdit)
-        setEditResidentId(departmentResidentIdEdit)
-        setOpenEdit(true)
-        getAllPersons()
-    }
+        setIdDepartmentUpdate(idDepartmentToEdit);
+        setEditCode(departmentCodeEdit);
+        setEditPropietaryId(departmentPropietaryIdEdit);
+        setEditResidentId(departmentResidentIdEdit);
+        setEditActive(departmentActive);
+
+        setOpenEdit(true);
+    };
 
     const handleCloseEdit = () => {
         setOpenEdit(false)
@@ -161,14 +172,13 @@ function AdminDepartmentManagement(){
                 propietary: allPersons.find(person => person.personId === editPropietaryId) || null,
                 
                 resident: allPersons.find(person => person.personId === editResidentId) || null,
-
+                active: editActive
             });
         }
 
-    }, [openEdit, allPersons, idDepartmentUpdate, editCode, editPropietaryId, editResidentId]);
+    }, [openEdit, allPersons, idDepartmentUpdate, editCode, editPropietaryId, editResidentId, editActive]);
 
 
-    // Efecto para cargar los datos del consorcio al montar el componente
     useEffect(() => {
         getAConsortiumByIdConsortium();
     }, [consortiumIdState]);
@@ -176,7 +186,7 @@ function AdminDepartmentManagement(){
 
     const handleChange = (event) => {
         const name = event.target.name; // Obtiene el nombre del campo
-        const value = event.target.value; // Obtiene el nuevo valor del campo
+        const value = name === 'active' ? event.target.checked : event.target.value;
 
         setDepartmentInfo((values) => {
             // Crea una copia del objeto actual
@@ -207,6 +217,9 @@ function AdminDepartmentManagement(){
                         ...updatedValues.resident,
                         personId: value // Actualiza el residentId dentro del objeto resident
                     };
+                    break;
+                case 'active':
+                    updatedValues.active = value;
                     break;
                 default:
                     break;
@@ -338,7 +351,8 @@ function AdminDepartmentManagement(){
                         personIdR:department.resident?.personId ? department.resident.personId : null,
                         fullNameR: department.resident?.personId
                             ? `${department.resident.name} ${department.resident.lastName}`
-                            : "LIBRE"  // Muestra "LIBRE" cuando no hay residente
+                            : "LIBRE",
+                        active: department.active
                     };
                 }));
             }
@@ -356,25 +370,23 @@ function AdminDepartmentManagement(){
         }
 
         try {
-            // Decodificar el token para obtener el rol
+
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
 
-            // Verificar si el usuario tiene el rol ROLE_ADMIN
+
             if (!isAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
                 return; // Detener ejecución si no es ROLE_ADMIN
             }
 
-            // Si el usuario tiene permisos, proceder con la eliminación
             console.log(idDepartmentToDelete);
             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/departments/${idDepartmentToDelete}`, {
                 headers: {
-                    Authorization: `Bearer ${token}` // Incluir el token en el encabezado
+                    Authorization: `Bearer ${token}`
                 }
             });
 
-            // Actualizar el estado con los departamentos restantes
             setAllDepartments(allDepartments.filter(department => department.departmentId !== idDepartmentToDelete));
         } catch (error) {
             console.error("Error al eliminar el departamento", error);
@@ -910,6 +922,14 @@ function AdminDepartmentManagement(){
                                             align="center"
                                             sx={{
                                                 ...tableHeadCellStyles,
+                                            }}
+                                        >
+                                            Estado
+                                        </TableCell>
+                                        <TableCell
+                                            align="center"
+                                            sx={{
+                                                ...tableHeadCellStyles,
                                                 borderTopRightRadius: '10px', // Redondeo solo en la celda "Acciones"
                                             }}
                                         >
@@ -936,15 +956,24 @@ function AdminDepartmentManagement(){
                                                                 key={column.id}
                                                                 align={column.align}
                                                                 sx={{ ...tableCellStyles,
-                                                                    fontWeight: isNotAssigned ? "bold" : "normal"}} // Las celdas no tienen borderRadius
-
-
-
+                                                                    fontWeight: isNotAssigned ? "bold" : "normal"}}
                                                             >
                                                                 {value}
                                                             </TableCell>
                                                         );
                                                     })}
+                                                    <TableCell align="center" sx={tableCellStyles}>
+                                                        <Chip
+                                                            label={department.active ? 'Habilitado' : 'Inhabilitado'}
+                                                            color={department.active ? 'success' : 'default'}
+                                                            size="small"
+                                                            sx={{
+                                                                fontWeight: 'bold',
+                                                                bgcolor: department.active ? '#c8f7c5' : '#f0f0f0',
+                                                                color: department.active ? '#028484' : '#999',
+                                                            }}
+                                                        />
+                                                    </TableCell>
                                                     <TableCell align="center" sx={tableCellStyles}>
                                                         <IconButton
                                                             aria-label="edit"
@@ -953,8 +982,9 @@ function AdminDepartmentManagement(){
                                                                 department.departmentId,
                                                                 department.code,
                                                                 department.personIdP,
-                                                                department.personIdR)
-                                                        } sx={{ color: '#002776' }}
+                                                                department.personIdR,
+                                                                department.active)}
+                                                            sx={{ color: '#002776' }}
                                                         >
                                                             <EditIcon fontSize="small" />
                                                         </IconButton>
@@ -1082,9 +1112,8 @@ function AdminDepartmentManagement(){
                     <Paper elevation={3} sx={{ padding: 4, backgroundColor: '#F2F2F2', marginTop: '10px' }}>
                         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12} sm={4}>
                                     <TextField
-                                        id="outlined-basic"
                                         label="Identificación"
                                         variant="outlined"
                                         size="small"
@@ -1092,6 +1121,7 @@ function AdminDepartmentManagement(){
                                         name="code"
                                         value={departmentInfo.code || ''}
                                         onChange={handleChange}
+                                        InputLabelProps={{ shrink: true }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -1111,30 +1141,38 @@ function AdminDepartmentManagement(){
                                         fullWidth
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12} sm={8}>
                                     <Grid container spacing={1} alignItems="center">
                                         <Grid item xs>
                                             <Autocomplete
                                                 freeSolo
-                                                options={[{ personId: null, fullName: "NO ASIGNADO" }, ...allPersons]} // Agrega opción null
+                                                options={[{ personId: null, fullName: "NO ASIGNADO" }, ...allPersons]}
                                                 getOptionLabel={(option) => option.fullName || ""}
                                                 value={allPersons.find((person) => person.personId === departmentInfo.propietary?.personId) || null}
                                                 onChange={(event, newValue) => {
-                                                    handlePersonChange(event, newValue?.personId ? newValue : null); // Si es null, actualiza propietario a null
+                                                    handlePersonChange(event, newValue?.personId ? newValue : null);
                                                 }}
                                                 renderInput={(params) => (
                                                     <TextField
                                                         {...params}
-                                                        label="Seleccione o escriba un propietario"
+                                                        label="Propietario"
                                                         variant="outlined"
                                                         size="small"
                                                         sx={{
                                                             "& .MuiOutlinedInput-root": {
-                                                                "& fieldset": { borderColor: "#002776" },
-                                                                "&:hover fieldset": { borderColor: "#002776" },
-                                                                "&.Mui-focused fieldset": { borderColor: "#002776" },
+                                                                "& fieldset": { borderColor: '#028484' },
+                                                                "&:hover fieldset": { borderColor: '#028484' },
+                                                                "&.Mui-focused fieldset": { borderColor: '#028484' },
                                                             },
-                                                            "& label.Mui-focused": { color: "#002776" },
+                                                            "& label.Mui-focused": { color: '#028484' },
+                                                        }}
+                                                        InputProps={{
+                                                            ...params.InputProps,
+                                                            startAdornment: (
+                                                                <InputAdornment position="start">
+                                                                    <PersonOutlineOutlinedIcon sx={{ color: '#028484' }} />
+                                                                </InputAdornment>
+                                                            ),
                                                         }}
                                                         fullWidth
                                                     />
@@ -1156,7 +1194,7 @@ function AdminDepartmentManagement(){
                                     </Grid>
                                 </Grid>
 
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12} sm={8}>
                                     <Grid container spacing={1} alignItems="center">
                                         <Grid item xs>
                                             <Autocomplete
@@ -1170,16 +1208,24 @@ function AdminDepartmentManagement(){
                                                 renderInput={(params) => (
                                                 <TextField
                                                     {...params}
-                                                    label="Seleccione o escriba un residente"
+                                                    label="Residente"
                                                     variant="outlined"
                                                     size="small"
                                                     sx={{
                                                         "& .MuiOutlinedInput-root": {
-                                                            "& fieldset": { borderColor: "#002776" },
-                                                            "&:hover fieldset": { borderColor: "#002776" },
-                                                            "&.Mui-focused fieldset": { borderColor: "#002776" },
+                                                            "& fieldset": { borderColor: '#028484' },
+                                                            "&:hover fieldset": { borderColor: '#028484' },
+                                                            "&.Mui-focused fieldset": { borderColor: '#028484' },
                                                         },
-                                                        "& label.Mui-focused": { color: "#002776" },
+                                                        "& label.Mui-focused": { color: '#028484' },
+                                                    }}
+                                                    InputProps={{
+                                                        ...params.InputProps,
+                                                        startAdornment: (
+                                                            <InputAdornment position="start">
+                                                                <PersonOutlineOutlinedIcon sx={{ color: '#028484' }} />
+                                                            </InputAdornment>
+                                                        ),
                                                     }}
                                                     fullWidth
                                                 />
@@ -1199,6 +1245,59 @@ function AdminDepartmentManagement(){
                                             <AdminCreatePerson/>
                                         </Grid>
                                     </Grid>
+                                </Grid>
+                                <Grid item xs={12} sm={4} sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    minHeight: '40px',
+                                    paddingLeft: 1,
+                                }}>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            backgroundColor: '#F2F2F2',
+                                            borderRadius: '12px',
+                                            paddingX: 2, // horizontal padding
+                                            height: '40px', // igual o similar a la altura del botón
+                                        }}
+                                    >
+                                        <FormControlLabel
+                                            control={
+                                                <Switch
+                                                    size="small"
+                                                    name= "active"
+                                                    checked={departmentInfo.active}
+                                                    onChange={handleChange}
+                                                    sx={{
+                                                        '& .MuiSwitch-switchBase.Mui-checked': {
+                                                            color: '#028484',
+                                                            '& + .MuiSwitch-track': {
+                                                                backgroundColor: '#028484',
+                                                                opacity: 0.5,
+                                                            },
+                                                        },
+                                                    }}
+                                                />
+                                            }
+                                            label={
+                                                <Typography
+                                                    variant="body2" // O "subtitle2" si quieres un poco más de énfasis
+                                                    sx={{
+                                                        fontWeight: 'bold',
+                                                        color: '#002776',
+                                                        marginRight: 1,
+                                                    }}
+                                                >
+                                                    HABILITAR
+                                                </Typography>
+                                            }
+                                            labelPlacement="start" // El texto "HABILITAR" estará a la izquierda del switch
+                                            sx={{
+                                                margin: 0,
+                                            }}
+                                        />
+                                    </Box>
                                 </Grid>
                             </Grid>
                         </Box>
