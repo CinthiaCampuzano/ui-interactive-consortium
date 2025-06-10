@@ -325,100 +325,139 @@ export function AdminManageContextProvider(props){
     };
 
     // Cambiado: getAllMaintenanceFeesByIdConsortium a getAllConsortiumFeePeriodsByIdConsortium
-    const getAllConsortiumFeePeriodsByIdConsortium = async (page = 0, size = 10) => { // Añadido parámetros de paginación
+    const getAllConsortiumFeePeriodsByIdConsortium = async (page = 0, size = 10) => {
         if (!consortiumIdState) {
-            return;
+            // Devolver un objeto consistente para evitar errores en el componente
+            return { content: [], totalElements: 0 };
         }
         const token = localStorage.getItem('token');
         if (!token) {
             alert("No estás autorizado.");
-            return;
+            // Devolver un objeto consistente
+            return { content: [], totalElements: 0 };
         }
         try {
             const decodedToken = jwtDecode(token);
             if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
                 alert("No tienes permisos.");
-                return;
+                // Devolver un objeto consistente
+                return { content: [], totalElements: 0 };
             }
-            // Endpoint actualizado
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/query`, {
                 headers: { Authorization: `Bearer ${token}` },
                 params: {
                     consortiumId: consortiumIdState,
-                    page, // Enviar paginación al backend
+                    page,
                     size
                 }
             });
 
-            const feePeriods = res.data.content; // Asumiendo que el backend devuelve Page<ConsortiumFeePeriodDto>
-            const totalElements = res.data.totalElements; // Para la paginación
+            const feePeriodsData = res.data.content || [];
+            const totalElements = res.data.totalElements || 0;
 
-            // Mapeo actualizado al DTO ConsortiumFeePeriodDto
-            setAllConsortiumFeePeriods(feePeriods.map(feePeriod => {
+            // Guardar el estado original y el mapeado para la UI
+            const mappedFeePeriods = feePeriodsData.map(feePeriod => {
                 return {
-                    consortiumFeePeriodId: feePeriod.consortiumFeePeriodId,
-                    periodDate: formatPeriodDate(feePeriod.periodDate), // Formato específico para el periodo
-                    generationDate: formatDate(feePeriod.generationDate, "dd/MM/yyyy"), // Solo fecha
-                    dueDate: formatDate(feePeriod.dueDate, "dd/MM/yyyy"), // Solo fecha
-                    feePeriodStatus: feePeriodStatusMapping[feePeriod.feePeriodStatus] || feePeriod.feePeriodStatus,
-                    totalAmount: feePeriod.totalAmount,
-                    notes: feePeriod.notes,
-                    pdfFilePath: feePeriod.pdfFilePath, // Se usará para la descarga
+                    ...feePeriod, // Mantener todos los campos originales
+                    rawFeePeriodStatus: feePeriod.feePeriodStatus, // Guardar el estado crudo
+                    displayPeriodDate: formatPeriodDate(feePeriod.periodDate),
+                    displayGenerationDate: formatDate(feePeriod.generationDate, "dd/MM/yyyy"),
+                    displayDueDate: formatDate(feePeriod.dueDate, "dd/MM/yyyy"),
+                    displayFeePeriodStatus: feePeriodStatusMapping[feePeriod.feePeriodStatus] || feePeriod.feePeriodStatus,
                 }
-            }));
-            return { content: allConsortiumFeePeriods, totalElements: totalElements }; // Devolver para paginación
+            });
+            setAllConsortiumFeePeriods(mappedFeePeriods);
+            // Devolver los datos mapeados para la paginación si el componente los usa directamente del resultado
+            // o simplemente el totalElements si el componente usa el estado del contexto.
+            // Para consistencia con el return original, devolvemos los datos mapeados y totalElements.
+            return { content: mappedFeePeriods, totalElements: totalElements };
         } catch (error) {
             console.error("Error al obtener los periodos de expensas:", error);
             alert("Hubo un problema al obtener los periodos de expensas.");
-            setAllConsortiumFeePeriods([]); // Limpiar en caso de error
+            setAllConsortiumFeePeriods([]);
             return { content: [], totalElements: 0 };
         }
     }
 
-    // Nueva función para subir ConsortiumFeePeriod
-    // Asume que el backend espera un FormData similar al anterior
-    // pero para un endpoint diferente.
-    // **NECESITARÁS EL DTO Y ENDPOINT EXACTO DEL BACKEND PARA ESTO**
-    const uploadConsortiumFeePeriod = async (file, totalAmount, periodDate) => { // periodDate podría ser necesario
-        if (!file || !consortiumIdState || !totalAmount || !periodDate) {
-            // alert('Por favor, completa todos los campos y selecciona un archivo.');
-            return { success: false, message: 'Por favor, completa todos los campos y selecciona un archivo.' };
-        }
+    // Nueva función para actualizar ConsortiumFeePeriod
+    const updateConsortiumFeePeriod = async (feePeriodId, dataToUpdate) => {
         const token = localStorage.getItem('token');
         if (!token) {
             return { success: false, message: 'No estás autorizado.' };
         }
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("consortiumId", consortiumIdState);
-        formData.append("totalAmount", totalAmount);
-        formData.append("periodDate", periodDate); // Ejemplo: '2023-10' o la fecha completa '2023-10-01'
-        // Ajustar según lo que espere el backend
-
         try {
             const decodedToken = jwtDecode(token);
             if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
                 return { success: false, message: 'No tienes permisos.' };
             }
-            // **ENDPOINT HIPOTÉTICO, AJUSTAR SEGÚN TU BACKEND**
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/upload`, // O el endpoint correcto
-                formData,
+
+            const payload = {
+                generationDate: dataToUpdate.generationDate,
+                dueDate: dataToUpdate.dueDate,
+                notes: dataToUpdate.emailText,
+                sendByEmail: dataToUpdate.sendByEmail,
+            };
+
+            await axios.put(
+                `${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/${feePeriodId}`,
+                payload,
                 {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: { Authorization: `Bearer ${token}` },
                 }
             );
-            await getAllConsortiumFeePeriodsByIdConsortium(); // Recargar lista
-            return { success: true, message: 'Periodo de expensa cargado correctamente.' };
+            // Opcional: llamar a getAllConsortiumFeePeriodsByIdConsortium() aquí para recargar,
+            // o dejar que el componente lo haga.
+            return { success: true, message: 'Periodo de expensa actualizado correctamente.' };
         } catch (error) {
-            console.error('Error al cargar el periodo de expensa:', error);
-            return { success: false, message: error.response?.data?.message || 'Error al cargar el periodo de expensa.' };
+            console.error('Error al actualizar el periodo de expensa:', error);
+            return { success: false, message: error.response?.data?.message || 'Error al actualizar el periodo de expensa.' };
         }
     };
+
+    // // Nueva función para subir ConsortiumFeePeriod
+    // // Asume que el backend espera un FormData similar al anterior
+    // // pero para un endpoint diferente.
+    // // **NECESITARÁS EL DTO Y ENDPOINT EXACTO DEL BACKEND PARA ESTO**
+    // const uploadConsortiumFeePeriod = async (file, totalAmount, periodDate) => { // periodDate podría ser necesario
+    //     if (!file || !consortiumIdState || !totalAmount || !periodDate) {
+    //         // alert('Por favor, completa todos los campos y selecciona un archivo.');
+    //         return { success: false, message: 'Por favor, completa todos los campos y selecciona un archivo.' };
+    //     }
+    //     const token = localStorage.getItem('token');
+    //     if (!token) {
+    //         return { success: false, message: 'No estás autorizado.' };
+    //     }
+    //
+    //     const formData = new FormData();
+    //     formData.append("file", file);
+    //     formData.append("consortiumId", consortiumIdState);
+    //     formData.append("totalAmount", totalAmount);
+    //     formData.append("periodDate", periodDate); // Ejemplo: '2023-10' o la fecha completa '2023-10-01'
+    //     // Ajustar según lo que espere el backend
+    //
+    //     try {
+    //         const decodedToken = jwtDecode(token);
+    //         if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
+    //             return { success: false, message: 'No tienes permisos.' };
+    //         }
+    //         // **ENDPOINT HIPOTÉTICO, AJUSTAR SEGÚN TU BACKEND**
+    //         const response = await axios.post(
+    //             `${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/upload`, // O el endpoint correcto
+    //             formData,
+    //             {
+    //                 headers: {
+    //                     'Content-Type': 'multipart/form-data',
+    //                     Authorization: `Bearer ${token}`,
+    //                 },
+    //             }
+    //         );
+    //         await getAllConsortiumFeePeriodsByIdConsortium(); // Recargar lista
+    //         return { success: true, message: 'Periodo de expensa cargado correctamente.' };
+    //     } catch (error) {
+    //         console.error('Error al cargar el periodo de expensa:', error);
+    //         return { success: false, message: error.response?.data?.message || 'Error al cargar el periodo de expensa.' };
+    //     }
+    // };
 
     // Nueva función para eliminar ConsortiumFeePeriod
     const deleteConsortiumFeePeriod = async (consortiumFeePeriodId) => {
@@ -656,7 +695,8 @@ export function AdminManageContextProvider(props){
             getAllPostsByIdConsortium,
             // Cambiado
             getAllConsortiumFeePeriodsByIdConsortium,
-            uploadConsortiumFeePeriod,
+            // uploadConsortiumFeePeriod,
+            updateConsortiumFeePeriod,
             deleteConsortiumFeePeriod,
             downloadConsortiumFeePeriod,
             getAllMaintenanceFeesPaymentByIdConsortium, // Revisar si esta lógica de pagos también cambia
