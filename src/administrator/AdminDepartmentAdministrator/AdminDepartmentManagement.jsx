@@ -161,7 +161,7 @@ function AdminDepartmentManagement(){
     }, [departmentCode, proprietor, resident, consortiumIdState])
 
     useEffect(() => {
-        if (openEdit && allPersons.length > 0){
+        if (openEdit){
             setDepartmentInfo({
                 departmentId: idDepartmentUpdate,
                 code: editCode || "",

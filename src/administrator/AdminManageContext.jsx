@@ -18,7 +18,8 @@ export function AdminManageContextProvider(props){
     // Cambiado: de allMaintenanceFees a allConsortiumFeePeriods
     const [allConsortiumFeePeriods , setAllConsortiumFeePeriods] = useState([])
     const [period , setPeriod] = useState(null) // Se mantiene por ahora, para la navegación a pagos
-    const [allMaintenanceFeesPayment , setAllMaintenanceFeesPayment] = useState([]) // Esto podría necesitar revisión si la lógica de pagos también cambia
+    //const [allMaintenanceFeesPayment , setAllMaintenanceFeesPayment] = useState([]) // Esto podría necesitar revisión si la lógica de pagos también cambia
+    const [departmentFeeQueryData, setDepartmentFeeQueryData] = useState({ content: [], totalElements: 0 });
     const [allClaims , setAllClaims] = useState([])
     const [departmentStats, setDepartmentStats] = useState({
         occupied: 0,
@@ -37,9 +38,10 @@ export function AdminManageContextProvider(props){
         EXPIRED: "Expirado",
         CANCELED: "Cancelado",
         UNDER_REVIEW: "En Revisión",
-        FINISHED : "Resuelto"
-        // Añade aquí los mapeos para EConsortiumFeePeriodStatus si son diferentes
-        // Ejemplo: EConsortiumFeePeriodStatus.GENERATED -> "Generado"
+        FINISHED : "Resuelto",
+        // EPaymentStatus del DTO
+        PARTIALLY_PAID: "Parcialmente Pagado", // Añadido desde tu DTO
+        OVERDUE: "Vencido" // Añadido desde tu DTO
     };
 
     // Mapeo para EConsortiumFeePeriodStatus (basado en un ENUM típico)
@@ -531,6 +533,51 @@ export function AdminManageContextProvider(props){
         }
     };
 
+    const fetchDepartmentFeeQueryData = async (currentPage = 0, pageSize = 10) => {
+        let periodArray = period.split('/');
+        const formattedPeriod = formatDate(periodArray[1] + '-' + periodArray[0], 'yyyy-MM-dd');
+        if (!consortiumIdState || !period) {
+            setDepartmentFeeQueryData({ content: [], totalElements: 0 }); // Limpiar si no hay datos
+            return;
+        }
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("No estás autorizado.");
+            // Podrías usar un sistema de notificaciones más amigable que alert
+            setDepartmentFeeQueryData({ content: [], totalElements: 0 });
+            return;
+        }
+        try {
+            const decodedToken = jwtDecode(token);
+            if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
+                alert("No tienes permisos.");
+                setDepartmentFeeQueryData({ content: [], totalElements: 0 });
+                return;
+            }
+
+            const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/department-fees/query`, {
+                headers: { Authorization: `Bearer ${token}` },
+                params: {
+                    period: formattedPeriod , // Enviar el período formateado
+                    page: currentPage,
+                    size: pageSize,
+                    // Si tu backend requiere consortiumId para este endpoint, agrégalo:
+                    // consortiumId: consortiumIdState
+                }
+            });
+            // No es necesario mapear aquí si los nombres de campos coinciden y el formato es adecuado
+            // Si necesitas formatear fechas o estados, puedes hacerlo aquí o en el componente que consume los datos
+            setDepartmentFeeQueryData({
+                content: response.data.content,
+                totalElements: response.data.totalElements
+            });
+        } catch (error) {
+            console.error("Error al obtener los datos de expensas por departamento:", error);
+            alert("Hubo un problema al obtener los datos de expensas por departamento.");
+            setDepartmentFeeQueryData({ content: [], totalElements: 0 }); // Limpiar en caso de error
+        }
+    };
+
 
     useEffect(() => {
         const storedConsortiumId = localStorage.getItem('consortiumId');
@@ -570,47 +617,47 @@ export function AdminManageContextProvider(props){
     // }, []); // Dependencias correctas
 
 
-    const getAllMaintenanceFeesPaymentByIdConsortium = async () => {
-        try {
-            if (!consortiumIdState || !period) {
-                return;
-            }
-            const token = localStorage.getItem('token');
-            if (!token) {
-                alert("No tienes acceso. Por favor, inicia sesión.");
-                return;
-            }
-            const decodedToken = jwtDecode(token);
-            const roles = decodedToken.role || [];
-            if (!roles.includes('ROLE_ADMIN')) {
-                alert("No tienes permisos para acceder a esta información.");
-                return;
-            }
-            const res = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment/consortium/${consortiumIdState}`,
-                {
-                    params: { period },
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            const maintenanceFeesPayment = res.data.content;
-            setAllMaintenanceFeesPayment(
-                maintenanceFeesPayment.map((maintenanceFeePayment) => ({
-                    maintenanceFeePaymentId: maintenanceFeePayment.maintenanceFeePaymentId,
-                    maintenanceFeeId: maintenanceFeePayment.maintenanceFee.maintenanceFeeId, // Esto podría necesitar cambiar si la estructura de expensas cambió
-                    period: maintenanceFeePayment.maintenanceFee.period, // Igual que arriba
-                    code: maintenanceFeePayment.department.code,
-                    status: statusMapping[maintenanceFeePayment.status] || maintenanceFeePayment.status,
-                    paymentDate: formatDate(maintenanceFeePayment.paymentDate)
-                }))
-            );
-        } catch (error) {
-            console.error("Error al obtener los pagos de expensas: ", error);
-            alert("Hubo un error al obtener los datos de pagos.");
-        }
-    };
+    // const getAllMaintenanceFeesPaymentByIdConsortium = async () => {
+    //     try {
+    //         if (!consortiumIdState || !period) {
+    //             return;
+    //         }
+    //         const token = localStorage.getItem('token');
+    //         if (!token) {
+    //             alert("No tienes acceso. Por favor, inicia sesión.");
+    //             return;
+    //         }
+    //         const decodedToken = jwtDecode(token);
+    //         const roles = decodedToken.role || [];
+    //         if (!roles.includes('ROLE_ADMIN')) {
+    //             alert("No tienes permisos para acceder a esta información.");
+    //             return;
+    //         }
+    //         const res = await axios.get(
+    //             `${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment/consortium/${consortiumIdState}`,
+    //             {
+    //                 params: { period },
+    //                 headers: {
+    //                     Authorization: `Bearer ${token}`,
+    //                 },
+    //             }
+    //         );
+    //         const maintenanceFeesPayment = res.data.content;
+    //         setAllMaintenanceFeesPayment(
+    //             maintenanceFeesPayment.map((maintenanceFeePayment) => ({
+    //                 maintenanceFeePaymentId: maintenanceFeePayment.maintenanceFeePaymentId,
+    //                 maintenanceFeeId: maintenanceFeePayment.maintenanceFee.maintenanceFeeId, // Esto podría necesitar cambiar si la estructura de expensas cambió
+    //                 period: maintenanceFeePayment.maintenanceFee.period, // Igual que arriba
+    //                 code: maintenanceFeePayment.department.code,
+    //                 status: statusMapping[maintenanceFeePayment.status] || maintenanceFeePayment.status,
+    //                 paymentDate: formatDate(maintenanceFeePayment.paymentDate)
+    //             }))
+    //         );
+    //     } catch (error) {
+    //         console.error("Error al obtener los pagos de expensas: ", error);
+    //         alert("Hubo un error al obtener los datos de pagos.");
+    //     }
+    // };
 
     const getAllClaimByConsortium = async () => {
         try {
@@ -678,7 +725,8 @@ export function AdminManageContextProvider(props){
             setAllConsortiumFeePeriods,
             period ,
             setPeriod,
-            allMaintenanceFeesPayment , setAllMaintenanceFeesPayment,
+            departmentFeeQueryData, // Nuevo estado
+            setDepartmentFeeQueryData,
             allClaims , setAllClaims,
             statusMapping, // General status mapping
             feePeriodStatusMapping, // Specific for fee periods
@@ -699,7 +747,7 @@ export function AdminManageContextProvider(props){
             updateConsortiumFeePeriod,
             deleteConsortiumFeePeriod,
             downloadConsortiumFeePeriod,
-            getAllMaintenanceFeesPaymentByIdConsortium, // Revisar si esta lógica de pagos también cambia
+            fetchDepartmentFeeQueryData,
             getAllClaimByConsortium
         }}>
             {props.children}

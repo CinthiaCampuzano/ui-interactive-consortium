@@ -5,14 +5,14 @@ import {
     Dialog,
     DialogActions,
     DialogContent,
-    DialogContentText,
+    // DialogContentText, // No se usa directamente
     DialogTitle, FormControl, Grid, InputLabel, MenuItem, Select, Snackbar,
     TablePagination,
     TextField
 } from "@mui/material";
 import React, {useContext, useEffect, useState} from "react";
 import Button from "@mui/material/Button";
-import Paper from "@mui/material/Paper";
+// import Paper from "@mui/material/Paper"; // No se usa directamente
 import axios from "axios";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
@@ -22,47 +22,57 @@ import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import IconButton from "@mui/material/IconButton";
 import {AdminManageContext} from "../AdminManageContext.jsx";
-import {useNavigate} from "react-router-dom";
+// import {useNavigate} from "react-router-dom"; // No se usa directamente
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from "@mui/icons-material/Edit";
-import {jwtDecode} from "jwt-decode";
+// import {jwtDecode} from "jwt-decode"; // No se usa directamente
 import { useSnackbar } from 'notistack';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import { Pending, CheckCircle, AccessTime, Assessment, Assignment, AttachMoney, Person} from "@mui/icons-material";
+// import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // No se usa
+// import { Pending, CheckCircle, AccessTime, Assessment, Assignment, AttachMoney, Person} from "@mui/icons-material"; // No se usan directamente
 
 
 const columns = [
-    { id: 'period', label: 'Periodo', minWidth: 100 },
-    { id: 'code', label: 'Departamento', minWidth: 100 },
-    { id: 'status', label: 'Estado de Pago', minWidth: 100 },
-    { id: 'paymentDate', label: 'Fecha de Pago', minWidth: 100 }
-]
+    { id: 'departmentCode', label: 'Departamento', minWidth: 100, align: 'center' },
+    { id: 'issueDate', label: 'Fecha Emisión', minWidth: 120, align: 'center' },
+    { id: 'dueDate', label: 'Fecha Vencimiento', minWidth: 120, align: 'center' },
+    { id: 'totalAmount', label: 'Monto Expensa', minWidth: 130, align: 'center' },
+    { id: 'dueAmount', label: 'Monto Adeudado', minWidth: 130, align: 'center' },
+    { id: 'paidAmount', label: 'Monto Pagado', minWidth: 120, align: 'center' },
+    { id: 'paymentStatus', label: 'Estado de Pago', minWidth: 120, align: 'center' },
+    { id: 'paymentDate', label: 'Fecha de Pago', minWidth: 120, align: 'center' } // Será derivado
+];
 
 function AdminMaintenanceFeesPayments(){
-    const {consortiumIdState, getAConsortiumByIdConsortium, consortiumName, getAllMaintenanceFeesPaymentByIdConsortium, period ,
-        setPeriod, allMaintenanceFees, allMaintenanceFeesPayment , setAllMaintenanceFeesPayment, getAllMaintenanceFeesByIdConsortium} = useContext(AdminManageContext)
+    const {
+        consortiumIdState,
+        getAConsortiumByIdConsortium,
+        consortiumName,
+        period,
+        getAllMaintenanceFeesByIdConsortium,
+        departmentFeeQueryData,
+        fetchDepartmentFeeQueryData,
+        statusMapping, allConsortiumFeePeriods , setAllConsortiumFeePeriods, setDepartmentFeeQueryData
+    } = useContext(AdminManageContext);
+
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [page, setPage] = React.useState(0);
+    // const [departmentFeesData, setDepartmentFeesData] = useState([]); // <--- ELIMINADO: Se usa departmentFeeQueryData.content
+    // const [totalFeeRecords, setTotalFeeRecords] = useState(0); // <--- ELIMINADO: Se usa departmentFeeQueryData.totalElements
+
     const [file, setFile] = useState(null);
-    const [maintenanceFee, setMaintenanceFee] = useState(null); // Para almacenar el DTO de la expensa
-    const [loading, setLoading] = useState(false);
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
-    const navigate = useNavigate();
-    const [openEditDialog, setOpenEditDialog] = useState(false);
+    const [editingFeePayment, setEditingFeePayment] = useState(null);
+    const [loading, setLoading] = useState(false); // Loading para acciones locales (guardar pago, etc.)
+    const [tableLoading, setTableLoading] = useState(false); // Loading específico para la carga de la tabla
+    // const navigate = useNavigate(); // No se usa
     const [editOpen, setEditOpen] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState("");
-    const [selectedMaintenanceFee, setSelectedMaintenanceFee] = useState("");
+    // const [selectedStatus, setSelectedStatus] = useState(""); // No se usa
+    const [selectedMaintenanceFee, setSelectedMaintenanceFee] = useState(null); // Para las summary cards
     const [totalAmount, setTotalAmount] = useState('');
-    const statusMapping = {
-        PENDING: "Pendiente",
-        PAID: "Pagado"
-    };
-    const [fileName, setFileName] = useState(''); // Estado para el archivo
+    // const statusMapping = { ... }; // <--- ELIMINADO: Se usa el del contexto
+    const [fileName, setFileName] = useState('');
     const { enqueueSnackbar } = useSnackbar();
 
     const handleChangePage = (event, newPage) => {
@@ -74,38 +84,52 @@ function AdminMaintenanceFeesPayments(){
         setPage(0);
     };
 
+    // Efecto para las summary cards
     useEffect(() => {
-        let find = allMaintenanceFees.find(maintenanceFee => maintenanceFee.period === period);
-        setSelectedMaintenanceFee(find);
-    }, [allMaintenanceFees]);
-
-    useEffect(() => {
-        getAConsortiumByIdConsortium();
-    }, [consortiumIdState]);
-
-    useEffect(() => {
-        getAllMaintenanceFeesByIdConsortium();
-    }, [consortiumIdState]);
+        if (period && allConsortiumFeePeriods.length > 0) {
+            let find = allConsortiumFeePeriods.find(mf => mf.period === period);
+            setSelectedMaintenanceFee(find);
+        } else {
+            setSelectedMaintenanceFee(null);
+        }
+    }, [allConsortiumFeePeriods, period]);
 
     useEffect(() => {
-        getAllMaintenanceFeesPaymentByIdConsortium();
-    }, [consortiumIdState]);
+        if (consortiumIdState) {
+            getAConsortiumByIdConsortium();
+            // fetchDepartmentFeeQueryData();
+            console.log(departmentFeeQueryData)
+        }
+    }, [consortiumIdState, getAllMaintenanceFeesByIdConsortium]); // Añadidas funciones a dependencias
 
-    const handleEditClick = (maintenanceFee) => {
-        setMaintenanceFee(maintenanceFee); // Carga el objeto seleccionado
-        // setSelectedStatus(maintenanceFee.status); // Estado actual
-        setEditOpen(true); // Abre el diálogo
-    };
+    // Efecto para obtener los datos de la tabla usando la función del contexto
+    useEffect(() => {
+        const loadData = async () => {
+            if (consortiumIdState && period) { // Asegurarse que period también esté definido
+                setTableLoading(true);
+                await fetchDepartmentFeeQueryData(page, rowsPerPage);
+                setTableLoading(false);
+            } else {
+                // Si no hay consorcio o período, podrías limpiar los datos si lo deseas
+                // setDepartmentFeeQueryData({ content: [], totalElements: 0 }); // Esto se haría en el contexto
+            }
+        };
+        loadData();
+    }, [consortiumIdState, period, page, rowsPerPage]);
 
-    const handleStatusChange = (event) => {
-        setSelectedStatus(event.target.value);
+    const handleEditClick = (departmentFee) => {
+        setEditingFeePayment(departmentFee);
+        setTotalAmount('');
+        setFileName('');
+        setFile(null);
+        setEditOpen(true);
     };
 
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
         if (selectedFile) {
-            setFileName(selectedFile.name);  // Guardar el nombre del archivo
-            setFile(selectedFile); // Guardar el archivo completo
+            setFileName(selectedFile.name);
+            setFile(selectedFile);
         }
     };
 
@@ -113,163 +137,93 @@ function AdminMaintenanceFeesPayments(){
         setTotalAmount(event.target.value);
     };
 
-
     const handleSaveChanges = async () => {
+        if (!editingFeePayment || !totalAmount || !file) {
+            enqueueSnackbar('Por favor, complete el monto y seleccione un archivo.', { variant: 'warning' });
+            return;
+        }
         setLoading(true);
         try {
             const formData = new FormData();
-
-            // Construir el JSON que se enviará en maintenanceFeePaymentDto
-            const maintenanceFeePaymentDto = {
-                maintenanceFeePaymentId: maintenanceFee.maintenanceFeePaymentId, // ID del pago seleccionado
-                amount: totalAmount, // Monto ingresado
-                maintenanceFee: {
-                    maintenanceFeeId: maintenanceFee.maintenanceFeeId, // ID de la expensa seleccionada
-                    consortium: {
-                        consortiumId: consortiumIdState, // ID del consorcio seleccionado
-                    },
-                },
-                // status: selectedStatus, // Estado seleccionado (e.g., "PENDING")
+            const paymentCreationDto = {
+                departmentCode: editingFeePayment.departmentCode,
+                period: typeof period === 'string' ? period : period.toISOString().split('T')[0],
+                amount: totalAmount,
             };
 
-            // Agregar el JSON como string en maintenanceFeePaymentDto
-            const jsonBlob = new Blob([JSON.stringify(maintenanceFeePaymentDto)], { type: 'application/json' });
+            const jsonBlob = new Blob([JSON.stringify(paymentCreationDto)], { type: 'application/json' });
+            formData.append('paymentDto', jsonBlob, 'paymentDto.json');
+            formData.append('file', file);
 
-            // Agregar el Blob al FormData
-            formData.append('maintenanceFeePaymentDto', jsonBlob, 'maintenanceFeePaymentDto.json');
+            const token = localStorage.getItem('token');
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payments/create`, formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
-
-            // Agregar el archivo si se seleccionó
-            if (file) {
-                formData.append('file', file);
-                console.log('Archivo añadido:', file);
-            }
-
-            // Mostrar el contenido de FormData en consola para ver qué se está enviando
-            console.log('FormData contenido:');
-            for (let pair of formData.entries()) {
-                console.log(`${pair[0]}:`, pair[1]);
-            }
-
-            // Llama a tu función para enviar la solicitud (con Axios)
-            await updateMaintenanceFee(formData);
-
-            // Actualiza la lista de expensas
-            await getAllMaintenanceFeesPaymentByIdConsortium();
-            await getAllMaintenanceFeesByIdConsortium();
-
-            // Mostrar mensaje de éxito
-            setSnackbarMessage('Actualización exitosa');
-            setSnackbarSeverity('success');
-            setSnackbarOpen(true);
-            setOpenEditDialog(false);
+            enqueueSnackbar('Pago registrado exitosamente', { variant: 'success' });
+            // Refrescar la tabla llamando a la función del contexto
+            await fetchDepartmentFeeQueryData(page, rowsPerPage);
+            // getAllMaintenanceFeesByIdConsortium(); // Refrescar summary cards si es necesario
         } catch (error) {
-            console.error('Error al actualizar:', error);
-            setSnackbarMessage('Error al actualizar. Por favor, inténtalo nuevamente.');
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true);
+            console.error('Error al guardar el pago:', error);
+            enqueueSnackbar(error.response?.data?.message || 'Error al guardar el pago.', { variant: 'error' });
         } finally {
             setLoading(false);
             setEditOpen(false);
         }
     };
 
-    const updateMaintenanceFee = async (formData) => {
-        const token = localStorage.getItem('token');
+    const handleDownload = async (departmentFee) => {
+        if (!departmentFee.payments || departmentFee.payments.length === 0) {
+            enqueueSnackbar('No hay pagos registrados para descargar comprobante.', { variant: 'info' });
+            return;
+        }
+        const paymentToDownload = departmentFee.payments[departmentFee.payments.length -1];
+        const paymentId = paymentToDownload.id; // ASUMIENDO que PaymentDto tiene 'id'
 
-        if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detenemos la ejecución si no hay token
+        if (!paymentId) {
+            enqueueSnackbar('No se pudo identificar el pago para la descarga.', { variant: 'error' });
+            return;
         }
 
-        // Decodifica el token para verificar el rol
-        const decodedToken = jwtDecode(token);
-        const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
-        if (!isAdmin) {
-            alert("No tienes permisos para realizar esta acción.");
-            return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN
+        const token = localStorage.getItem('token');
+        if (!token) {
+            enqueueSnackbar("No estás autorizado.", { variant: 'error' });
+            return;
         }
 
         try {
-            // Realiza la solicitud a la API
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment`, formData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-
-                },
-            });
-            return response.data;
-        } catch (error) {
-            // Manejo de errores
-            console.error('Error en la solicitud:', error);
-            alert(error.message || "Ha ocurrido un error. Por favor, inténtalo nuevamente.");
-            throw error; // Re-lanzar el error para manejarlo en niveles superiores
-        }
-    };
-    const handleDownload = async (id) => {
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detenemos la ejecución si no hay token
-        }
-
-        // Decodifica el token para verificar el rol
-        const decodedToken = jwtDecode(token);
-        const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
-        if (!isAdmin) {
-            alert("No tienes permisos para realizar esta acción.");
-            return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN
-        }
-
-        try {
-            // Hacer la solicitud fetch al backend para descargar el archivo
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment/${id}/download`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/${paymentId}/download`, {
                 method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             if (!response.ok) {
-                throw new Error('No se pudo descargar el archivo');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'No se pudo descargar el archivo');
             }
-
-            // Convertir la respuesta en un Blob (archivo binario)
             const blob = await response.blob();
-
-            // Obtener el encabezado 'Content-Disposition' y extraer el nombre del archivo
             const contentDisposition = response.headers.get('Content-Disposition');
-            let fileName = 'default.pdf';  // Valor por defecto en caso de que no haya nombre en el encabezado
-
+            let downloadFileName = 'comprobante.pdf';
             if (contentDisposition) {
                 const matches = contentDisposition.match(/filename="(.+)"/);
-                if (matches && matches[1]) {
-                    fileName = matches[1];  // Extrae el nombre del archivo
-                }
+                if (matches && matches[1]) downloadFileName = matches[1];
             }
-
-            // Crear una URL de objeto para el archivo
             const url = window.URL.createObjectURL(blob);
-
-            // Crear un enlace para descargar el archivo
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', fileName); // Asigna el nombre del archivo
+            link.setAttribute('download', downloadFileName);
             document.body.appendChild(link);
             link.click();
-
-            // Limpiar el DOM y la URL del objeto después de la descarga
-            document.body.removeChild(link);
+            link.remove();
             window.URL.revokeObjectURL(url);
-
         } catch (error) {
-            // Manejo de errores
-            enqueueSnackbar('Error al descargar el archivo', { variant: 'error' });
+            enqueueSnackbar(error.message || 'Error al descargar el archivo', { variant: 'error' });
             console.error('Error de descarga:', error);
         }
     };
-
 
     const tableHeadCellStyles = {
         backgroundColor: '#002776',
@@ -285,329 +239,270 @@ function AdminMaintenanceFeesPayments(){
 
     return(
         <div>
-            <Box
-                sx={{
-                    display: 'flex',
-                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
-                }}
-            >
+            <Box sx={{ display: 'flex', minHeight: '100vh' }}>
                 <AdminGallerySidebar/>
                 <Box
                     component="main"
                     sx={{
-                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
-                        padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
-                        marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
-                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
-
+                        flexGrow: 1,
+                        padding: { xs: '16px', sm: '24px' },
+                        marginLeft: { xs: 0, sm: '240px' },
+                        transition: 'margin-left 0.3s ease',
                     }}
                 >
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                        }}
-                    >
-                        {/* Título */}
-                        <Typography
-                            variant="h6"
-                            component="h1"
-                            sx={{
-                                fontWeight: 'bold',
-                                color: '#003366',
-                                fontSize: { xs: '1.5rem', md: '2rem' },
-                                marginBottom: '20px',
-                            }}
-                >
-                    Pago de Expensas de {consortiumName}
-                </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold', color: '#003366', fontSize: { xs: '1.5rem', md: '2rem' }, marginBottom: '20px' }}>
+                            Gestión de Expensas de {consortiumName}
+                        </Typography>
 
-                        <Box sx={{ width: '100%', maxWidth: '1100px', marginLeft: { xs: '40px', sm: '80px' } }}>
-                            {/* Tabla de resumen */}
-                            <Box sx={{ flexGrow: 1, p: 3 }}>
-                                <Grid container spacing={3}>
-                                    {/* PENDING Card */}
-                                    <Grid item xs={12} sm={6} md={4}>
-                                        <Card sx={{
-                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-                                            transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                                            '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-                                            },
-                                        }}>
-                                            <CardContent>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <Pending color="warning" />
-                                                        <Typography variant="subtitle1" color="warning.main" sx={{ fontWeight: 'bold' }}>
-                                                            PENDIENTES
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                                <Box sx={{ mb: 2 }}>
-                                                    <Typography variant="caption" color="text.secondary">CANTIDAD</Typography>
-                                                    <Typography variant="h4" component="div">{selectedMaintenanceFee?.resume?.pendingCount || 0}</Typography>
-                                                </Box>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">MONTO</Typography>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <AttachMoney color="action" />
-                                                        <Typography variant="h4" component="div">{selectedMaintenanceFee?.resume?.pendingAmount || 0}</Typography>
-                                                    </Box>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
-
-                                    {/* PAID Card */}
-                                    <Grid item xs={12} sm={6} md={4}>
-                                        <Card sx={{
-                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-                                            transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                                            '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-                                            },
-                                        }}>
-                                            <CardContent>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <CheckCircle color="success" />
-                                                        <Typography variant="subtitle1" color="success.main" sx={{ fontWeight: 'bold' }}>
-                                                            PAGADAS
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                                <Box sx={{ mb: 2 }}>
-                                                    <Typography variant="caption" color="text.secondary">CANTIDAD</Typography>
-                                                    <Typography variant="h4" component="div">{selectedMaintenanceFee?.resume?.paymentCount || 0}</Typography>
-                                                </Box>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">MONTO</Typography>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <AttachMoney color="action" />
-                                                        <Typography variant="h4" component="div">{selectedMaintenanceFee?.resume?.paymentAmount || 0}</Typography>
-                                                    </Box>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
-
-                                    {/* EXPIRED Card */}
-                                    <Grid item xs={12} sm={6} md={4}>
-                                        <Card sx={{
-                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-                                            transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                                            '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-                                            },
-                                        }}>
-                                            <CardContent>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <AccountBalanceIcon color="primary" />
-                                                        <Typography variant="subtitle1" color="primary" sx={{ fontWeight: 'bold' }}>
-                                                            TOTAL
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                                <Box sx={{ mb: 2 }}>
-                                                    <Typography variant="caption" color="text.secondary">CANTIDAD</Typography>
-                                                    <Typography variant="h4" component="div">{selectedMaintenanceFee?.resume?.totalCount || 0}</Typography>
-                                                </Box>
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">MONTO</Typography>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                        <AttachMoney color="action" />
-                                                        <Typography variant="h4" component="div">{selectedMaintenanceFee?.resume?.totalAmount || 0}</Typography>
-                                                    </Box>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    </Grid>
+                        {/* Cards de Resumen */}
+                        <Box sx={{ width: '100%', maxWidth: '1100px', mb: 3 }}>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} sm={6} md={4}>
+                                    <Card sx={{ backgroundColor: '#FFF0F0', borderLeft: '5px solid #FF6B6B' }}>
+                                        <CardContent>
+                                            <Typography sx={{ fontSize: 16, color: '#B22222', fontWeight: 'bold' }} gutterBottom>
+                                                PENDIENTES
+                                            </Typography>
+                                            <Typography variant="h4" component="div" sx={{ color: '#B22222', fontWeight: 'bold' }}>
+                                                {selectedMaintenanceFee?.resume?.pendingCount || 0}
+                                            </Typography>
+                                            <Typography sx={{ mb: 1.5, color: '#B22222', fontSize: '0.9rem' }}>
+                                                Monto: ${Number(selectedMaintenanceFee?.resume?.pendingAmount || 0).toFixed(2)}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
                                 </Grid>
-                            </Box>
+                                <Grid item xs={12} sm={6} md={4}>
+                                    <Card sx={{ backgroundColor: '#F0FFF0', borderLeft: '5px solid #32CD32' }}>
+                                        <CardContent>
+                                            <Typography sx={{ fontSize: 16, color: '#228B22', fontWeight: 'bold' }} gutterBottom>
+                                                PAGADAS
+                                            </Typography>
+                                            <Typography variant="h4" component="div" sx={{ color: '#228B22', fontWeight: 'bold' }}>
+                                                {selectedMaintenanceFee?.resume?.paymentCount || 0}
+                                            </Typography>
+                                            <Typography sx={{ mb: 1.5, color: '#228B22', fontSize: '0.9rem' }}>
+                                                Monto: ${Number(selectedMaintenanceFee?.resume?.paymentAmount || 0).toFixed(2)}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={4}>
+                                    <Card sx={{ backgroundColor: '#F0F8FF', borderLeft: '5px solid #1E90FF' }}>
+                                        <CardContent>
+                                            <Typography sx={{ fontSize: 16, color: '#003366', fontWeight: 'bold' }} gutterBottom>
+                                                TOTAL EXPENSAS
+                                            </Typography>
+                                            <Typography variant="h4" component="div" sx={{ color: '#003366', fontWeight: 'bold' }}>
+                                                {selectedMaintenanceFee?.resume?.totalCount || 0}
+                                            </Typography>
+                                            <Typography sx={{ mb: 1.5, color: '#003366', fontSize: '0.9rem' }}>
+                                                Monto Total: ${Number(selectedMaintenanceFee?.resume?.totalAmount || 0).toFixed(2)}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            </Grid>
                         </Box>
 
-                    <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
-                        <TableContainer  sx={{
-                            maxHeight: 600,
-                            overflowX: 'auto',
-                            borderRadius: '10px', // Redondea solo las esquinas del contenedor
-                            border: '1px solid #002776',
-                        }}
-                        >
-                            <Table
-                                stickyHeader
-                                sx={{
-                                    borderCollapse: 'separate',
-                                    borderSpacing: '0', // Evita que las celdas se superpongan
-                                }}
-                            >
-                                <TableHead>
-                                    <TableRow sx={{ height: '24px' }}>
-                                        {columns.map((column , index) => (
-                                            <TableCell
-                                                key={column.id}
-                                                align={column.align}
-                                                sx={{
-                                                    ...tableHeadCellStyles,
-                                                    ...(index === 0 && {
-                                                        borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
-                                                    })
-                                                }}
-                                            >
-                                                {column.label}
+                        {/* Tabla Principal */}
+                        <Box sx={{ width: '100%', maxWidth: '1200px' }}>
+                            <TableContainer sx={{ maxHeight: 600, overflowX: 'auto', borderRadius: '10px', border: '1px solid #002776' }}>
+                                <Table stickyHeader sx={{ borderCollapse: 'separate', borderSpacing: '0' }}>
+                                    <TableHead>
+                                        <TableRow sx={{ height: '24px' }}>
+                                            {columns.map((column , index) => (
+                                                <TableCell
+                                                    key={column.id}
+                                                    align={column.align}
+                                                    style={{ minWidth: column.minWidth }}
+                                                    sx={{
+                                                        ...tableHeadCellStyles,
+                                                        ...(index === 0 && { borderTopLeftRadius: '10px' })
+                                                    }}
+                                                >
+                                                    {column.label}
+                                                </TableCell>
+                                            ))}
+                                            <TableCell align="center" sx={{ ...tableHeadCellStyles, borderTopRightRadius: '10px' }}>
+                                                Acciones
                                             </TableCell>
-                                        ))}
-                                        <TableCell align="center" sx={{
-                                            ...tableHeadCellStyles,
-                                            borderTopRightRadius: '0px',
-                                        }}>
-                                            Comprobante de pago
-                                        </TableCell>
-                                        <TableCell align="center" sx={{
-                                            ...tableHeadCellStyles,
-                                            borderTopRightRadius: '10px',
-                                        }}>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {tableLoading ? ( // <--- Usar tableLoading para la tabla
+                                            <TableRow>
+                                                <TableCell colSpan={columns.length + 2} align="center">
+                                                    Cargando datos de expensas...
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : departmentFeeQueryData.content.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={columns.length + 2} align="center">
+                                                    No hay datos disponibles para el período seleccionado.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            departmentFeeQueryData.content
+                                                .map((deptFee) => {
+                                                    let paymentDateDisplay = 'N/A';
+                                                    if (deptFee.paymentStatus === 'PAID' && deptFee.payments && deptFee.payments.length > 0) {
+                                                        const latestPayment = deptFee.payments.reduce((latest, current) => {
+                                                            // Asegúrate que los campos de fecha existan antes de crear el objeto Date
+                                                            const latestDateValue = latest.date || latest.paymentDate;
+                                                            const currentDateValue = current.date || current.paymentDate;
+                                                            if (!latestDateValue || !currentDateValue) return latest; // o current, según prefieras
 
-                                        </TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {allMaintenanceFeesPayment
-                                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                        .map((maintenanceFeePayment) => {
-                                            return (
-                                                <TableRow hover key={maintenanceFeePayment.maintenanceFeePaymentId} sx={{
-                                                    backgroundColor: '#FFFFFF',
-                                                    '&:hover': { backgroundColor: '#F6EFE5' },
-                                                }}>
-                                                    {columns.map((column) => {
-                                                        const value = maintenanceFeePayment[column.id];
-                                                        return (
-                                                            <TableCell
-                                                                key={column.id}
-                                                                align={column.align}
-                                                                sx={{ ...tableCellStyles }}
-                                                            >
-                                                                {column.id === 'status' ? (
-                                                                    <Chip
-                                                                        label={value}
-                                                                        sx={{
-                                                                            backgroundColor: value === 'Pagado' ? '#B0F2C2' : '#BCE7FD',
-                                                                            color: '#002776',
-                                                                            fontWeight: 'bold',
-                                                                        }}
-                                                                    />
-                                                                ) : (
-                                                                    value
-                                                                )}
+                                                            const latestDate = new Date(latestDateValue);
+                                                            const currentDate = new Date(currentDateValue);
+                                                            return currentDate > latestDate ? current : latest;
+                                                        }, deptFee.payments[0]);
+                                                        const dateToFormat = latestPayment.date || latestPayment.paymentDate;
+                                                        if (dateToFormat) {
+                                                            paymentDateDisplay = new Date(dateToFormat).toLocaleDateString();
+                                                        }
+                                                    }
+
+                                                    return (
+                                                        <TableRow hover key={deptFee.departmentCode} sx={{
+                                                            backgroundColor: '#FFFFFF',
+                                                            '&:hover': { backgroundColor: '#F6EFE5' },
+                                                        }}>
+                                                            {columns.map((column) => {
+                                                                let value;
+                                                                switch (column.id) {
+                                                                    case 'departmentCode': value = deptFee.departmentCode; break;
+                                                                    case 'issueDate': value = deptFee.issueDate; break;
+                                                                    case 'dueDate': value = deptFee.dueDate; break;
+                                                                    case 'totalAmount': value = deptFee.totalAmount; break;
+                                                                    case 'dueAmount': value = deptFee.dueAmount; break;
+                                                                    case 'paidAmount': value = deptFee.paidAmount; break;
+                                                                    case 'paymentStatus': value = deptFee.paymentStatus; break;
+                                                                    case 'paymentDate': value = paymentDateDisplay; break;
+                                                                    default: value = 'N/A';
+                                                                }
+
+                                                                let cellContent = value !== undefined && value !== null ? value : 'N/A';
+
+                                                                if (['totalAmount', 'dueAmount', 'paidAmount'].includes(column.id)) {
+                                                                    cellContent = typeof value === 'number' ? `$${Number(value).toFixed(2)}` : (String(value) || 'N/A');
+                                                                } else if (column.id === 'paymentStatus') {
+                                                                    cellContent = (
+                                                                        <Chip
+                                                                            label={statusMapping[value] || String(value)} // Usar statusMapping del contexto
+                                                                            size="small"
+                                                                            sx={{
+                                                                                backgroundColor: value === 'PAID' ? '#B0F2C2'
+                                                                                    : value === 'PENDING' ? '#FFDDAA'
+                                                                                        : value === 'PARTIALLY_PAID' ? '#ADD8E6'
+                                                                                            : value === 'OVERDUE' ? '#FFBABA'
+                                                                                                : '#BCE7FD',
+                                                                                color: '#002776', fontWeight: 'bold',
+                                                                            }}
+                                                                        />
+                                                                    );
+                                                                } else if (['issueDate', 'dueDate'].includes(column.id) && value !== 'N/A') {
+                                                                    // Asegurar que se interprete como fecha local, añadiendo 'T00:00:00' si es solo fecha
+                                                                    const dateValue = String(value).includes('T') ? value : value + 'T00:00:00';
+                                                                    cellContent = new Date(dateValue).toLocaleDateString();
+                                                                }
+                                                                return (
+                                                                    <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles }}>
+                                                                        {cellContent}
+                                                                    </TableCell>
+                                                                );
+                                                            })}
+                                                            <TableCell align="center" sx={tableCellStyles}>
+                                                                <IconButton
+                                                                    disabled={!deptFee.payments || deptFee.payments.length === 0}
+                                                                    aria-label="download-receipt"
+                                                                    onClick={() => handleDownload(deptFee)}
+                                                                    sx={{ padding: '4px' }}
+                                                                >
+                                                                    <CloudDownloadIcon fontSize="small" sx={{color: (!deptFee.payments || deptFee.payments.length === 0) ? '#B0B0B0' : '#002776' }} />
+                                                                </IconButton>
+                                                                <IconButton
+                                                                    disabled={deptFee.paymentStatus === "PAID"}
+                                                                    aria-label="add-payment"
+                                                                    onClick={() => handleEditClick(deptFee)}
+                                                                    sx={{ padding: '4px' }}
+                                                                >
+                                                                    <EditIcon fontSize="small" sx={{ color: deptFee.paymentStatus === "PAID" ? '#B0B0B0' : '#002776' }} />
+                                                                </IconButton>
                                                             </TableCell>
-                                                        );
-                                                    })}
-                                                    <TableCell align="center"  sx={tableCellStyles}>
-                                                        <IconButton
-                                                            disabled={maintenanceFeePayment.status !== "Pagado"}
-                                                            aria-label="download-file"
-                                                            onClick={() => handleDownload(maintenanceFeePayment.maintenanceFeePaymentId)}
-                                                            sx={{ padding: '4px' }}
-                                                        >
-                                                            <CloudDownloadIcon fontSize="small" sx={{color: maintenanceFeePayment.status === "Pagado" ? '#002776' : '#48494a' }} />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                    <TableCell align="center" style={{ padding: '8px', minWidth: 100 }}>
-
-                                                        <IconButton
-                                                            disabled={maintenanceFeePayment.status === "Pagado"}
-                                                            aria-label="edit"
-                                                            onClick={() => handleEditClick(maintenanceFeePayment)}
-                                                            sx={{ padding: '4px', marginRight: '4px' }}
-                                                        >
-                                                            <EditIcon fontSize="small" sx={{ color: maintenanceFeePayment.status !== "Pagado" ? '#002776' : '#48494a' }} />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                        <TablePagination
-                            rowsPerPageOptions={[10, 20, 50]}
-                            component="div"
-                            count={allMaintenanceFeesPayment.length}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                            labelRowsPerPage="Filas por página"
-                        />
-                </Box>
-                </Box>
+                                                        </TableRow>
+                                                    );
+                                                })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            <TablePagination
+                                rowsPerPageOptions={[10, 20, 50]}
+                                component="div"
+                                count={departmentFeeQueryData.totalElements} // <--- Usar totalElements del contexto
+                                rowsPerPage={rowsPerPage}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                labelRowsPerPage="Filas por página"
+                            />
+                        </Box>
+                    </Box>
                 </Box>
             </Box>
-            <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
-                <DialogTitle>Pago de Expensa</DialogTitle>
+
+            {/* Dialogo para Registrar Pago */}
+            <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Registrar Pago para Departamento: {editingFeePayment?.departmentCode}</DialogTitle>
                 <DialogContent>
+                    <Typography variant="body2" gutterBottom>
+                        Expensa del período: {period ? (typeof period === 'string' ? period : new Date(period).toLocaleDateString()) : 'N/A'}
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                        Monto Total de Expensa: ${Number(editingFeePayment?.totalAmount || 0).toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                        Monto Adeudado Actual: ${Number(editingFeePayment?.dueAmount || 0).toFixed(2)}
+                    </Typography>
                     <Box component="form" sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <TextField
+                            label="Monto a Pagar"
+                            variant="outlined"
+                            type="number"
+                            value={totalAmount}
+                            onChange={handleInputChange}
+                            sx={{ marginBottom: '20px', width: '100%' }}
+                            InputProps={{
+                                startAdornment: <Typography sx={{ mr: 0.5 }}>$</Typography>,
+                            }}
+                        />
                         <Button
                             variant="outlined"
                             component="label"
-                            sx={{
-                                backgroundColor: '#002776',
-                                color: '#fff',
-                                '&:hover': { backgroundColor: '#001B5E' },
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '10px 20px',
-                                marginBottom: '20px',
-                            }}
+                            fullWidth
+                            sx={{ mb: 1, borderColor: '#002776', color: '#002776', '&:hover': { borderColor: '#001B5E', backgroundColor: 'rgba(0, 39, 118, 0.04)'} }}
                         >
                             <CloudUploadIcon sx={{ marginRight: 1 }} />
-                            Subir Archivo
-                            <input
-                                type="file"
-                                hidden
-                                onChange={handleFileChange}
-                                accept="application/pdf" // Ajusta los tipos de archivo permitidos
-                            />
+                            Subir Comprobante
+                            <input type="file" hidden onChange={handleFileChange} accept="application/pdf,image/*" />
                         </Button>
-
-                        {/* Si el archivo fue seleccionado, mostrar el nombre y un ícono de éxito */}
                         {fileName && (
-                            <Typography variant="body2" sx={{ color: 'green', marginTop: '10px', display: 'flex', alignItems: 'center' }}>
-                                <CheckCircleIcon sx={{ marginRight: 1 }} /> Archivo seleccionado: {fileName}
+                            <Typography variant="body2" sx={{ color: 'green', mt: 1, display: 'flex', alignItems: 'center' }}>
+                                <CheckCircleIcon sx={{ marginRight: 1 }} /> {fileName}
                             </Typography>
                         )}
                     </Box>
                 </DialogContent>
-                <DialogActions>
-                    <TextField
-                        label="Ingrese Monto"
-                        variant="outlined"
-                        value={totalAmount}
-                        onChange={handleInputChange}
-                        sx={{ marginTop: '20px', marginBottom: '20px', width: '100%' }}
-                    />
-                </DialogActions>
-                <DialogActions>
-                    <Button onClick={() => setEditOpen(false)}variant="contained" sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}>
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={handleSaveChanges}
-                        variant="contained" sx={{ backgroundColor: '#228B22', '&:hover': { backgroundColor: '#228B22' } }}
-                    >
-                        Guardar
+                <DialogActions sx={{ padding: '16px 24px' }}>
+                    <Button onClick={() => setEditOpen(false)} variant="outlined" >Cancelar</Button>
+                    <Button onClick={handleSaveChanges} variant="contained" color="primary" disabled={loading}>
+                        {loading ? 'Guardando...' : 'Guardar Pago'}
                     </Button>
                 </DialogActions>
             </Dialog>
-
         </div>
     )
 }
-export default AdminMaintenanceFeesPayments
+export default AdminMaintenanceFeesPayments;
