@@ -2,17 +2,22 @@
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {
-    Alert, Card, CardContent, Chip, // Añadido Chip
+    Alert,
+    Card,
+    CardContent,
+    Chip,
+    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
-    DialogContentText, // Añadido DialogContentText
-    DialogTitle, Snackbar,
+    DialogContentText,
+    DialogTitle,
+    FormControlLabel,
+    Grid,
+    Snackbar,
+    Switch,
     TablePagination,
-    TextField, // Añadido TextField
-    Grid, // Añadido Grid
-    Switch, // Añadido Switch
-    FormControlLabel // Añadido FormControlLabel
+    TextField
 } from "@mui/material";
 import React, {useContext, useEffect, useState} from "react";
 import Button from "@mui/material/Button";
@@ -23,17 +28,16 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import IconButton from "@mui/material/IconButton";
+import ReplayIcon from '@mui/icons-material/Replay';
 import {AdminManageContext} from "../AdminManageContext.jsx";
-import DeleteIcon from "@mui/icons-material/Delete.js";
 import {useNavigate} from "react-router-dom";
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import {CircularProgress} from '@mui/material';
 import SettingsIcon from "@mui/icons-material/Settings";
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import EditIcon from "@mui/icons-material/Edit"; // Añadido EditIcon
 import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
-import { format as formatDateFns } from 'date-fns';
+import {format as formatDateFns} from 'date-fns';
 
 // Columnas existentes
 const columns = [
@@ -453,6 +457,15 @@ function AdminConsortiumFeesManagement(){
                                                             title="Descargar PDF"
                                                         >
                                                             <CloudDownloadIcon fontSize="small"/>
+                                                        </IconButton>
+                                                        <IconButton
+                                                            aria-label="regenerate"
+                                                            onClick={() => handleManageClick(feePeriod.displayPeriodDate)}
+                                                            disabled={isEditable}
+                                                            sx={{padding: '4px', color: '#28a745', mx: 0.5}}
+                                                            title="Regenerar Expensa"
+                                                        >
+                                                            <ReplayIcon fontSize="small"/>
                                                         </IconButton>
                                                         <IconButton
                                                             aria-label="manage"

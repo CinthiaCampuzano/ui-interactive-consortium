@@ -257,7 +257,7 @@ function AdminCreatePerson(){
                         const consortiumPersonUrl = `${import.meta.env.VITE_API_BASE_URL}/consortiums/consortiumPerson?idConsortium=${consortiumIdState}&idPerson=${idPerson}`;
                         await axios.post(consortiumPersonUrl, {}, {
                             headers: {
-                                Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                                Authorization: `Bearer ${token}`,
                             },
                         });
 
@@ -303,7 +303,7 @@ function AdminCreatePerson(){
                    }}>
                     Ingrese el DNI
                 </DialogTitle>
-                <DialogContent>
+                <DialogContent sx={{ paddingTop: '20px !important' }}>
                     <TextField
                         label="DNI"
                         variant="outlined"

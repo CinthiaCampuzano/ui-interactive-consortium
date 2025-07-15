@@ -20,7 +20,6 @@ const options = [
     { title: 'Departamentos', icon: <ApartmentIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/admin/management/departamentos' },
     { title: 'Espacio Común', icon: <HomeIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/admin/management/espacio-comun' },
     { title: 'Expensas', icon: <ReceiptIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/admin/management/expensas' },
-    { title: 'Expensas2', icon: <ReceiptIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/admin/management/expensas2' },
     { title: 'Tablón de Anuncios', icon: <AnnouncementIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/admin/management/publicaciones' },
     { title: 'Reclamos', icon: <ReportIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/admin/management/reclamos' },
     { title: 'Reservas', icon: <CalendarTodayIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/admin/management/reservas' },

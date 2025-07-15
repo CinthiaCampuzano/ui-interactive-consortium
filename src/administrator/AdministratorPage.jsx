@@ -37,9 +37,7 @@ function AdministratorPage(){
 
         <Route path="/reclamos" element={<AdminClaimManagement />} />
 
-        <Route path="/expensas" element={<AdminMaintenanceFeesManagement/>} />
-
-        <Route path="/expensas2" element={<AdminConsortiumFeesManagement/>} />
+        <Route path="/expensas" element={<AdminConsortiumFeesManagement/>} />
 
         <Route path="/configuracion-expensas" element={<AdminConsortiumFeeConcepts/>} />
 
