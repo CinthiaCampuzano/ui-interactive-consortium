@@ -558,7 +558,8 @@ export function AdminManageContextProvider(props){
             const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/department-fees/query`, {
                 headers: { Authorization: `Bearer ${token}` },
                 params: {
-                    period: formattedPeriod , // Enviar el período formateado
+                    period: formattedPeriod,
+                    consortiumId: consortiumIdState,
                     page: currentPage,
                     size: pageSize,
                     // Si tu backend requiere consortiumId para este endpoint, agrégalo:

@@ -94,9 +94,10 @@ function AdminConsortiumFeeConcepts() {
                 return; // Stop execution if no token
             }
 
-            const consortiumId = localStorage.getItem('consortiumId');
             const response = await axios.get(`${API_BASE_URL}/consortiumFeeConcepts/query`, {
-                params: {consortiumId},
+                params: {
+                    consortiumId: consortiumIdState,
+                },
                 headers: {
                     Authorization: `Bearer ${token}` // Include the token in the headers
                 }

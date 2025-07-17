@@ -38,6 +38,7 @@ import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import EditIcon from "@mui/icons-material/Edit"; // Añadido EditIcon
 import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
 import {format as formatDateFns} from 'date-fns';
+import axios from "axios";
 
 // Columnas existentes
 const columns = [
@@ -126,6 +127,39 @@ function AdminConsortiumFeesManagement(){
         return '';
     };
 
+    const handleRegenerateClick = async (consortiumFeePeriodId) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setSnackbarMessage('No estás autorizado. Por favor, inicia sesión.');
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true);
+            return;
+        }
+
+        setLoadingTable(true);
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/regenerate/${consortiumFeePeriodId}`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            setSnackbarMessage('La regeneración de la expensa ha comenzado. El proceso puede tardar unos minutos.');
+            setSnackbarSeverity('info');
+            fetchFeePeriods(page, rowsPerPage); // Recargar datos
+        } catch (error) {
+            console.error("Error al regenerar la expensa:", error);
+            const errorMessage = error.response?.data?.message || 'Error al intentar regenerar la expensa.';
+            setSnackbarMessage(errorMessage);
+            setSnackbarSeverity('error');
+        } finally {
+            setSnackbarOpen(true);
+            setLoadingTable(false);
+        }
+    };
 
     const handleManageClick = (periodDateString) => {
         setPeriod(periodDateString);
@@ -460,7 +494,7 @@ function AdminConsortiumFeesManagement(){
                                                         </IconButton>
                                                         <IconButton
                                                             aria-label="regenerate"
-                                                            onClick={() => handleManageClick(feePeriod.displayPeriodDate)}
+                                                            onClick={() => handleRegenerateClick(feePeriod.consortiumFeePeriodId)}
                                                             disabled={isEditable}
                                                             sx={{padding: '4px', color: '#28a745', mx: 0.5}}
                                                             title="Regenerar Expensa"
