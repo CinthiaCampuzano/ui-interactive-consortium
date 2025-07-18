@@ -550,7 +550,7 @@ function SuperAdminManagesAdministrator(){
                                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                         .map((administrator) => {
                                             return (
-                                                <TableRow hover key={administrator.name}  sx={{
+                                                <TableRow hover key={administrator.administratorId}  sx={{
                                                     backgroundColor: '#FFFFFF',
                                                     '&:hover': { backgroundColor: '#F6EFE5' },
                                                 }}>

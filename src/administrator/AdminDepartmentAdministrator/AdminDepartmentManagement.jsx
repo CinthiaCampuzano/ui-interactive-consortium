@@ -161,22 +161,20 @@ function AdminDepartmentManagement(){
     }, [departmentCode, proprietor, resident, consortiumIdState])
 
     useEffect(() => {
-        if (openEdit && allPersons.length > 0){
+        if (openEdit){
             setDepartmentInfo({
                 departmentId: idDepartmentUpdate,
                 code: editCode || "",
                 consortium: {
                     consortiumId: consortiumIdState
                 },
-
-                propietary: allPersons.find(person => person.personId === editPropietaryId) || null,
-                
-                resident: allPersons.find(person => person.personId === editResidentId) || null,
+                propietary: editPropietaryId ? { personId: editPropietaryId } : null,
+                resident: editResidentId ? { personId: editResidentId } : null,
                 active: editActive
             });
         }
 
-    }, [openEdit, allPersons, idDepartmentUpdate, editCode, editPropietaryId, editResidentId, editActive]);
+    }, [openEdit, idDepartmentUpdate, editCode, editPropietaryId, editResidentId, editActive, consortiumIdState]);
 
 
     useEffect(() => {
@@ -301,7 +299,6 @@ function AdminDepartmentManagement(){
             return value === '' ? null : value;
         };
 
-        // Obtención del token
         const token = localStorage.getItem('token');
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
@@ -309,17 +306,14 @@ function AdminDepartmentManagement(){
         }
 
         try {
-            // Decodificación del token para obtener el rol
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
 
-            // Verificar si el usuario tiene el rol ROLE_ADMIN
             if (!isAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
                 return; // Detener ejecución si no es ROLE_ADMIN
             }
 
-            // Si el usuario tiene el rol adecuado, continuar con la solicitud
             const code = handleEmptyValues(departmentCode);
             const proprietorName = handleEmptyValues(proprietor);
             const residentName = handleEmptyValues(resident);
@@ -336,7 +330,7 @@ function AdminDepartmentManagement(){
                 const queryParams = new URLSearchParams(params).toString();
                 const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/departments/filterBy?${queryParams}`, {
                     headers: {
-                        Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                        Authorization: `Bearer ${token}`
                     }
                 });
                 const departments = res.data.content;
@@ -347,11 +341,11 @@ function AdminDepartmentManagement(){
                         personIdP: department.propietary?.personId ? department.propietary.personId : null,
                         fullNameP: department.propietary?.personId
                             ? `${department.propietary.name} ${department.propietary.lastName}`
-                            : "LIBRE",  // Muestra "LIBRE" cuando no hay propietario
+                            : "NO ASIGNADO",
                         personIdR:department.resident?.personId ? department.resident.personId : null,
                         fullNameR: department.resident?.personId
                             ? `${department.resident.name} ${department.resident.lastName}`
-                            : "LIBRE",
+                            : "NO ASIGNADO",
                         active: department.active
                     };
                 }));
@@ -453,8 +447,6 @@ function AdminDepartmentManagement(){
     }, [newPersonDpto]);
 
     const handlePersonCreated = (newPerson) => {
-        console.log(newPerson)
-        // Asignar la nueva persona creada al input
         setSelectedPerson(newPerson);
         setDepartmentInfo((prev) => ({
             ...prev,
@@ -469,8 +461,6 @@ function AdminDepartmentManagement(){
     }, [newResidentDpto]);
 
     const handleResidentCreated = (newResident) => {
-        console.log(newResident);
-        // Asignar la nueva persona creada al input de residente
         setSelectedResident(newResident);
         setDepartmentInfo((prev) => ({
             ...prev,

@@ -8,9 +8,11 @@ import AdminAmenitiesManagement from "./AdminAmenitiesAdministrator/AdminAmeniti
 import AdminPostManagement from "./AdminPostAdministrator/AdminPostManagement.jsx";
 import AdminBulletinBoard from "./AdminPostAdministrator/AdminBulletinBoard.jsx";
 import AdminClaimManagement from "./AdminClaimAdministrator/AdminClaimManagement.jsx";
-import AdminMaintenanceFeesAdministrator from "./AdminMaintenanceFees/AdminMaintenanceFeesManagement.jsx";
+import AdminMaintenanceFeesManagement from "./AdminMaintenanceFees/AdminMaintenanceFeesManagement.jsx";
 import AdminMaintenanceFeePayments from "./AdminMaintenanceFees/AdminMaintenanceFeePayments.jsx";
 import AdminBooking from "./AdminBooking/AdminBooking.jsx";
+import AdminConsortiumFeesManagement from "./AdminConsortiumFees/AdminConsortiumFeesManagement.jsx";
+import AdminConsortiumFeeConcepts from "./AdminConsortiumFees/AdminConsortiumFeeConcepts.jsx";
 
 
 function AdministratorPage(){
@@ -35,7 +37,9 @@ function AdministratorPage(){
 
         <Route path="/reclamos" element={<AdminClaimManagement />} />
 
-        <Route path="/expensas" element={<AdminMaintenanceFeesAdministrator/>} />
+        <Route path="/expensas" element={<AdminConsortiumFeesManagement/>} />
+
+        <Route path="/configuracion-expensas" element={<AdminConsortiumFeeConcepts/>} />
 
         <Route path="/expensas/pago" element={<AdminMaintenanceFeePayments/>} />
 

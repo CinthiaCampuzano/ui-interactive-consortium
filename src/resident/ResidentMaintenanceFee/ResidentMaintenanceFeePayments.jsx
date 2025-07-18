@@ -29,12 +29,16 @@ import ResidentSidebar from "../ResidentSidebar.jsx";
 
 
 const columns = [
-    { id: 'period', label: 'Periodo', minWidth: 100 },
-    { id: 'code', label: 'Departamento', minWidth: 100 },
-    { id: 'maintenanceFee', label: 'Expensas', minWidth: 100 },
-    { id: 'status', label: 'Estado de Pago', minWidth: 100 },
-    { id: 'paymentDate', label: 'Fecha de Pago', minWidth: 100 }
-]
+    { id: 'period', label: 'Periodo', minWidth: 80, align: 'center' }, // Reducido
+    { id: 'code', label: 'Departamento', minWidth: 90, align: 'center' }, // Reducido
+    { id: 'issueDate', label: 'Fecha Emisión', minWidth: 110, align: 'center' }, // Reducido
+    { id: 'dueDate', label: 'Fecha Vencimiento', minWidth: 110, align: 'center' }, // Reducido
+    { id: 'maintenanceFee', label: 'Monto Expensa', minWidth: 120, align: 'center' }, // Ligeramente reducido
+    { id: 'amountDue', label: 'Monto Adeudado', minWidth: 120, align: 'center' }, // Ligeramente reducido
+    { id: 'amountPaid', label: 'Monto Pagado', minWidth: 110, align: 'center' },   // Reducido
+    { id: 'status', label: 'Estado de Pago', minWidth: 110, align: 'center' }, // Reducido
+    { id: 'paymentDate', label: 'Fecha de Pago', minWidth: 110, align: 'center' } // Reducido
+];
 
 function ResidentMaintenanceFeePayments(){
     const {consortiumIdState, getAConsortiumByIdConsortium, consortiumName, getAllMaintenanceFeesPaymentByIdConsortiumAndPerson,
@@ -217,7 +221,7 @@ function ResidentMaintenanceFeePayments(){
 
 
 
-                        <Box sx={{ width: '100%', maxWidth: '900px',  marginLeft: { xs: '40px', sm: '80px' } }}>
+                        <Box sx={{ width: '100%',  padding: { xs: '16px', sm: '24px' },}}>
                             <TableContainer  sx={{
                                 maxHeight: 600,
                                 overflowX: 'auto',
@@ -258,13 +262,14 @@ function ResidentMaintenanceFeePayments(){
                                     </TableHead>
                                     <TableBody>
                                         {allMaintenanceFeesPaymentPerson
-                                            .sort((a, b) => new Date(b.period) - new Date(a.period)) // Ordenar por período descendente
+                                            // Asumo que querrás ordenar por fecha de emisión o vencimiento ahora
+                                            .sort((a, b) => new Date(b.issueDate || b.period) - new Date(a.issueDate || a.period)) // Ordenar por fecha de emisión o período descendente
                                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                             .map((maintenanceFeePayment) => {
                                                 return (
                                                     <TableRow
                                                         hover
-                                                        key={maintenanceFeePayment.maintenanceFeePaymentId}
+                                                        key={maintenanceFeePayment.maintenanceFeePaymentId || maintenanceFeePayment.id} // Asegúrate de tener un ID único
                                                         sx={{
                                                             backgroundColor: '#FFFFFF',
                                                             '&:hover': { backgroundColor: '#F6EFE5' },
@@ -272,66 +277,82 @@ function ResidentMaintenanceFeePayments(){
                                                     >
                                                         {columns.map((column) => {
                                                             const value = maintenanceFeePayment[column.id];
+                                                            let cellContent = value !== undefined && value !== null ? value : 'N/A';
+
+                                                            if (column.id === 'maintenanceFee') {
+                                                                cellContent = (
+                                                                    <Box display="flex" justifyContent="center" alignItems="center" sx={{ gap: 1 }}>
+                                                                        <Typography>
+                                                                            {/* Formatear como moneda si es necesario */}
+                                                                            {typeof value === 'number' ? `$${value.toFixed(2)}` : value || 'N/A'}
+                                                                        </Typography>
+                                                                        <IconButton
+                                                                            aria-label="download-original-maintenance-fee"
+                                                                            onClick={() =>
+                                                                                downloadMaintenanceFee(
+                                                                                    maintenanceFeePayment.maintenanceFeeId // ID de la expensa original
+                                                                                )
+                                                                            }
+                                                                            // La lógica de disabled podría cambiar según si la expensa original siempre está disponible
+                                                                            // disabled={maintenanceFeePayment.status === 'PENDING'}
+                                                                            sx={{ padding: '4px' }}
+                                                                        >
+                                                                            <CloudDownloadIcon
+                                                                                fontSize="small"
+                                                                                sx={{ color: '#002776' }}
+                                                                            />
+                                                                        </IconButton>
+                                                                    </Box>
+                                                                );
+                                                            } else if (column.id === 'amountDue' || column.id === 'amountPaid') {
+                                                                // Formatear como moneda si es necesario
+                                                                cellContent = typeof value === 'number' ? `$${value.toFixed(2)}` : (value || 'N/A');
+                                                            } else if (column.id === 'status') {
+                                                                cellContent = (
+                                                                    <Chip
+                                                                        label={value || 'N/A'}
+                                                                        size="small" // Añadido para consistencia
+                                                                        sx={{
+                                                                            backgroundColor:
+                                                                                value === 'Pagado' ? '#B0F2C2' // Verde para Pagado
+                                                                                    : value === 'PENDING' ? '#FFDDAA' // Amarillo para Pendiente (ejemplo)
+                                                                                        : value === 'Vencido' ? '#FFBABA' // Rojo para Vencido (ejemplo)
+                                                                                            : '#BCE7FD', // Azul por defecto
+                                                                            color: '#002776',
+                                                                            fontWeight: 'bold',
+                                                                        }}
+                                                                    />
+                                                                );
+                                                            } else if (column.id === 'issueDate' || column.id === 'dueDate' || column.id === 'paymentDate') {
+                                                                // Formatear fechas si vienen como string ISO y quieres un formato específico
+                                                                cellContent = value ? new Date(value).toLocaleDateString() : 'N/A';
+                                                            }
+
                                                             return (
                                                                 <TableCell
                                                                     key={column.id}
-                                                                    align="center"
-                                                                    sx={{ ...tableCellStyles, textAlign: 'center' }}
+                                                                    align={column.align || "center"} // Usar alineación de la columna o centrado por defecto
+                                                                    sx={{ ...tableCellStyles, textAlign: column.align || 'center' }}
                                                                 >
-                                                                    {column.id === 'maintenanceFee' ? (
-                                                                        <Box display="flex" justifyContent="center" alignItems="center">
-                                                                            {/* Valor de Expensas */}
-                                                                            <Typography sx={{ marginRight: '8px' }}>
-                                                                                {value}
-                                                                            </Typography>
-                                                                            {/* Botón con validación del estado y fecha de pago */}
-                                                                            <IconButton
-                                                                                aria-label="download-file"
-                                                                                onClick={() =>
-                                                                                    downloadMaintenanceFee(
-                                                                                        maintenanceFeePayment.maintenanceFeeId
-                                                                                    )
-                                                                                }
-                                                                                disabled={
-                                                                                    maintenanceFeePayment.status === 'PENDING' }
-                                                                                sx={{ padding: '4px' }}
-                                                                            >
-                                                                                <CloudDownloadIcon
-                                                                                    fontSize="small"
-                                                                                    sx={{ color: '#002776' }}
-                                                                                />
-                                                                            </IconButton>
-                                                                        </Box>
-                                                                    ) : column.id === 'status' ? (
-                                                                        <Chip
-                                                                            label={value}
-                                                                            sx={{
-                                                                                backgroundColor:
-                                                                                    value === 'Pagado' ? '#B0F2C2' : '#BCE7FD',
-                                                                                color: '#002776',
-                                                                                fontWeight: 'bold',
-                                                                            }}
-                                                                        />
-                                                                    ) : (
-                                                                        value
-                                                                    )}
+                                                                    {cellContent}
                                                                 </TableCell>
                                                             );
                                                         })}
+                                                        {/* Columna para el Comprobante de Pago */}
                                                         <TableCell align="center" sx={{ ...tableCellStyles, textAlign: 'center' }}>
                                                             <IconButton
-                                                                aria-label="download-file"
+                                                                aria-label="download-payment-receipt"
                                                                 onClick={() =>
-                                                                    handleDownload(maintenanceFeePayment.maintenanceFeePaymentId)
+                                                                    handleDownload(maintenanceFeePayment.maintenanceFeePaymentId) // ID del pago
                                                                 }
                                                                 disabled={
-                                                                    maintenanceFeePayment.status === 'PENDING' ||
-                                                                    !maintenanceFeePayment.paymentDate
+                                                                    maintenanceFeePayment.status !== 'Pagado' || // Solo habilitado si está pagado
+                                                                    !maintenanceFeePayment.paymentDate // y tiene fecha de pago
                                                                 }
                                                                 sx={{
                                                                     padding: '4px',
                                                                     '&.Mui-disabled': {
-                                                                        color: '#B0B0B0', // Color gris para el botón deshabilitado
+                                                                        color: '#B0B0B0',
                                                                     },
                                                                 }}
                                                             >
@@ -339,10 +360,10 @@ function ResidentMaintenanceFeePayments(){
                                                                     fontSize="small"
                                                                     sx={{
                                                                         color:
-                                                                            maintenanceFeePayment.status === 'PENDING' ||
+                                                                            maintenanceFeePayment.status !== 'Pagado' ||
                                                                             !maintenanceFeePayment.paymentDate
-                                                                                ? '#B0B0B0' // Gris para el ícono si está deshabilitado
-                                                                                : '#002776', // Azul si está habilitado
+                                                                                ? '#B0B0B0'
+                                                                                : '#002776',
                                                                     }}
                                                                 />
                                                             </IconButton>

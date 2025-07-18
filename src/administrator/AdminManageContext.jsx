@@ -1,6 +1,7 @@
+// /home/gustavo/Develop/ui-interactive-consortium/src/administrator/AdminManageContext.jsx
 import {createContext, useEffect, useState} from "react";
 import axios from "axios";
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns'; // Asegúrate de importar parseISO si las fechas vienen como string ISO
 import {jwtDecode} from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 
@@ -14,9 +15,11 @@ export function AdminManageContextProvider(props){
     const [aConsortiumByIdConsortium, setAConsortiumByIdConsortium] = useState({})
     const [allAmenities , setAllAmenities] = useState([])
     const [allPosts , setAllPosts] = useState([])
-    const [allMaintenanceFees , setAllMaintenanceFees] = useState([])
-    const [period , setPeriod] = useState(null)
-    const [allMaintenanceFeesPayment , setAllMaintenanceFeesPayment] = useState([])
+    // Cambiado: de allMaintenanceFees a allConsortiumFeePeriods
+    const [allConsortiumFeePeriods , setAllConsortiumFeePeriods] = useState([])
+    const [period , setPeriod] = useState(null) // Se mantiene por ahora, para la navegación a pagos
+    //const [allMaintenanceFeesPayment , setAllMaintenanceFeesPayment] = useState([]) // Esto podría necesitar revisión si la lógica de pagos también cambia
+    const [departmentFeeQueryData, setDepartmentFeeQueryData] = useState({ content: [], totalElements: 0 });
     const [allClaims , setAllClaims] = useState([])
     const [departmentStats, setDepartmentStats] = useState({
         occupied: 0,
@@ -35,8 +38,24 @@ export function AdminManageContextProvider(props){
         EXPIRED: "Expirado",
         CANCELED: "Cancelado",
         UNDER_REVIEW: "En Revisión",
-        FINISHED : "Resuelto"
+        FINISHED : "Resuelto",
+        // EPaymentStatus del DTO
+        PARTIALLY_PAID: "Parcialmente Pagado", // Añadido desde tu DTO
+        OVERDUE: "Vencido" // Añadido desde tu DTO
     };
+
+    // Mapeo para EConsortiumFeePeriodStatus (basado en un ENUM típico)
+    // Ajusta esto según los valores reales de tu EConsortiumFeePeriodStatus
+    const feePeriodStatusMapping = {
+        PENDING_GENERATION: "Pendiente Generación",
+        GENERATED: "Generado",
+        SENT: "Enviado",
+        PARTIALLY_PAID: "Parcialmente Pagado",
+        PAID: "Pagado",
+        OVERDUE: "Vencido",
+        // ...otros estados
+    };
+
 
     const [newPersonDpto,   setNewPersonDpto] =  useState( {
         personId: null,
@@ -50,51 +69,60 @@ export function AdminManageContextProvider(props){
     })
 
 
-    function formatDate(dateString) {
+    function formatDate(dateString, outputFormat = "dd/MM/yyyy HH:mm") {
         if (!dateString) {
-            return ''; // Si la fecha es null o undefined, retorna una cadena vacía
+            return '';
         }
-        return format(new Date(dateString), "dd/MM/yyyy HH:mm"); // Formato de fecha legible
+        try {
+            // Intenta parsear la fecha. Si ya es un objeto Date, parseISO no hará nada.
+            // Si es un string ISO 8601, lo parseará correctamente.
+            const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+            return format(date, outputFormat);
+        } catch (error) {
+            console.error("Error formateando fecha:", dateString, error);
+            return 'Fecha inválida';
+        }
     }
+
+    function formatPeriodDate(dateString) {
+        if (!dateString) return '';
+        // Asumiendo que periodDate es solo una fecha (LocalDate)
+        // y la quieres mostrar como MM/yyyy o similar para el "Periodo"
+        try {
+            const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+            return format(date, "MM/yyyy");
+        } catch (error) {
+            console.error("Error formateando fecha de periodo:", dateString, error);
+            return 'Fecha inválida';
+        }
+    }
+
 
     const getAllPersons = async () => {
         if (!consortiumIdState) {
             return;
         }
-
-        // Obtén el token del almacenamiento local
         const token = localStorage.getItem('token');
-
-        // Verifica si hay un token presente
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detener ejecución si no hay token
+            return;
         }
-
         try {
-            // Decodifica el token para verificar el rol
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
-
             if (!isAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detener ejecución si no es ROLE_ADMIN
+                return;
             }
-
-            // Realiza la solicitud para obtener las personas del consorcio
             const res = await axios.get(
                 `${import.meta.env.VITE_API_BASE_URL}/consortiums/${consortiumIdState}/persons`,
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                        Authorization: `Bearer ${token}`,
                     },
                 }
             );
-
-            console.log(res.data);
             const persons = res.data;
-
-            // Mapea y establece las personas en el estado
             setAllPersons(persons.map(person => {
                 return {
                     personId: person.personId,
@@ -112,38 +140,28 @@ export function AdminManageContextProvider(props){
         }
     };
 
-    const getAllDepartmentsByConsortium = async (idConsortium) => {
+    const getAllDepartmentsByConsortium = async () => { // Eliminado idConsortium como parámetro, usa consortiumIdState
         if (!consortiumIdState) {
             return;
         }
-
         const token = localStorage.getItem('token');
-
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detener la ejecución si no hay token
+            return;
         }
-
         try {
-            // Decodifica el token para verificar el rol
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
-
             if (!isAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detener la ejecución si no es ROLE_ADMIN
+                return;
             }
-
-            // Realizar la solicitud GET para obtener los departamentos
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/departments?consortiumId=${consortiumIdState}`, {
                 headers: {
-                    Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                    Authorization: `Bearer ${token}`
                 }
             });
-
-            // Acceder a los datos de los departamentos y actualizar el estado
             const departments = res.data.content;
-            console.log(departments)
             const total = departments.length;
             let occupied = 0;
             let free = 0;
@@ -155,15 +173,14 @@ export function AdminManageContextProvider(props){
                 const hasResident = department.resident?.personId;
 
                 if (hasOwner && hasResident) {
-                    occupied++; // Tiene ambos
+                    occupied++;
                 } else if (!hasOwner && !hasResident) {
-                    free++; // No tiene ninguno
+                    free++;
                 } else if (hasResident) {
-                    onlyResident++; // Solo residente
+                    onlyResident++;
                 } else if (hasOwner) {
-                    onlyOwner++; // Solo propietario
+                    onlyOwner++;
                 }
-
                 return {
                     departmentId: department.departmentId,
                     code: department.code,
@@ -178,7 +195,6 @@ export function AdminManageContextProvider(props){
                     active: department.active
                 };
             });
-
             setAllDepartments(formattedDepartments);
             setDepartmentStats({
                 occupied,
@@ -187,53 +203,34 @@ export function AdminManageContextProvider(props){
                 onlyOwner
             });
             setTotalDepartments(total)
-
         } catch (error) {
             console.error("Error al obtener los departamentos:", error);
             alert("Hubo un problema al obtener los departamentos. Por favor, intenta nuevamente.");
         }
     };
 
-
-    useEffect(() => {
-        if (consortiumIdState) {
-            getAConsortiumByIdConsortium();
-        }
-    }, [consortiumIdState]);
-
     const getAConsortiumByIdConsortium = async () => {
         if (!consortiumIdState) {
             return;
         }
-
-        // Obtén el token almacenado
         const token = localStorage.getItem('token');
-
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detener la ejecución si no hay token
+            return;
         }
-
         try {
-            // Decodifica el token para verificar el rol
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
-
             if (!isAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detener la ejecución si no es ROLE_ADMIN
+                return;
             }
-
-            // Realiza la solicitud para obtener el consorcio por su ID
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/consortiums/consortium/${consortiumIdState}`, {
                 headers: {
-                    Authorization: `Bearer ${token}` // Incluye el token en los encabezados
+                    Authorization: `Bearer ${token}`
                 }
             });
-
-            const consortium = res.data; // Almacenar directamente el objeto retornado
-
-            // Guardamos el nombre y los detalles del consorcio
+            const consortium = res.data;
             setConsortiumName(consortium.name);
             setAConsortiumByIdConsortium({
                 consortiumId: consortium.consortiumId,
@@ -243,7 +240,6 @@ export function AdminManageContextProvider(props){
                 province: consortium.province,
                 functionalUnits: consortium.functionalUnits
             });
-
         } catch (error) {
             console.error("Error fetching consortium data", error);
             alert("Hubo un problema al obtener los datos del consorcio. Por favor, intenta nuevamente.");
@@ -255,35 +251,25 @@ export function AdminManageContextProvider(props){
             if (!consortiumIdState) {
                 return;
             }
-
-
-            // Obtén el token almacenado
             const token = localStorage.getItem('token');
             if (!token) {
                 alert("No estás autorizado. Por favor, inicia sesión.");
-                return; // Detener la ejecución si no hay token
+                return;
             }
-
-            // Decodifica el token para verificar el rol
             const decodedToken = jwtDecode(token);
             const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
             if (!isAdmin) {
                 alert("No tienes permisos para realizar esta acción.");
-                return; // Detener la ejecución si no es ROLE_ADMIN
+                return;
             }
-
-            // Si el usuario tiene el rol adecuado, realiza la solicitud
             const res = await axios.get(
                 `${import.meta.env.VITE_API_BASE_URL}/Amenities?idConsortium=${consortiumIdState}`,
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                        Authorization: `Bearer ${token}`,
                     },
                 }
             );
-            console.log(res.data);
-
-            // Mapear y establecer las amenities
             const amenities = res.data.content;
             setAllAmenities(
                 amenities.map((amenity) => {
@@ -293,6 +279,7 @@ export function AdminManageContextProvider(props){
                         maxBookings: amenity.maxBookings,
                         costOfUse: amenity.costOfUse,
                         imagePath: amenity.imagePath,
+                        active: amenity.active,
                     };
                 })
             );
@@ -302,34 +289,27 @@ export function AdminManageContextProvider(props){
         }
     };
 
-    const getAllPostsByIdConsortium = async () => {   // Obtén el token del almacenamiento local
+    const getAllPostsByIdConsortium = async () => {
         if (!consortiumIdState) {
             return;
         }
-
         const token = localStorage.getItem('token');
         if (!token) {
             alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detenemos la ejecución si no hay token
+            return;
         }
-
-        // Decodifica el token para verificar el rol
         const decodedToken = jwtDecode(token);
         const isAdmin = decodedToken?.role?.includes('ROLE_ADMIN');
         if (!isAdmin) {
             alert("No tienes permisos para ver esta información.");
-            return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN
+            return;
         }
-
-        // Continúa con la solicitud si el usuario tiene permisos
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/posts?idConsortium=${consortiumIdState}`, {
                 headers: {
-                    Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
+                    Authorization: `Bearer ${token}`,
                 },
             });
-
-            console.log(res.data);
             const posts = res.data.content;
             setAllPosts(posts.map((post) => ({
                 postId: post.postId,
@@ -347,145 +327,372 @@ export function AdminManageContextProvider(props){
         }
     };
 
-    const getAllMaintenanceFeesByIdConsortium = async () => {
+    // Cambiado: getAllMaintenanceFeesByIdConsortium a getAllConsortiumFeePeriodsByIdConsortium
+    const getAllConsortiumFeePeriodsByIdConsortium = async (page = 0, size = 10) => {
         if (!consortiumIdState) {
-            return;
+            // Devolver un objeto consistente para evitar errores en el componente
+            return { content: [], totalElements: 0 };
         }
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/maintenanceFee?consortiumId=${consortiumIdState}`)
-        const maintenanceFees = res.data.content;
-        setAllMaintenanceFees(maintenanceFees.map(maintenanceFee =>{
-            return {
-                maintenanceFeeId: maintenanceFee.maintenanceFeeId,
-                period: maintenanceFee.period,
-                fileName: maintenanceFee.fileName,
-                uploadDate: formatDate(maintenanceFee.uploadDate),
-                resume: maintenanceFee.resume,
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("No estás autorizado.");
+            // Devolver un objeto consistente
+            return { content: [], totalElements: 0 };
+        }
+        try {
+            const decodedToken = jwtDecode(token);
+            if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
+                alert("No tienes permisos.");
+                // Devolver un objeto consistente
+                return { content: [], totalElements: 0 };
             }
-        }))
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/query`, {
+                headers: { Authorization: `Bearer ${token}` },
+                params: {
+                    consortiumId: consortiumIdState,
+                    page,
+                    size
+                }
+            });
+
+            const feePeriodsData = res.data.content || [];
+            const totalElements = res.data.totalElements || 0;
+
+            // Guardar el estado original y el mapeado para la UI
+            const mappedFeePeriods = feePeriodsData.map(feePeriod => {
+                return {
+                    ...feePeriod, // Mantener todos los campos originales
+                    rawFeePeriodStatus: feePeriod.feePeriodStatus, // Guardar el estado crudo
+                    displayPeriodDate: formatPeriodDate(feePeriod.periodDate),
+                    displayGenerationDate: formatDate(feePeriod.generationDate, "dd/MM/yyyy"),
+                    displayDueDate: formatDate(feePeriod.dueDate, "dd/MM/yyyy"),
+                    displayFeePeriodStatus: feePeriodStatusMapping[feePeriod.feePeriodStatus] || feePeriod.feePeriodStatus,
+                }
+            });
+            setAllConsortiumFeePeriods(mappedFeePeriods);
+            // Devolver los datos mapeados para la paginación si el componente los usa directamente del resultado
+            // o simplemente el totalElements si el componente usa el estado del contexto.
+            // Para consistencia con el return original, devolvemos los datos mapeados y totalElements.
+            return { content: mappedFeePeriods, totalElements: totalElements };
+        } catch (error) {
+            console.error("Error al obtener los periodos de expensas:", error);
+            alert("Hubo un problema al obtener los periodos de expensas.");
+            setAllConsortiumFeePeriods([]);
+            return { content: [], totalElements: 0 };
+        }
     }
 
-    useEffect(() => {
-        const storedConsortiumId = localStorage.getItem('consortiumId');
-        if (storedConsortiumId) {
-            setConsortiumIdState(storedConsortiumId);
-        } else {
-            navigate('/admin/management/'); // Redirect if no consortiumId is found
+    // Nueva función para actualizar ConsortiumFeePeriod
+    const updateConsortiumFeePeriod = async (feePeriodId, dataToUpdate) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            return { success: false, message: 'No estás autorizado.' };
         }
-    }, []);
+        try {
+            const decodedToken = jwtDecode(token);
+            if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
+                return { success: false, message: 'No tienes permisos.' };
+            }
+
+            const payload = {
+                generationDate: dataToUpdate.generationDate,
+                dueDate: dataToUpdate.dueDate,
+                notes: dataToUpdate.emailText,
+                sendByEmail: dataToUpdate.sendByEmail,
+            };
+
+            await axios.put(
+                `${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/${feePeriodId}`,
+                payload,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            // Opcional: llamar a getAllConsortiumFeePeriodsByIdConsortium() aquí para recargar,
+            // o dejar que el componente lo haga.
+            return { success: true, message: 'Periodo de expensa actualizado correctamente.' };
+        } catch (error) {
+            console.error('Error al actualizar el periodo de expensa:', error);
+            return { success: false, message: error.response?.data?.message || 'Error al actualizar el periodo de expensa.' };
+        }
+    };
+
+    // // Nueva función para subir ConsortiumFeePeriod
+    // // Asume que el backend espera un FormData similar al anterior
+    // // pero para un endpoint diferente.
+    // // **NECESITARÁS EL DTO Y ENDPOINT EXACTO DEL BACKEND PARA ESTO**
+    // const uploadConsortiumFeePeriod = async (file, totalAmount, periodDate) => { // periodDate podría ser necesario
+    //     if (!file || !consortiumIdState || !totalAmount || !periodDate) {
+    //         // alert('Por favor, completa todos los campos y selecciona un archivo.');
+    //         return { success: false, message: 'Por favor, completa todos los campos y selecciona un archivo.' };
+    //     }
+    //     const token = localStorage.getItem('token');
+    //     if (!token) {
+    //         return { success: false, message: 'No estás autorizado.' };
+    //     }
+    //
+    //     const formData = new FormData();
+    //     formData.append("file", file);
+    //     formData.append("consortiumId", consortiumIdState);
+    //     formData.append("totalAmount", totalAmount);
+    //     formData.append("periodDate", periodDate); // Ejemplo: '2023-10' o la fecha completa '2023-10-01'
+    //     // Ajustar según lo que espere el backend
+    //
+    //     try {
+    //         const decodedToken = jwtDecode(token);
+    //         if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
+    //             return { success: false, message: 'No tienes permisos.' };
+    //         }
+    //         // **ENDPOINT HIPOTÉTICO, AJUSTAR SEGÚN TU BACKEND**
+    //         const response = await axios.post(
+    //             `${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/upload`, // O el endpoint correcto
+    //             formData,
+    //             {
+    //                 headers: {
+    //                     'Content-Type': 'multipart/form-data',
+    //                     Authorization: `Bearer ${token}`,
+    //                 },
+    //             }
+    //         );
+    //         await getAllConsortiumFeePeriodsByIdConsortium(); // Recargar lista
+    //         return { success: true, message: 'Periodo de expensa cargado correctamente.' };
+    //     } catch (error) {
+    //         console.error('Error al cargar el periodo de expensa:', error);
+    //         return { success: false, message: error.response?.data?.message || 'Error al cargar el periodo de expensa.' };
+    //     }
+    // };
+
+    // Nueva función para eliminar ConsortiumFeePeriod
+    const deleteConsortiumFeePeriod = async (consortiumFeePeriodId) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("No estás autorizado.");
+            return false;
+        }
+        try {
+            const decodedToken = jwtDecode(token);
+            if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
+                alert("No tienes permisos.");
+                return false;
+            }
+            // Endpoint actualizado
+            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/${consortiumFeePeriodId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            // Actualizar estado local
+            setAllConsortiumFeePeriods(prevPeriods =>
+                prevPeriods.filter(p => p.consortiumFeePeriodId !== consortiumFeePeriodId)
+            );
+            return true;
+        } catch (error) {
+            console.error("Error al eliminar el periodo de expensa:", error);
+            alert(error.response?.data?.message || "Error al eliminar el periodo de expensa.");
+            return false;
+        }
+    };
+
+    // Nueva función para descargar PDF de ConsortiumFeePeriod
+    const downloadConsortiumFeePeriod = async (consortiumFeePeriodId, fileNameFromState) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("No estás autorizado.");
+            return;
+        }
+        try {
+            const decodedToken = jwtDecode(token);
+            if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
+                alert("No tienes permisos.");
+                return;
+            }
+            // Endpoint actualizado
+            const response = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/consortiumFeePeriods/${consortiumFeePeriodId}/download`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    responseType: 'blob',
+                }
+            );
+            const contentDisposition = response.headers['content-disposition'];
+            let fileName = fileNameFromState || 'expensa.pdf'; // Fallback
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+                if (fileNameMatch && fileNameMatch.length > 1) {
+                    fileName = fileNameMatch[1];
+                }
+            }
+            const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] || 'application/pdf' }));
+            const link = document.createElement('a');
+            link.href = fileURL;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(fileURL);
+        } catch (error) {
+            console.error('Error al descargar el archivo:', error);
+            alert('Hubo un error al descargar el archivo.');
+        }
+    };
+
+    const fetchDepartmentFeeQueryData = async (currentPage = 0, pageSize = 10) => {
+        let periodArray = period.split('/');
+        const formattedPeriod = formatDate(periodArray[1] + '-' + periodArray[0], 'yyyy-MM-dd');
+        if (!consortiumIdState || !period) {
+            setDepartmentFeeQueryData({ content: [], totalElements: 0 }); // Limpiar si no hay datos
+            return;
+        }
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert("No estás autorizado.");
+            // Podrías usar un sistema de notificaciones más amigable que alert
+            setDepartmentFeeQueryData({ content: [], totalElements: 0 });
+            return;
+        }
+        try {
+            const decodedToken = jwtDecode(token);
+            if (!decodedToken?.role?.includes('ROLE_ADMIN')) {
+                alert("No tienes permisos.");
+                setDepartmentFeeQueryData({ content: [], totalElements: 0 });
+                return;
+            }
+
+            const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/department-fees/query`, {
+                headers: { Authorization: `Bearer ${token}` },
+                params: {
+                    period: formattedPeriod,
+                    consortiumId: consortiumIdState,
+                    page: currentPage,
+                    size: pageSize,
+                    // Si tu backend requiere consortiumId para este endpoint, agrégalo:
+                    // consortiumId: consortiumIdState
+                }
+            });
+            // No es necesario mapear aquí si los nombres de campos coinciden y el formato es adecuado
+            // Si necesitas formatear fechas o estados, puedes hacerlo aquí o en el componente que consume los datos
+            setDepartmentFeeQueryData({
+                content: response.data.content,
+                totalElements: response.data.totalElements
+            });
+        } catch (error) {
+            console.error("Error al obtener los datos de expensas por departamento:", error);
+            alert("Hubo un problema al obtener los datos de expensas por departamento.");
+            setDepartmentFeeQueryData({ content: [], totalElements: 0 }); // Limpiar en caso de error
+        }
+    };
+
 
     useEffect(() => {
-        const period = localStorage.getItem('period');
         const storedConsortiumId = localStorage.getItem('consortiumId');
         if (storedConsortiumId) {
-            setPeriod(period);
             setConsortiumIdState(storedConsortiumId);
-            getAllMaintenanceFeesPaymentByIdConsortium()
         } else {
-            navigate('/admin/management/'); // Redirect if no consortiumId is found
+            navigate('/admin/management/');
         }
-    }, []);
+    }, [navigate]); // Añadir navigate a las dependencias
+
+    // Este useEffect parece redundante con el de arriba y el de abajo.
+    // Considera unificar la lógica de carga inicial.
+    useEffect(() => {
+        const localPeriod = localStorage.getItem('period'); // Renombrado para evitar conflicto
+        const storedConsortiumId = localStorage.getItem('consortiumId');
+        if (storedConsortiumId) {
+            if (localPeriod) setPeriod(localPeriod); // Solo setea si existe
+            // setConsortiumIdState(storedConsortiumId); // Ya se hace en el useEffect anterior
+            // getAllMaintenanceFeesPaymentByIdConsortium() // Esto se llamará cuando period y consortiumIdState estén listos
+        } else {
+            // navigate('/admin/management/'); // Ya se hace en el useEffect anterior
+        }
+    }, [navigate]); // Añadir navigate
 
     useEffect(() => {
         if (consortiumIdState) {
             getAConsortiumByIdConsortium();
+            // getAllConsortiumFeePeriodsByIdConsortium(); // Llamar aquí para la carga inicial de expensas
         }
     }, [consortiumIdState]);
 
-    const getAllMaintenanceFeesPaymentByIdConsortium = async () => {
-        try {
+    // useEffect(() => {
+    //     if (consortiumIdState && period) { // Solo llama si ambos están definidos
+    //         getAllMaintenanceFeesPaymentByIdConsortium();
+    //     }
+    // // }, [consortiumIdState, period]); // Dependencias correctas
+    // }, []); // Dependencias correctas
 
-            if (!consortiumIdState || !period) {
-                return;
-            }
 
-            // Obtén el token
-            const token = localStorage.getItem('token');
-            if (!token) {
-                alert("No tienes acceso. Por favor, inicia sesión.");
-                return;
-            }
-
-            // Decodifica el token
-            const decodedToken = jwtDecode(token);
-            const roles = decodedToken.role || [];
-
-            // Verifica el rol
-            if (!roles.includes('ROLE_ADMIN')) {
-                alert("No tienes permisos para acceder a esta información.");
-                return;
-            }
-
-            // Realiza la solicitud
-            const res = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment/consortium/${consortiumIdState}`, // consortiumId en la URL
-                {
-                    params: { period }, // period como query param
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            const maintenanceFeesPayment = res.data.content;
-            setAllMaintenanceFeesPayment(
-                maintenanceFeesPayment.map((maintenanceFeePayment) => ({
-                    maintenanceFeePaymentId: maintenanceFeePayment.maintenanceFeePaymentId,
-                    maintenanceFeeId: maintenanceFeePayment.maintenanceFee.maintenanceFeeId,
-                    period: maintenanceFeePayment.maintenanceFee.period,
-                    code: maintenanceFeePayment.department.code,
-                    status: statusMapping[maintenanceFeePayment.status] || maintenanceFeePayment.status,
-                    paymentDate: formatDate(maintenanceFeePayment.paymentDate)
-                }))
-            );
-        } catch (error) {
-            console.error("Error al obtener las expensas: ", error);
-            alert("Hubo un error al obtener los datos.");
-        }
-    };
+    // const getAllMaintenanceFeesPaymentByIdConsortium = async () => {
+    //     try {
+    //         if (!consortiumIdState || !period) {
+    //             return;
+    //         }
+    //         const token = localStorage.getItem('token');
+    //         if (!token) {
+    //             alert("No tienes acceso. Por favor, inicia sesión.");
+    //             return;
+    //         }
+    //         const decodedToken = jwtDecode(token);
+    //         const roles = decodedToken.role || [];
+    //         if (!roles.includes('ROLE_ADMIN')) {
+    //             alert("No tienes permisos para acceder a esta información.");
+    //             return;
+    //         }
+    //         const res = await axios.get(
+    //             `${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment/consortium/${consortiumIdState}`,
+    //             {
+    //                 params: { period },
+    //                 headers: {
+    //                     Authorization: `Bearer ${token}`,
+    //                 },
+    //             }
+    //         );
+    //         const maintenanceFeesPayment = res.data.content;
+    //         setAllMaintenanceFeesPayment(
+    //             maintenanceFeesPayment.map((maintenanceFeePayment) => ({
+    //                 maintenanceFeePaymentId: maintenanceFeePayment.maintenanceFeePaymentId,
+    //                 maintenanceFeeId: maintenanceFeePayment.maintenanceFee.maintenanceFeeId, // Esto podría necesitar cambiar si la estructura de expensas cambió
+    //                 period: maintenanceFeePayment.maintenanceFee.period, // Igual que arriba
+    //                 code: maintenanceFeePayment.department.code,
+    //                 status: statusMapping[maintenanceFeePayment.status] || maintenanceFeePayment.status,
+    //                 paymentDate: formatDate(maintenanceFeePayment.paymentDate)
+    //             }))
+    //         );
+    //     } catch (error) {
+    //         console.error("Error al obtener los pagos de expensas: ", error);
+    //         alert("Hubo un error al obtener los datos de pagos.");
+    //     }
+    // };
 
     const getAllClaimByConsortium = async () => {
         try {
-
             if (!consortiumIdState) {
                 return;
             }
-
-            // Obtén el token
             const token = localStorage.getItem('token');
             if (!token) {
                 alert("No tienes acceso. Por favor, inicia sesión.");
                 return;
             }
-
-            // Decodifica el token
             const decodedToken = jwtDecode(token);
             const roles = decodedToken.role || [];
-
-            // Verifica el rol
             if (!roles.includes('ROLE_ADMIN')) {
                 alert("No tienes permisos para acceder a esta información.");
                 return;
             }
-
-            // Realiza la solicitud
             const res = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/issueReport/consortium/${consortiumIdState}/admin`, // consortiumId en la URL
+                `${import.meta.env.VITE_API_BASE_URL}/issueReport/consortium/${consortiumIdState}/admin`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 }
             );
-
             const claims = res.data.content;
-            console.log(claims)
             setAllClaims(
                 claims.map((claim) => ({
                     issueReportId: claim.issueReportId,
                     subject: claim.subject,
                     issue: claim.issue,
                     user: claim.person.name && claim.person.lastName
-                    ? `${claim.person.name} ${claim.person.lastName}`
+                        ? `${claim.person.name} ${claim.person.lastName}`
                         : '',
                     status: statusMapping[claim.status] || claim.status,
                     createdDate: formatDate(claim.createdDate),
@@ -494,51 +701,58 @@ export function AdminManageContextProvider(props){
                 }))
             );
         } catch (error) {
-            console.error("Error al obtener las expensas: ", error);
-            alert("Hubo un error al obtener los datos.");
+            console.error("Error al obtener los reclamos: ", error);
+            alert("Hubo un error al obtener los reclamos.");
         }
     };
- return(
-     <AdminManageContext.Provider value={{
-         consortiumIdState,
-         setConsortiumIdState,
-         allPersons,
-         setAllPersons,
-         allDepartments,
-         setAllDepartments,
-         consortiumName,
-         setConsortiumName,
-         aConsortiumByIdConsortium,
-         setAConsortiumByIdConsortium,
-         allAmenities ,
-         setAllAmenities,
-         allPosts,
-         setAllPosts,
-         allMaintenanceFees ,
-         setAllMaintenanceFees,
-         period ,
-         setPeriod,
-         allMaintenanceFeesPayment , setAllMaintenanceFeesPayment,
-         allClaims , setAllClaims,
-         statusMapping,
-         departmentStats, setDepartmentStats,
-         totalDepartments, setTotalDepartments,
-         openDniDialog, setOpenDniDialog,
-         newPersonDpto, setNewPersonDpto,
-         personCreationType, setPersonCreationType,
-         newResidentDpto, setNewResidentDpto,
-         getAllPersons,
-         getAllDepartmentsByConsortium,
-         getAConsortiumByIdConsortium,
-         getAllAmenitiesByIdConsortium,
-         getAllPostsByIdConsortium,
-         getAllMaintenanceFeesByIdConsortium,
-         getAllMaintenanceFeesPaymentByIdConsortium,
-         getAllClaimByConsortium
 
-     }}>
-         {props.children}
-     </AdminManageContext.Provider>
-
- )
+    return(
+        <AdminManageContext.Provider value={{
+            consortiumIdState,
+            setConsortiumIdState,
+            allPersons,
+            setAllPersons,
+            allDepartments,
+            setAllDepartments,
+            consortiumName,
+            setConsortiumName,
+            aConsortiumByIdConsortium,
+            setAConsortiumByIdConsortium,
+            allAmenities ,
+            setAllAmenities,
+            allPosts,
+            setAllPosts,
+            // Cambiado
+            allConsortiumFeePeriods ,
+            setAllConsortiumFeePeriods,
+            period ,
+            setPeriod,
+            departmentFeeQueryData, // Nuevo estado
+            setDepartmentFeeQueryData,
+            allClaims , setAllClaims,
+            statusMapping, // General status mapping
+            feePeriodStatusMapping, // Specific for fee periods
+            departmentStats, setDepartmentStats,
+            totalDepartments, setTotalDepartments,
+            openDniDialog, setOpenDniDialog,
+            newPersonDpto, setNewPersonDpto,
+            personCreationType, setPersonCreationType,
+            newResidentDpto, setNewResidentDpto,
+            getAllPersons,
+            getAllDepartmentsByConsortium,
+            getAConsortiumByIdConsortium,
+            getAllAmenitiesByIdConsortium,
+            getAllPostsByIdConsortium,
+            // Cambiado
+            getAllConsortiumFeePeriodsByIdConsortium,
+            // uploadConsortiumFeePeriod,
+            updateConsortiumFeePeriod,
+            deleteConsortiumFeePeriod,
+            downloadConsortiumFeePeriod,
+            fetchDepartmentFeeQueryData,
+            getAllClaimByConsortium
+        }}>
+            {props.children}
+        </AdminManageContext.Provider>
+    )
 }
