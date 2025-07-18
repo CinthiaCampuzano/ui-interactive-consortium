@@ -52,6 +52,14 @@ const shiftMapping = {
     'NIGHT': 'Noche'
 };
 
+const bookingStatusMapping = {
+    PENDING: { label: 'PENDIENTE', color: 'warning' },
+    USER_CANCELLED: { label: 'CANCELADA POR USUARIO', color: 'error' },
+    AUTOMATIC_CANCELLED: { label: 'CANCELACION AUTOMATICA', color: 'default' },
+    ADMIN_CANCELLED: { label: 'CANCELADA POR ADMINISTRADOR', color: 'error' },
+    DONE: { label: 'CONCRETADA', color: 'success' }
+};
+
 
 const ReserveSpace = () => {
 
@@ -269,7 +277,6 @@ const ReserveSpace = () => {
 
             setReservationsState(
                 reservations.map((reservation) => {
-                    const status = 'PENDING';
                     return {
                         bookingId: reservation.bookingId,
                         space: reservation.amenity.name,
@@ -277,7 +284,8 @@ const ReserveSpace = () => {
                         reserveDay: reservation.createdAt.replace(/T/, ' ').substring(0, 16),
                         shift: shiftMapping[reservation.shift],
                         reserveDate: reservation.startDate,
-                        status: status
+                        status: reservation.bookingStatus,
+                        bookingCost: reservation.bookingCost,
                     };
                 })
             );
@@ -487,7 +495,8 @@ const ReserveSpace = () => {
         { id: 'reserveDay', label: 'Fecha de Solicitud', align: 'center' },
         { id: 'shift', label: 'Turno', align: 'center' },
         { id: 'reserveDate', label: 'Fecha de Reserva', align: 'center' },
-        { id: 'status', label: 'Estado', align: 'center' }, // <--- NUEVA COLUMNA
+        { id: 'bookingCost', label: 'Costo de Uso', align: 'center' },
+        { id: 'status', label: 'Estado', align: 'center' },
         { id: 'actions', label: 'Acciones', align: 'center' }
     ];
 
@@ -642,26 +651,17 @@ const ReserveSpace = () => {
                                     </TableHead>
                                     <TableBody>
                                         {reservationsState.map((row, index) => {
-                                            const isDeletable = canDeleteBooking(row.reserveDate);
+                                            const isDeletable = canDeleteBooking(row.reserveDate) && row.status === 'PENDING';
+                                            const statusInfo = bookingStatusMapping[row.status] || { label: row.status, color: 'default' };
 
-                                            let chipLabel = row.status; // El texto del chip será el estado
-                                            let chipProps = { // Objeto para las props del Chip
-                                                label: chipLabel,
-                                                size: "small",
-                                                color: "default" // Color por defecto
-                                            };
-
-                                            // Define aquí el nombre exacto de tu estado "Pendiente" cuando lo tengas de la API
-                                            if (row.status === 'PENDING') {
-                                                chipProps.color = 'warning'; // Amarillo/Naranja para Pendiente
-                                                chipProps.label = 'Pendiente'; // Etiqueta específica para Pendiente
-                                            }
                                             return (
                                                 <TableRow hover key={row.bookingId || index} sx={{
                                                     backgroundColor: '#FFFFFF',
                                                     '&:hover': { backgroundColor: '#F6EFE5' },
                                                 }}>
                                                     {columns.map((column) => {
+                                                        const value = row[column.id];
+
                                                         if (column.id === 'actions') {
                                                             return (
                                                                 <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles, textAlign: 'center' }}>
@@ -669,7 +669,7 @@ const ReserveSpace = () => {
                                                                         aria-label="delete"
                                                                         onClick={() => handleOpenDeleteDialog(row.bookingId)}
                                                                         disabled={!isDeletable}
-                                                                        sx={{ color: '#B2675E' }} // Manteniendo tu color personalizado
+                                                                        sx={{ color: '#B2675E' }}
                                                                         size="small"
                                                                     >
                                                                         <DeleteIcon fontSize="small" />
@@ -677,18 +677,24 @@ const ReserveSpace = () => {
                                                                 </TableCell>
                                                             );
                                                         }
-                                                        if (column.id === 'status') { // Si la columna es 'status'
+                                                        if (column.id === 'status') {
                                                             return (
                                                                 <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles, textAlign: 'center' }}>
-                                                                    <Chip {...chipProps} /> {/* Pasa las props al Chip */}
+                                                                    <Chip label={statusInfo.label} color={statusInfo.color} size="small" />
                                                                 </TableCell>
                                                             );
                                                         }
-                                                        // Renderizado para las otras columnas
-                                                        const cellValue = row[column.id] !== undefined && row[column.id] !== null ? row[column.id] : 'N/A';
+                                                        if (column.id === 'bookingCost') {
+                                                            return (
+                                                                <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles, textAlign: 'center' }}>
+                                                                    {`$ ${value}`}
+                                                                </TableCell>
+                                                            );
+                                                        }
+                                                        // Default rendering for other columns
                                                         return (
                                                             <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles, textAlign: 'center' }}>
-                                                                {cellValue}
+                                                                {value !== undefined && value !== null ? value : 'N/A'}
                                                             </TableCell>
                                                         );
                                                     })}
