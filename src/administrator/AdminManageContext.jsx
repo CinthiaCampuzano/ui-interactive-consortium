@@ -279,6 +279,7 @@ export function AdminManageContextProvider(props){
                         maxBookings: amenity.maxBookings,
                         costOfUse: amenity.costOfUse,
                         imagePath: amenity.imagePath,
+                        active: amenity.active,
                     };
                 })
             );

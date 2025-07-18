@@ -40,14 +40,7 @@ const columns = [
 function AdminAmenitiesManagement(){
     const {consortiumIdState, getAConsortiumByIdConsortium, consortiumName, allAmenities,
         setAllAmenities, getAllAmenitiesByIdConsortium } = useContext(AdminManageContext)
-    const [amenityName, setAmenityName] = useState('');
-    const [rowsPerPage, setRowsPerPage] = React.useState(10);
-    const [page, setPage] = React.useState(0);
-    const [idAmenityUpdate, setIdAmenityUpdate] = useState(null)
-    const [openEdit, setOpenEdit] = useState(false)
-    const [editName, setEditName] = useState('')
-    const [editMaxBooking, setEditMaxBooking] = useState('')
-    const [editCostOfUse, setEditCostOfUse] = useState('')
+    const [openEdit, setOpenEdit] = useState(false);
     const [idAmenityCreated, setIdAmenityCreated] = useState(null)
     const [open, setOpen] = useState(false)
     const [text, setText] = useState('')
@@ -59,17 +52,18 @@ function AdminAmenitiesManagement(){
     const [isFormWellComplete, setIsFormWellComplete] = useState(false);
 
 
-    const handleClickOpenEdit = (idAmenityToEdit, amenityNameEdit, amenityMaxBookingEdit, amenityCostOfUseEdit) => {
-        setIdAmenityUpdate(idAmenityToEdit)
-        setEditName(amenityNameEdit)
-        setEditMaxBooking(amenityMaxBookingEdit)
-        setEditCostOfUse(amenityCostOfUseEdit)
-        setOpenEdit(true)
+    const handleClickOpenEdit = (amenity) => {
+        setAmenityInfo({
+            ...amenity,
+            consortium: {
+                consortiumId: consortiumIdState
+            }
+        });
+        setOpenEdit(true);
     }
 
     const handleCloseEdit = () => {
         setOpenEdit(false)
-        setIdAmenityUpdate(null)
         setAmenityInfo({})
     }
 
@@ -108,21 +102,6 @@ function AdminAmenitiesManagement(){
     useEffect(() => {
         setIsFormWellComplete(areFieldsComplete());
     }, [amenityInfo]);
-
-    useEffect( () => {
-        if (openEdit){
-            setAmenityInfo({
-                amenityId: idAmenityUpdate,
-                name: editName || "",
-                maxBookings: editMaxBooking || "",
-                costOfUse: editCostOfUse || "",
-                consortium: {
-                    consortiumId: consortiumIdState
-                }
-            })
-        }
-
-    }, [idAmenityUpdate, editName, editMaxBooking, editCostOfUse]);
 
     useEffect(() => {
         if (allAmenities.length > 0) {
@@ -165,9 +144,12 @@ function AdminAmenitiesManagement(){
     };
 
     const handleChange = (event) => {
-        const name = event.target.name
-        const value = event.target.value
-        setAmenityInfo(values => ({...values, [name]: value}))
+        const { name, value, type, checked } = event.target;
+        const val = type === 'checkbox' ? checked : value;
+        setAmenityInfo(values => ({
+            ...values,
+            [name]: val
+        }));
     }
 
     const handleSubmit = async (event) => {
@@ -222,10 +204,8 @@ function AdminAmenitiesManagement(){
     };
 
     useEffect(() => {
-        if (amenityName === '' ){
-            getAllAmenitiesByIdConsortium()
-        }
-    }, [amenityName, consortiumIdState]);
+        getAllAmenitiesByIdConsortium()
+    }, [consortiumIdState]);
 
     useEffect(() => {
         getAConsortiumByIdConsortium();
@@ -405,14 +385,16 @@ function AdminAmenitiesManagement(){
                                                 Costo: $ {amenity.costOfUse}
                                             </Typography>
                                             <Chip
-                                                label='Habilitado'
-                                                color='success'
+                                                label={amenity.active ? 'Habilitado' : 'Deshabilitado'}
+                                                color={amenity.active ? 'success' : 'default'}
                                                 size="small"
-                                                sx={{
+                                                sx={amenity.active ? {
                                                     mt: 1,
                                                     bgcolor:'#c8f7c5',
                                                     color:'#028484',
                                                     fontWeight: 'bold',
+                                                } : {
+                                                    mt: 1
                                                 }}
                                             />
                                         </CardContent>
@@ -428,14 +410,7 @@ function AdminAmenitiesManagement(){
                                             </IconButton>
                                             <IconButton
                                                 aria-label="edit"
-                                                onClick={() =>
-                                                    handleClickOpenEdit(
-                                                        amenity.amenityId,
-                                                        amenity.name,
-                                                        amenity.maxBookings,
-                                                        amenity.costOfUse
-                                                    )
-                                                }
+                                                onClick={() => handleClickOpenEdit(amenity)}
                                             >
                                                 <EditIcon sx={{ color: '#002776' }} />
                                             </IconButton>
@@ -469,11 +444,11 @@ function AdminAmenitiesManagement(){
                     borderBottom: '2px solid #028484',
                     fontWeight: 'bold',
                 }}>
-                    {"Desea eliminar este Espacio Comun ?"}
+                    {"Desea eliminar este Espacio Común?"}
                 </DialogTitle>
                 <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
                     <DialogContentText id="alert-dialog-description">
-                        Si acepta se eliminara el espacio comun deseado.
+                        Si acepta se eliminara el espacio común deseado.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions  sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
@@ -551,7 +526,7 @@ function AdminAmenitiesManagement(){
                                         size="small"
                                         type="text"
                                         name="name"
-                                        value={amenityInfo.name !== undefined ? amenityInfo.name : editName || ''}
+                                        value={amenityInfo.name || ''}
                                         onChange={handleChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
@@ -580,7 +555,7 @@ function AdminAmenitiesManagement(){
                                         size="small"
                                         type="text"
                                         name="maxBookings"
-                                        value={amenityInfo.maxBookings !== undefined ? amenityInfo.maxBookings : editMaxBooking || ''}
+                                        value={amenityInfo.maxBookings || ''}
                                         onChange={handleChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
@@ -609,7 +584,7 @@ function AdminAmenitiesManagement(){
                                         size="small"
                                         type="text"
                                         name="costOfUse"
-                                        value={amenityInfo.costOfUse !== undefined ? amenityInfo.costOfUse : editCostOfUse || ''}
+                                        value={amenityInfo.costOfUse || ''}
                                         onChange={handleChange}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
@@ -651,8 +626,8 @@ function AdminAmenitiesManagement(){
                                                 <Switch
                                                     size="small"
                                                     name= "active"
-                                                    checked={true}
-                                                    //onChange={handleChange}
+                                                    checked={amenityInfo.active || false}
+                                                    onChange={handleChange}
                                                     sx={{
                                                         '& .MuiSwitch-switchBase.Mui-checked': {
                                                             color: '#028484',
@@ -673,7 +648,7 @@ function AdminAmenitiesManagement(){
                                                         marginRight: 1,
                                                     }}
                                                 >
-                                                    HABILITAR
+                                                    Habilitado
                                                 </Typography>
                                             }
                                             labelPlacement="start" // El texto "HABILITAR" estará a la izquierda del switch
@@ -703,14 +678,14 @@ function AdminAmenitiesManagement(){
                     </Button>
                     <Button type="submit" color="primary" onClick={handleSubmit} variant="contained"  disabled={!isFormWellComplete || loading }
                             sx={{
-                        backgroundColor: '#028484',
-                        '&:hover': {
-                            backgroundColor: '#026F6B',
-                        },
-                        borderRadius: '25px',
-                        padding: '8px 20px',
-                        transition: 'background-color 0.3s ease',
-                    }}>
+                                backgroundColor: '#028484',
+                                '&:hover': {
+                                    backgroundColor: '#026F6B',
+                                },
+                                borderRadius: '25px',
+                                padding: '8px 20px',
+                                transition: 'background-color 0.3s ease',
+                            }}>
                         Guardar
                     </Button>
 

@@ -8,7 +8,9 @@ import {
     Button,
     Box,
     Card,
+    CardMedia,
     CardContent,
+    CardActions,
     FormControl,
     InputLabel,
     Select,
@@ -36,8 +38,10 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import DeleteIcon from '@mui/icons-material/Delete'
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
-// const spaces = ['Piscina', 'Gimnasio', 'Sala de Reuniones', 'Cancha de Tenis'];
 const shifts = [
     { id: 'MORNING', name: 'Mañana'},
     { id: 'NIGHT',   name: 'Noche'}
@@ -47,6 +51,7 @@ const shiftMapping = {
     'MORNING': 'Mañana',
     'NIGHT': 'Noche'
 };
+
 
 const ReserveSpace = () => {
 
@@ -66,13 +71,52 @@ const ReserveSpace = () => {
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // Estado para controlar si el diálogo de eliminación está abierto
     const [bookingIdToDelete, setBookingIdToDelete] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [uploadedImages, setUploadedImages] = useState({});
+    const [selectedAmenity, setSelectedAmenity] = useState(null);
 
-    const handleChangeSpace = (event) => setSpace(event.target.value);
+    const sliderSettings = {
+        dots: true,
+        infinite: amenities.length > 3,
+        speed: 500,
+        slidesToShow: 3,
+        slidesToScroll: 1,
+        responsive: [
+            {
+                breakpoint: 1100, // When to switch to 2 slides
+                settings: {
+                    slidesToShow: 2,
+                    slidesToScroll: 1,
+                    infinite: amenities.length > 2,
+                    dots: true
+                }
+            },
+            {
+                breakpoint: 700, // When to switch to 1 slide
+                settings: {
+                    slidesToShow: 1,
+                    slidesToScroll: 1,
+                    infinite: amenities.length > 1,
+                }
+            }
+        ]
+    };
+
     const handleChangeDate = (event) => setDate(event.target.value);
-
     const handleChangeShift = (event) => setShift(event.target.value);
-    const handleOpenDialog = () => setOpenDialog(true);
-    const handleCloseDialog = () => setOpenDialog(false);
+
+    const handleOpenDialog = (amenity) => {
+        setSelectedAmenity(amenity);
+        setSpace(amenity.amenityId);
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setSelectedAmenity(null);
+        setDate('');
+        setShift('');
+        setDepartment('');
+    };
 
     const [reservationsState, setReservationsState] = useState([]);
 
@@ -99,6 +143,37 @@ const ReserveSpace = () => {
     const handleCloseDeleteDialog = () => {
         setBookingIdToDelete(null); // Limpia el ID al cerrar
         setOpenDeleteDialog(false); // Cierra el diálogo
+    };
+
+    const setAmenityPhotos = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            return;
+        }
+
+        const imagePromises = amenities.map(async (amenity) => {
+            if (amenity.imagePath) {
+                try {
+                    const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/Amenities/${amenity.amenityId}/download`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        },
+                        responseType: 'blob'
+                    });
+                    const imageBlob = res.data;
+                    const imageUrl = URL.createObjectURL(imageBlob);
+                    return { amenityId: amenity.amenityId, imageUrl };
+                } catch (error) {
+                    console.error(`Error fetching image for amenity ${amenity.amenityId}:`, error);
+                    return null;
+                }
+            }
+            return null;
+        });
+
+        const images = await Promise.all(imagePromises);
+        const newImages = Object.fromEntries(images.filter(Boolean).map(img => [img.amenityId, img.imageUrl]));
+        setUploadedImages(newImages);
     };
 
     useEffect(() => {
@@ -189,7 +264,7 @@ const ReserveSpace = () => {
                     },
                 }
             );
-            
+
             const reservations = res.data.content;
 
             setReservationsState(
@@ -223,6 +298,12 @@ const ReserveSpace = () => {
         }
     }, [consortiumIdState, residentDepartmentIds]);
 
+    useEffect(() => {
+        if (amenities.length > 0) {
+            setAmenityPhotos();
+        }
+    }, [amenities]);
+
     const getAllAmenitiesByIdConsortium = async () => {
         try {
 
@@ -249,7 +330,7 @@ const ReserveSpace = () => {
                     },
                 }
             );
-            
+
             // Mapear y establecer las amenities
             const amenities = res.data.content;
             setAmenities(
@@ -259,6 +340,8 @@ const ReserveSpace = () => {
                         name: amenity.name,
                         maxBookings: amenity.maxBookings,
                         imagePath: amenity.imagePath,
+                        costOfUse: amenity.costOfUse,
+                        active: amenity.active,
                     };
                 })
             );
@@ -459,97 +542,68 @@ const ReserveSpace = () => {
                             Reserva tu Espacio Común
                         </Typography>
 
-                        <Box
-                            sx={{
-                                width: '100%',
-                                maxWidth: '600px',
-                                marginBottom: '40px',
-                            }}
-                        >
-                            <Card sx={{boxShadow: 3, padding: 2}}>
-                                <CardContent>
-                                    <Grid container spacing={2}>
-                                        {/* Selección de espacio */}
-                                        <Grid item xs={12}>
-                                            <FormControl fullWidth>
-                                                <InputLabel>Espacio Común</InputLabel>
-                                                <Select value={space} onChange={handleChangeSpace}
-                                                        label="Espacio Común">
-                                                    {amenities.map((amenity) => (
-                                                        <MenuItem key={amenity.amenityId} value={amenity.amenityId}>
-                                                            {amenity.name}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                label="Fecha"
-                                                type="date"
-                                                value={date}
-                                                onChange={handleChangeDate}
-                                                fullWidth
-                                                InputLabelProps={{shrink: true}}
-                                                InputProps={{
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <CalendarTodayIcon/>
-                                                        </InputAdornment>
-                                                    ),
+                        {/* Amenity Cards */}
+                        <Box sx={{ width: '100%', maxWidth: '1100px', mb: 5, px: {xs: 0, sm: '40px'} }}>
+                            <Slider {...sliderSettings}>
+                                {amenities.map((amenity) => (
+                                    <Box key={amenity.amenityId} sx={{ p: 1.5 }}>
+                                        <Card
+                                            sx={{
+                                                height: '100%', // Ensure all cards have the same height
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                textAlign: 'center',
+                                                backgroundColor: 'transparent',
+                                                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+                                                transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+                                                ...(amenity.active ? {
+                                                    '&:hover': {
+                                                        transform: 'scale(1.05)',
+                                                        boxShadow: '0px 16px 32px rgba(184, 218, 227, 0.8)',
+                                                    },
+                                                } : {
+                                                    cursor: 'not-allowed'
+                                                }),
+                                            }}
+                                        >
+                                            <CardMedia
+                                                component="img"
+                                                height="220"
+                                                image={uploadedImages[amenity.amenityId] || '/images/poolPlaceholder.jpeg'}
+                                                alt={amenity.name}
+                                                sx={{
+                                                    opacity: amenity.active ? 1 : 0.5,
+                                                    filter: amenity.active ? 'none' : 'grayscale(80%)',
                                                 }}
                                             />
-                                        </Grid>
-
-                                        {/* Selección de turno */}
-                                        <Grid item xs={12}>
-                                            <FormControl fullWidth>
-                                                <InputLabel>Turno</InputLabel>
-                                                <Select value={shift} onChange={handleChangeShift} label="Turno">
-                                                    {shifts.map((option) => (
-                                                        <MenuItem key={option.id} value={option.id}>
-                                                            {option.name}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <FormControl fullWidth>
-                                                <InputLabel>Departamento</InputLabel>
-                                                <Select value={department}
-                                                        onChange={handleChangeDepartment}
-                                                        label="Departamento"
-                                                        disabled={departments.length === 0}
+                                            <CardContent sx={{ flexGrow: 1 }}> {/* Content grows to fill space */}
+                                                <Typography gutterBottom variant="h6" component="div" sx={{ color: '#002776', fontWeight: 'bold' }}>
+                                                    {amenity.name}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary" sx={{ color: '#002776' }}>
+                                                    Costo de Uso: $ {amenity.costOfUse}
+                                                </Typography>
+                                            </CardContent>
+                                            <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    onClick={() => handleOpenDialog(amenity)}
+                                                    disabled={!amenity.active}
+                                                    sx={{
+                                                        backgroundColor: amenity.active ? '#003366' : 'grey.400',
+                                                        '&:hover': {
+                                                            backgroundColor: amenity.active ? '#002776' : 'grey.400'
+                                                        },
+                                                    }}
                                                 >
-                                                    {departments.map((dept) => (
-                                                        <MenuItem key={dept.departmentId} value={dept.departmentId}>
-                                                            {dept.code}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-
-                                        <Grid item xs={12} textAlign="center">
-                                            <Button
-                                                disabled={!space || !date || !shift}
-                                                variant="contained"
-                                                color="primary"
-                                                onClick={handleOpenDialog}
-                                                sx={{
-                                                    padding: '10px 20px',
-                                                    fontSize: '16px',
-                                                    backgroundColor: '#003366'
-                                                }}
-                                            >
-                                                Reservar Espacio
-                                            </Button>
-                                        </Grid>
-                                    </Grid>
-                                </CardContent>
-                            </Card>
+                                                    {amenity.active ? 'Reservar' : 'No Habilitado'}
+                                                </Button>
+                                            </CardActions>
+                                        </Card>
+                                    </Box>
+                                ))}
+                            </Slider>
                         </Box>
 
 
@@ -609,7 +663,6 @@ const ReserveSpace = () => {
                                                 }}>
                                                     {columns.map((column) => {
                                                         if (column.id === 'actions') {
-                                                            // ... tu código para el botón de eliminar
                                                             return (
                                                                 <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles, textAlign: 'center' }}>
                                                                     <IconButton
@@ -651,17 +704,87 @@ const ReserveSpace = () => {
                 </Box>
             </Box>
 
-            <Dialog open={openDialog} onClose={handleCloseDialog}>
-                <DialogTitle>Confirmar Reserva</DialogTitle>
+            {/* Booking Dialog */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                <DialogTitle sx={{
+                    backgroundColor: '#E5E5E5',
+                    color: '#002776',
+                    textAlign: 'center',
+                    padding: '20px 30px',
+                    borderBottom: '2px solid #B2675E', // Color de borde relacionado con eliminar
+                    fontWeight: 'bold',
+                }}>
+                    Reservar: {selectedAmenity?.name}
+                </DialogTitle>
                 <DialogContent>
-                    <Typography variant="body1">
-                        Estás por realizar la reserva día <strong>{date}</strong>
-                    </Typography>
+                    <Grid container spacing={3} sx={{ pt: 2 }}>
+                        <Grid item xs={12}>
+                            <TextField
+                                label="Fecha"
+                                type="date"
+                                value={date}
+                                onChange={handleChangeDate}
+                                fullWidth
+                                InputLabelProps={{ shrink: true }}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <CalendarTodayIcon />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel>Turno</InputLabel>
+                                <Select value={shift} onChange={handleChangeShift} label="Turno">
+                                    {shifts.map((option) => (
+                                        <MenuItem key={option.id} value={option.id}>
+                                            {option.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel>Departamento</InputLabel>
+                                <Select value={department}
+                                        onChange={handleChangeDepartment}
+                                        label="Departamento"
+                                        disabled={departments.length === 0}
+                                >
+                                    {departments.map((dept) => (
+                                        <MenuItem key={dept.departmentId} value={dept.departmentId}>
+                                            {dept.code}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseDialog} color="secondary">Cancelar</Button>
-                    <Button onClick={handleSubmit} color="primary">Confirmar</Button>
+                    <Button onClick={handleCloseDialog} disabled={loading} color="secondary">Cancelar</Button>
+                    <Button onClick={handleSubmit}  disabled={loading || !date || !shift || !department} color="primary">Confirmar Reserva</Button>
                 </DialogActions>
+                {loading && (
+                    <Backdrop
+                        open={true}
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        }}
+                    >
+                        <CircularProgress color="primary" />
+                    </Backdrop>
+                )}
             </Dialog>
             <Dialog
                 open={openDeleteDialog}
@@ -743,34 +866,6 @@ const ReserveSpace = () => {
                         </Backdrop>
                     )}
                 </DialogActions>
-            </Dialog>
-            <Dialog open={openDialog} onClose={handleCloseDialog}>
-                <DialogTitle>Confirmar Reserva</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body1">
-                        Estás por realizar la reserva día <strong>{date}</strong>
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog} disabled={loading} color="secondary">Cancelar</Button>
-                    <Button onClick={handleSubmit}  disabled={loading} color="primary">Confirmar</Button>
-                </DialogActions>
-                {loading && (
-                    <Backdrop
-                        open={true}
-                        sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            zIndex: 10,
-                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                        }}
-                    >
-                        <CircularProgress color="primary" />
-                    </Backdrop>
-                )}
             </Dialog>
             <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
                 <Alert onClose={handleCloseAlert} severity={bookingMade ? "success" : "error"} sx={{width: '100%'}}>
