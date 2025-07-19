@@ -641,89 +641,6 @@ const ReserveSpace = () => {
                         >
                             Reserva tu Espacio Común
                         </Typography>
-                        
-                        {/* Filters */}
-                        <Paper 
-                            elevation={2} 
-                            sx={{ 
-                                p: 3, 
-                                mb: 3, 
-                                width: '100%', 
-                                maxWidth: '1100px',
-                                backgroundColor: '#f8f9fa'
-                            }}
-                        >
-                            <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                    mb: 2, 
-                                    display: 'flex', 
-                                    alignItems: 'center',
-                                    color: '#002776'
-                                }}
-                            >
-                                <FilterListIcon sx={{ mr: 1 }} />
-                                Filtros
-                            </Typography>
-                            
-                            <Grid container spacing={2}>
-                                {/* Date filter */}
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        label="Fecha de Reserva"
-                                        type="date"
-                                        value={filterDate}
-                                        onChange={handleFilterChange(setFilterDate)}
-                                        fullWidth
-                                        size="small"
-                                        InputLabelProps={{ shrink: true }}
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <CalendarTodayIcon fontSize="small" />
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                </Grid>
-                                
-                                {/* Status filter */}
-                                <Grid item xs={12} sm={6}>
-                                    <FormControl fullWidth size="small">
-                                        <InputLabel>Estado</InputLabel>
-                                        <Select
-                                            value={filterStatus}
-                                            onChange={handleFilterChange(setFilterStatus)}
-                                            label="Estado"
-                                        >
-                                            {Object.entries(bookingStatusMapping).map(([value, { label }]) => (
-                                                <MenuItem key={value} value={value}>
-                                                    {label}
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                            </Grid>
-                            
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<ClearIcon />}
-                                    onClick={handleClearFilters}
-                                    sx={{ 
-                                        borderColor: '#002776',
-                                        color: '#002776',
-                                        '&:hover': {
-                                            borderColor: '#001a4d',
-                                            backgroundColor: 'rgba(0, 39, 118, 0.04)'
-                                        }
-                                    }}
-                                >
-                                    Limpiar Filtros
-                                </Button>
-                            </Box>
-                        </Paper>
 
                         {/* Amenity Cards */}
                         <Box sx={{ width: '100%', maxWidth: '1100px', mb: 5, px: {xs: 0, sm: '40px'} }}>
@@ -789,6 +706,87 @@ const ReserveSpace = () => {
                             </Slider>
                         </Box>
 
+                        <Paper
+                            elevation={2}
+                            sx={{
+                                p: 3,
+                                mb: 3,
+                                width: '100%',
+                                maxWidth: '1100px',
+                                backgroundColor: '#f8f9fa'
+                            }}
+                        >
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    mb: 2,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    color: '#002776'
+                                }}
+                            >
+                                <FilterListIcon sx={{ mr: 1 }} />
+                                Filtros
+                            </Typography>
+
+                            <Grid container spacing={2}>
+                                {/* Date filter */}
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        label="Fecha de Reserva"
+                                        type="date"
+                                        value={filterDate}
+                                        onChange={handleFilterChange(setFilterDate)}
+                                        fullWidth
+                                        size="small"
+                                        InputLabelProps={{ shrink: true }}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <CalendarTodayIcon fontSize="small" />
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                </Grid>
+
+                                {/* Status filter */}
+                                <Grid item xs={12} sm={6}>
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Estado</InputLabel>
+                                        <Select
+                                            value={filterStatus}
+                                            onChange={handleFilterChange(setFilterStatus)}
+                                            label="Estado"
+                                        >
+                                            {Object.entries(bookingStatusMapping).map(([value, { label }]) => (
+                                                <MenuItem key={value} value={value}>
+                                                    {label}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<ClearIcon />}
+                                    onClick={handleClearFilters}
+                                    sx={{
+                                        borderColor: '#002776',
+                                        color: '#002776',
+                                        '&:hover': {
+                                            borderColor: '#001a4d',
+                                            backgroundColor: 'rgba(0, 39, 118, 0.04)'
+                                        }
+                                    }}
+                                >
+                                    Limpiar Filtros
+                                </Button>
+                            </Box>
+                        </Paper>
 
                         <Box sx={{
                             width: '100%',
