@@ -266,6 +266,7 @@ function AdminDepartmentManagement(){
 
             // Manejo de errores más detallado
             if (exception.response) {
+
                 switch (exception.response.status) {
                     case 404:
                         if (exception.response.data.message.includes('No existe ese departamento')) {
@@ -284,7 +285,7 @@ function AdminDepartmentManagement(){
                         setText('Ya existe un departamento en ese piso con ese identificador.');
                         break;
                     default:
-                        setText('No se realizó la carga, error de datos!!');
+                        setText(exception.response?.data?.message || exception.response?.data || 'No se realizó la carga, error de datos!!');
                 }
             }
         } finally {
@@ -1138,7 +1139,7 @@ function AdminDepartmentManagement(){
                                                 freeSolo
                                                 options={[{ personId: null, fullName: "NO ASIGNADO" }, ...allPersons]}
                                                 getOptionLabel={(option) => option.fullName || ""}
-                                                value={allPersons.find((person) => person.personId === departmentInfo.propietary?.personId) || null}
+                                                value={allPersons.find((person) => person.personId === departmentInfo.propietary?.personId) || { personId: null, fullName: "NO ASIGNADO" }}
                                                 onChange={(event, newValue) => {
                                                     handlePersonChange(event, newValue?.personId ? newValue : null);
                                                 }}
@@ -1191,7 +1192,7 @@ function AdminDepartmentManagement(){
                                                 freeSolo
                                                 options={[{ personId: null, fullName: "NO ASIGNADO" }, ...allPersons]} // Agrega opción null
                                                 getOptionLabel={(option) => option.fullName || ""}
-                                                value={allPersons.find((person) => person.personId === departmentInfo.resident?.personId) || null}
+                                                value={allPersons.find((person) => person.personId === departmentInfo.resident?.personId) || { personId: null, fullName: "NO ASIGNADO" }}
                                                 onChange={(event, newValue) => {
                                                 handleResidentChange(event, newValue?.personId ? newValue : null); // Si es null, actualiza residente a null
                                             }}
