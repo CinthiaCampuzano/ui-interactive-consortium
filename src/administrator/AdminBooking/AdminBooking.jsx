@@ -220,7 +220,7 @@ const AdminBooking = () => {
                         reserveDay: reservation.createdAt.replace(/T/, ' ').substring(0, 16),
                         shift: shiftMapping[reservation.shift] || reservation.shift,
                         reserveDate: reservation.startDate,
-                        resident: reservation.resident.name + ' ' + reservation.resident.lastName,
+                        resident: reservation.resident ? reservation.resident.name + ' ' + reservation.resident.lastName : 'N/A',
                         status: reservation.bookingStatus,
                         bookingCost: reservation.bookingCost,
                         department: reservation.department.code,
