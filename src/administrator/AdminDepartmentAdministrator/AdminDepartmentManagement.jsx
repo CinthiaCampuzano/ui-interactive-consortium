@@ -1031,7 +1031,9 @@ function AdminDepartmentManagement(){
                 </DialogTitle>
                 <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
                     <DialogContentText id="alert-dialog-description">
-                        Si acepta, se eliminará el usuario deseado.
+                        <strong>¿Desea eliminar permanentemente este departamento?</strong>
+                        <br /><br />
+                        Toda su información asociada (expensas, pagos, reservas, etc.) se perderá. Esta acción no se puede deshacer.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
