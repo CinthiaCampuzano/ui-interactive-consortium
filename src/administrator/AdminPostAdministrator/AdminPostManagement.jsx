@@ -560,11 +560,6 @@ function AdminPostManagement(){
                 }}>
                     {"Desea eliminar esta publicación?"}
                 </DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#F9F9F9' }}>
-                    <DialogContentText id="alert-dialog-description">
-                        Si acepta se eliminara la publicación deseada.
-                    </DialogContentText>
-                </DialogContent>
                 <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
                     <Button onClick={handleClose} variant="contained"  sx={{
                         backgroundColor: '#B2675E',

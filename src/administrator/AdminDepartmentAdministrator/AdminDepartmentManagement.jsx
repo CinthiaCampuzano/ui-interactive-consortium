@@ -130,10 +130,6 @@ function AdminDepartmentManagement(){
         })
     }
 
-    useEffect(() => {
-        setTotalDepartments(allDepartments.length);
-    }, [allDepartments]);
-
     const handleClickOpen = (idPersonToDelete) => {
         setIdPersonCreated(idPersonToDelete)
         setOpen(true)

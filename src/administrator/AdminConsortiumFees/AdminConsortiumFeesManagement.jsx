@@ -147,7 +147,7 @@ function AdminConsortiumFeesManagement(){
                     },
                 }
             );
-            setSnackbarMessage('La regeneración de la expensa ha comenzado. El proceso puede tardar unos minutos.');
+            setSnackbarMessage('Los datos para la expensa han sido restablecidos. Por favor, reingrese los valores necesarios para ejecutar el proceso.');
             setSnackbarSeverity('info');
             fetchFeePeriods(page, rowsPerPage); // Recargar datos
         } catch (error) {
