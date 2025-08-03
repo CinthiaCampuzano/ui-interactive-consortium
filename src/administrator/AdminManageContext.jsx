@@ -49,6 +49,8 @@ export function AdminManageContextProvider(props){
     const feePeriodStatusMapping = {
         PENDING_GENERATION: "Pendiente Generación",
         GENERATED: "Generado",
+        IN_PROCESS: "En Proceso",
+        CLOSED: "Cerrado",
         SENT: "Enviado",
         PARTIALLY_PAID: "Parcialmente Pagado",
         PAID: "Pagado",

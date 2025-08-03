@@ -36,6 +36,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import EditIcon from "@mui/icons-material/Edit"; // Añadido EditIcon
+import PaymentIcon from '@mui/icons-material/Payment'; // Icono para ajustes
 import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
 import {format as formatDateFns} from 'date-fns';
 import axios from "axios";
@@ -65,7 +66,8 @@ const EConsortiumFeePeriodStatusDisplay = {
     PENDING: 'Pendiente',
     GENERATED: 'Generado',
     SENT: 'Enviado',
-    CLOSED: 'Cerrado',
+    IN_PROCESS: "En Proceso",
+    CLOSED: "Cerrado",
     ERROR: 'Error',
     // Añade aquí otros estados que vengan del backend y su visualización
     PENDING_GENERATION: "Pendiente Generación", // Del feePeriodStatusMapping del contexto
@@ -323,6 +325,7 @@ function AdminConsortiumFeesManagement(){
             case 'DRAFT':
             case 'PENDING':
             case 'PENDING_GENERATION':
+            case 'IN_PROCESS':
                 return { label: EConsortiumFeePeriodStatusDisplay[statusKey] || rawPeriodStatus, color: 'info' };
             case 'GENERATED':
                 return { label: EConsortiumFeePeriodStatusDisplay[statusKey] || rawPeriodStatus, color: 'success' };
@@ -360,7 +363,7 @@ function AdminConsortiumFeesManagement(){
     };
 
     // Estados que permiten edición
-    const editableStatuses = ['DRAFT', 'PENDING', 'PENDING_GENERATION']; // Ajusta según los valores reales del backend
+    const editableStatuses = ['DRAFT', 'PENDING', 'PENDING_GENERATION', 'ERROR']; // Ajusta según los valores reales del backend
 
     return(
         <div>
@@ -509,6 +512,15 @@ function AdminConsortiumFeesManagement(){
                                                             title="Gestionar Pagos"
                                                         >
                                                             <SettingsIcon fontSize="small"/>
+                                                        </IconButton>
+                                                        <IconButton
+                                                            aria-label="adjustments"
+                                                            onClick={() => navigate(`/admin/management/expensas/ajustes/${feePeriod.consortiumFeePeriodId}`)}
+                                                            disabled={feePeriod.rawFeePeriodStatus !== 'PENDING'}
+                                                            sx={{padding: '4px', color: feePeriod.rawFeePeriodStatus === 'PENDING' ? '#ff9800' : 'grey', mx: 0.5}}
+                                                            title="Configurar Ajustes"
+                                                        >
+                                                            <PaymentIcon fontSize="small"/>
                                                         </IconButton>
                                                         {/*<IconButton*/}
                                                         {/*    aria-label="delete"*/}

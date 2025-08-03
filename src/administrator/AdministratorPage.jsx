@@ -13,6 +13,7 @@ import AdminMaintenanceFeePayments from "./AdminMaintenanceFees/AdminMaintenance
 import AdminBooking from "./AdminBooking/AdminBooking.jsx";
 import AdminConsortiumFeesManagement from "./AdminConsortiumFees/AdminConsortiumFeesManagement.jsx";
 import AdminConsortiumFeeConcepts from "./AdminConsortiumFees/AdminConsortiumFeeConcepts.jsx";
+import AdminConsortiumFeeAdjustments from "./AdminConsortiumFees/AdminConsortiumFeeAdjustments.jsx";
 
 
 function AdministratorPage(){
@@ -44,6 +45,8 @@ function AdministratorPage(){
         <Route path="/expensas/pago" element={<AdminMaintenanceFeePayments/>} />
 
         <Route path="/reservas" element={<AdminBooking/>} />
+
+        <Route path="expensas/ajustes/:consortiumFeePeriodId" element={<AdminConsortiumFeeAdjustments/>} />
 
     </Routes>
 </AdminManageContextProvider>

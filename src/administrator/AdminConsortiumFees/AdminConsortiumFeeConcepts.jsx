@@ -15,6 +15,7 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    DialogContentText,
     TextField,
     Select,
     MenuItem,
@@ -28,6 +29,7 @@ import {
     Alert, Chip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import SettingsIcon from "@mui/icons-material/Settings"; // Reutilizando
 import axios from 'axios';
@@ -76,6 +78,8 @@ function AdminConsortiumFeeConcepts() {
     const [loading, setLoading] = useState(false);
     const [tableLoading, setTableLoading] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [openConfirmDeleteDialog, setOpenConfirmDeleteDialog] = useState(false);
+    const [conceptToDelete, setConceptToDelete] = useState(null);
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -322,6 +326,44 @@ function AdminConsortiumFeeConcepts() {
     };
 
 
+    const handleDeleteClick = (concept) => {
+        setConceptToDelete(concept);
+        setOpenConfirmDeleteDialog(true);
+    };
+
+    const handleCloseConfirmDeleteDialog = () => {
+        setOpenConfirmDeleteDialog(false);
+        setConceptToDelete(null);
+    };
+
+    const handleDeleteConcept = async () => {
+        if (!conceptToDelete) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setSnackbar({ open: true, message: 'No estás autorizado. Por favor, inicia sesión.', severity: 'error' });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await axios.delete(`${API_BASE_URL}/consortiumFeeConcepts/${conceptToDelete.consortiumFeeConceptId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            setSnackbar({ open: true, message: 'Concepto eliminado correctamente.', severity: 'success' });
+            fetchConcepts();
+        } catch (error) {
+            console.error("Error deleting concept:", error);
+            const errorMessage = error.response?.data?.message || 'Error al eliminar el concepto.';
+            setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+        } finally {
+            setLoading(false);
+            handleCloseConfirmDeleteDialog();
+        }
+    };
+
     const handleCloseSnackbar = () => {
         setSnackbar(prev => ({ ...prev, open: false }));
     };
@@ -439,8 +481,21 @@ function AdminConsortiumFeeConcepts() {
                                                 />
                                             </TableCell>
                                             <TableCell align="center">
-                                                <IconButton onClick={() => handleOpenDialog(concept)} color="primary" disabled={loading}>
+                                                <IconButton 
+                                                    onClick={() => handleOpenDialog(concept)} 
+                                                    color="primary" 
+                                                    disabled={loading}
+                                                    title="Editar"
+                                                >
                                                     <EditIcon />
+                                                </IconButton>
+                                                <IconButton 
+                                                    onClick={() => handleDeleteClick(concept)} 
+                                                    color="error" 
+                                                    disabled={loading}
+                                                    title="Eliminar"
+                                                >
+                                                    <DeleteIcon />
                                                 </IconButton>
                                             </TableCell>
                                         </TableRow>
@@ -579,6 +634,27 @@ function AdminConsortiumFeeConcepts() {
                             sx={{ backgroundColor: '#002776', '&:hover': { backgroundColor: '#001B5E' } }}
                         >
                             {loading ? <CircularProgress size={24} color="inherit" /> : (isEditing ? 'Guardar Cambios' : 'Crear Concepto')}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Dialog de confirmación para eliminar */}
+                <Dialog
+                    open={openConfirmDeleteDialog}
+                    onClose={handleCloseConfirmDeleteDialog}
+                >
+                    <DialogTitle>Confirmar Eliminación</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            ¿Está seguro de que desea eliminar este concepto? Esta acción no se puede deshacer.
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseConfirmDeleteDialog} color="primary">
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleDeleteConcept} color="error" autoFocus>
+                            Eliminar
                         </Button>
                     </DialogActions>
                 </Dialog>
