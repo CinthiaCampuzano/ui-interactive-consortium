@@ -118,15 +118,12 @@ function AdminConsortiumFeeAdjustments() {
                 return;
             }
 
-            const response = await axios.get(`${API_BASE_URL}/departments`, {
-                params: {
-                    consortiumId: consortiumIdState
-                },
+            const response = await axios.get(`${API_BASE_URL}/departments/consortium/${consortiumIdState}/list`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
-            setDepartments(response.data.content || []);
+            setDepartments(response.data || []);
         } catch (error) {
             console.error("Error fetching departments:", error);
             setSnackbar({ open: true, message: 'Error al cargar los departamentos.', severity: 'error' });

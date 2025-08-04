@@ -415,7 +415,7 @@ export function AdminManageContextProvider(props){
             return { success: true, message: 'Periodo de expensa actualizado correctamente.' };
         } catch (error) {
             console.error('Error al actualizar el periodo de expensa:', error);
-            return { success: false, message: error.response?.data?.message || 'Error al actualizar el periodo de expensa.' };
+            return { success: false, message: error.response?.data || 'Error al actualizar el periodo de expensa.' };
         }
     };
 

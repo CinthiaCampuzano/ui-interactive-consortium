@@ -1,16 +1,18 @@
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {
-    Alert, Card, CardContent, Chip,
+    Card,
+    CardContent,
+    Chip,
     Dialog,
     DialogActions,
     DialogContent,
-    // DialogContentText, // No se usa directamente
-    DialogTitle, FormControl, Grid, InputLabel, MenuItem, Select, Snackbar,
+    DialogTitle,
+    Grid,
     TablePagination,
     TextField
 } from "@mui/material";
-import React, {useContext, useEffect, useState} from "react";
+import React, {useCallback, useContext, useEffect, useState} from "react";
 import Button from "@mui/material/Button";
 // import Paper from "@mui/material/Paper"; // No se usa directamente
 import axios from "axios";
@@ -26,12 +28,11 @@ import {AdminManageContext} from "../AdminManageContext.jsx";
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from "@mui/icons-material/Edit";
-// import {jwtDecode} from "jwt-decode"; // No se usa directamente
-import { useSnackbar } from 'notistack';
+import LocalAtmIcon from '@mui/icons-material/LocalAtm';
+import {useSnackbar} from 'notistack';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
-// import AccountBalanceIcon from '@mui/icons-material/AccountBalance'; // No se usa
-// import { Pending, CheckCircle, AccessTime, Assessment, Assignment, AttachMoney, Person} from "@mui/icons-material"; // No se usan directamente
+import { format } from 'date-fns';
 
 
 const columns = [
@@ -42,7 +43,7 @@ const columns = [
     { id: 'dueAmount', label: 'Monto Adeudado', minWidth: 130, align: 'center' },
     { id: 'paidAmount', label: 'Monto Pagado', minWidth: 120, align: 'center' },
     { id: 'paymentStatus', label: 'Estado de Pago', minWidth: 120, align: 'center' },
-    { id: 'paymentDate', label: 'Fecha de Pago', minWidth: 120, align: 'center' } // Será derivado
+    { id: 'paymentDate', label: 'Última Fecha de Pago', minWidth: 120, align: 'center' } // Será derivado
 ];
 
 function AdminMaintenanceFeesPayments(){
@@ -59,19 +60,14 @@ function AdminMaintenanceFeesPayments(){
 
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [page, setPage] = React.useState(0);
-    // const [departmentFeesData, setDepartmentFeesData] = useState([]); // <--- ELIMINADO: Se usa departmentFeeQueryData.content
-    // const [totalFeeRecords, setTotalFeeRecords] = useState(0); // <--- ELIMINADO: Se usa departmentFeeQueryData.totalElements
 
     const [file, setFile] = useState(null);
     const [editingFeePayment, setEditingFeePayment] = useState(null);
     const [loading, setLoading] = useState(false); // Loading para acciones locales (guardar pago, etc.)
     const [tableLoading, setTableLoading] = useState(false); // Loading específico para la carga de la tabla
-    // const navigate = useNavigate(); // No se usa
     const [editOpen, setEditOpen] = useState(false);
-    // const [selectedStatus, setSelectedStatus] = useState(""); // No se usa
-    const [selectedMaintenanceFee, setSelectedMaintenanceFee] = useState(null); // Para las summary cards
+    const [resumeData, setResumeData] = useState(null);
     const [totalAmount, setTotalAmount] = useState('');
-    // const statusMapping = { ... }; // <--- ELIMINADO: Se usa el del contexto
     const [fileName, setFileName] = useState('');
     const { enqueueSnackbar } = useSnackbar();
 
@@ -84,15 +80,27 @@ function AdminMaintenanceFeesPayments(){
         setPage(0);
     };
 
-    // Efecto para las summary cards
-    useEffect(() => {
-        if (period && allConsortiumFeePeriods.length > 0) {
-            let find = allConsortiumFeePeriods.find(mf => mf.period === period);
-            setSelectedMaintenanceFee(find);
-        } else {
-            setSelectedMaintenanceFee(null);
+    const fetchResumeData = useCallback(async () => {
+        if (consortiumIdState && period) {
+            try {
+                const periodArray = period.split('/');
+                const periodFormatted = `${periodArray[1]}-${periodArray[0]}-01`;
+                const token = localStorage.getItem('token');
+                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/department-fees/resume`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    params: {
+                        consortiumId: consortiumIdState,
+                        period: periodFormatted,
+                    }
+                });
+                setResumeData(response.data);
+            } catch (error) {
+                console.error('Error fetching resume data:', error);
+                enqueueSnackbar('Error al cargar el resumen de expensas.', { variant: 'error' });
+                setResumeData(null);
+            }
         }
-    }, [allConsortiumFeePeriods, period]);
+    }, [consortiumIdState, period, enqueueSnackbar]);
 
     useEffect(() => {
         if (consortiumIdState) {
@@ -100,7 +108,7 @@ function AdminMaintenanceFeesPayments(){
             // fetchDepartmentFeeQueryData();
             console.log(departmentFeeQueryData)
         }
-    }, [consortiumIdState, getAllMaintenanceFeesByIdConsortium]); // Añadidas funciones a dependencias
+    }, [consortiumIdState, getAllMaintenanceFeesByIdConsortium]);
 
     // Efecto para obtener los datos de la tabla usando la función del contexto
     useEffect(() => {
@@ -116,6 +124,10 @@ function AdminMaintenanceFeesPayments(){
         };
         loadData();
     }, [consortiumIdState, period, page, rowsPerPage]);
+
+    useEffect(() => {
+        fetchResumeData();
+    }, [fetchResumeData]);
 
     const handleEditClick = (departmentFee) => {
         setEditingFeePayment(departmentFee);
@@ -146,6 +158,7 @@ function AdminMaintenanceFeesPayments(){
         try {
             const formData = new FormData();
             const paymentCreationDto = {
+                departmentFee: {departmentFeeId: editingFeePayment.departmentFeeId},
                 departmentCode: editingFeePayment.departmentCode,
                 period: typeof period === 'string' ? period : period.toISOString().split('T')[0],
                 amount: totalAmount,
@@ -156,7 +169,7 @@ function AdminMaintenanceFeesPayments(){
             formData.append('file', file);
 
             const token = localStorage.getItem('token');
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payments/create`, formData, {
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payments`, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -165,7 +178,7 @@ function AdminMaintenanceFeesPayments(){
             enqueueSnackbar('Pago registrado exitosamente', { variant: 'success' });
             // Refrescar la tabla llamando a la función del contexto
             await fetchDepartmentFeeQueryData(page, rowsPerPage);
-            // getAllMaintenanceFeesByIdConsortium(); // Refrescar summary cards si es necesario
+            await fetchResumeData();
         } catch (error) {
             console.error('Error al guardar el pago:', error);
             enqueueSnackbar(error.response?.data?.message || 'Error al guardar el pago.', { variant: 'error' });
@@ -265,10 +278,10 @@ function AdminMaintenanceFeesPayments(){
                                                 PENDIENTES
                                             </Typography>
                                             <Typography variant="h4" component="div" sx={{ color: '#B22222', fontWeight: 'bold' }}>
-                                                {selectedMaintenanceFee?.resume?.pendingCount || 0}
+                                                {resumeData?.pendingQuantity || 0}
                                             </Typography>
                                             <Typography sx={{ mb: 1.5, color: '#B22222', fontSize: '0.9rem' }}>
-                                                Monto: ${Number(selectedMaintenanceFee?.resume?.pendingAmount || 0).toFixed(2)}
+                                                Monto: ${Number(resumeData?.pendingAmount || 0).toFixed(2)}
                                             </Typography>
                                         </CardContent>
                                     </Card>
@@ -280,10 +293,10 @@ function AdminMaintenanceFeesPayments(){
                                                 PAGADAS
                                             </Typography>
                                             <Typography variant="h4" component="div" sx={{ color: '#228B22', fontWeight: 'bold' }}>
-                                                {selectedMaintenanceFee?.resume?.paymentCount || 0}
+                                                {resumeData?.paidQuantity || 0}
                                             </Typography>
                                             <Typography sx={{ mb: 1.5, color: '#228B22', fontSize: '0.9rem' }}>
-                                                Monto: ${Number(selectedMaintenanceFee?.resume?.paymentAmount || 0).toFixed(2)}
+                                                Monto: ${Number(resumeData?.paidAmount || 0).toFixed(2)}
                                             </Typography>
                                         </CardContent>
                                     </Card>
@@ -295,10 +308,10 @@ function AdminMaintenanceFeesPayments(){
                                                 TOTAL EXPENSAS
                                             </Typography>
                                             <Typography variant="h4" component="div" sx={{ color: '#003366', fontWeight: 'bold' }}>
-                                                {selectedMaintenanceFee?.resume?.totalCount || 0}
+                                                {resumeData?.totalQuantity || 0}
                                             </Typography>
                                             <Typography sx={{ mb: 1.5, color: '#003366', fontSize: '0.9rem' }}>
-                                                Monto Total: ${Number(selectedMaintenanceFee?.resume?.totalAmount || 0).toFixed(2)}
+                                                Monto Total: ${Number(resumeData?.totalAmount || 0).toFixed(2)}
                                             </Typography>
                                         </CardContent>
                                     </Card>
@@ -379,7 +392,7 @@ function AdminMaintenanceFeesPayments(){
                                                                     case 'dueAmount': value = deptFee.dueAmount; break;
                                                                     case 'paidAmount': value = deptFee.paidAmount; break;
                                                                     case 'paymentStatus': value = deptFee.paymentStatus; break;
-                                                                    case 'paymentDate': value = paymentDateDisplay; break;
+                                                                    case 'paymentDate': value = deptFee.lastPaidDate; break;
                                                                     default: value = 'N/A';
                                                                 }
 
@@ -402,10 +415,9 @@ function AdminMaintenanceFeesPayments(){
                                                                             }}
                                                                         />
                                                                     );
-                                                                } else if (['issueDate', 'dueDate'].includes(column.id) && value !== 'N/A') {
-                                                                    // Asegurar que se interprete como fecha local, añadiendo 'T00:00:00' si es solo fecha
-                                                                    const dateValue = String(value).includes('T') ? value : value + 'T00:00:00';
-                                                                    cellContent = new Date(dateValue).toLocaleDateString();
+                                                                } else if (['issueDate', 'dueDate', 'paymentDate'].includes(column.id) && value && value !== 'N/A') {
+                                                                    const dateValue = String(value).includes('T') ? value : `${value}T00:00:00`;
+                                                                    cellContent = format(new Date(dateValue), 'dd/MM/yyyy');
                                                                 }
                                                                 return (
                                                                     <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles }}>
@@ -414,21 +426,22 @@ function AdminMaintenanceFeesPayments(){
                                                                 );
                                                             })}
                                                             <TableCell align="center" sx={tableCellStyles}>
-                                                                <IconButton
-                                                                    disabled={!deptFee.payments || deptFee.payments.length === 0}
-                                                                    aria-label="download-receipt"
-                                                                    onClick={() => handleDownload(deptFee)}
-                                                                    sx={{ padding: '4px' }}
-                                                                >
-                                                                    <CloudDownloadIcon fontSize="small" sx={{color: (!deptFee.payments || deptFee.payments.length === 0) ? '#B0B0B0' : '#002776' }} />
-                                                                </IconButton>
+                                                                {/*<IconButton*/}
+                                                                {/*    disabled={!deptFee.payments || deptFee.payments.length === 0}*/}
+                                                                {/*    aria-label="download-receipt"*/}
+                                                                {/*    onClick={() => handleDownload(deptFee)}*/}
+                                                                {/*    sx={{ padding: '4px' }}*/}
+                                                                {/*>*/}
+                                                                {/*    <CloudDownloadIcon fontSize="small" sx={{color: (!deptFee.payments || deptFee.payments.length === 0) ? '#B0B0B0' : '#002776' }} />*/}
+                                                                {/*</IconButton>*/}
                                                                 <IconButton
                                                                     disabled={deptFee.paymentStatus === "PAID"}
                                                                     aria-label="add-payment"
                                                                     onClick={() => handleEditClick(deptFee)}
+                                                                    title="Regsitrar Pago"
                                                                     sx={{ padding: '4px' }}
                                                                 >
-                                                                    <EditIcon fontSize="small" sx={{ color: deptFee.paymentStatus === "PAID" ? '#B0B0B0' : '#002776' }} />
+                                                                    <LocalAtmIcon fontSize="small" sx={{ color: deptFee.paymentStatus === "PAID" ? '#B0B0B0' : '#002776' }} />
                                                                 </IconButton>
                                                             </TableCell>
                                                         </TableRow>
@@ -485,7 +498,7 @@ function AdminMaintenanceFeesPayments(){
                             sx={{ mb: 1, borderColor: '#002776', color: '#002776', '&:hover': { borderColor: '#001B5E', backgroundColor: 'rgba(0, 39, 118, 0.04)'} }}
                         >
                             <CloudUploadIcon sx={{ marginRight: 1 }} />
-                            Subir Comprobante
+                            Subir Recibo
                             <input type="file" hidden onChange={handleFileChange} accept="application/pdf,image/*" />
                         </Button>
                         {fileName && (

@@ -36,8 +36,8 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import EditIcon from "@mui/icons-material/Edit"; // Añadido EditIcon
-import PaymentIcon from '@mui/icons-material/Payment'; // Icono para ajustes
-import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
+import CalculateIcon from '@mui/icons-material/Calculate';
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote';import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
 import {format as formatDateFns} from 'date-fns';
 import axios from "axios";
 
@@ -449,6 +449,8 @@ function AdminConsortiumFeesManagement(){
                                             // Usar rawFeePeriodStatus para la lógica del chip y habilitación del botón
                                             const statusChipProps = getPeriodStatusChipProps(feePeriod.rawFeePeriodStatus);
                                             const isEditable = editableStatuses.includes(feePeriod.rawFeePeriodStatus);
+                                            const closedPeriod = feePeriod.rawFeePeriodStatus === 'CLOSED' || feePeriod.rawFeePeriodStatus === 'IN_PROCESS';
+                                            const wasGenerated = feePeriod.pdfFilePath == null;
 
                                             return (
                                                 <TableRow hover key={feePeriod.consortiumFeePeriodId} sx={tableRowHoverStyles}>
@@ -480,57 +482,48 @@ function AdminConsortiumFeesManagement(){
                                                         <IconButton
                                                             aria-label="edit-fee-period"
                                                             onClick={() => handleConsortiumFeeEdit(feePeriod)}
-                                                            disabled={!isEditable} // Habilitar/deshabilitar botón
+                                                            disabled={closedPeriod || !isEditable} // Habilitar/deshabilitar botón
                                                             sx={{padding: '4px', color: isEditable ? '#1976d2' : 'grey' }} // Cambiar color si está deshabilitado
                                                             title="Editar Periodo"
                                                         >
                                                             <EditIcon fontSize="small"/>
                                                         </IconButton>
                                                         <IconButton
-                                                            aria-label="download-file"
-                                                            onClick={() => handleDownload(feePeriod.consortiumFeePeriodId, feePeriod.displayPeriodDate)}
-                                                            disabled={isEditable}
-                                                            sx={{padding: '4px', color: '#007bff'}}
-                                                            title="Descargar PDF"
-                                                        >
-                                                            <CloudDownloadIcon fontSize="small"/>
-                                                        </IconButton>
-                                                        <IconButton
                                                             aria-label="regenerate"
                                                             onClick={() => handleRegenerateClick(feePeriod.consortiumFeePeriodId)}
-                                                            disabled={isEditable}
+                                                            disabled={closedPeriod || isEditable}
                                                             sx={{padding: '4px', color: '#28a745', mx: 0.5}}
                                                             title="Regenerar Expensa"
                                                         >
                                                             <ReplayIcon fontSize="small"/>
                                                         </IconButton>
                                                         <IconButton
+                                                            aria-label="adjustments"
+                                                            onClick={() => navigate(`/admin/management/expensas/ajustes/${feePeriod.consortiumFeePeriodId}`)}
+                                                            disabled={feePeriod.rawFeePeriodStatus !== 'PENDING' && feePeriod.rawFeePeriodStatus !== 'PENDING_GENERATION'}
+                                                            sx={{padding: '4px', color: feePeriod.rawFeePeriodStatus === 'PENDING' || feePeriod.rawFeePeriodStatus === 'PENDING_GENERATION' ? '#ff9800' : 'grey', mx: 0.5}}
+                                                            title="Configurar Ajustes"
+                                                        >
+                                                            <CalculateIcon fontSize="small"/>
+                                                        </IconButton>
+                                                        <IconButton
                                                             aria-label="manage"
                                                             onClick={() => handleManageClick(feePeriod.displayPeriodDate)}
-                                                            disabled={isEditable}
+                                                            disabled={wasGenerated || isEditable}
                                                             sx={{padding: '4px', color: '#28a745', mx: 0.5}}
                                                             title="Gestionar Pagos"
                                                         >
-                                                            <SettingsIcon fontSize="small"/>
+                                                            <RequestQuoteIcon fontSize="small"/>
                                                         </IconButton>
                                                         <IconButton
-                                                            aria-label="adjustments"
-                                                            onClick={() => navigate(`/admin/management/expensas/ajustes/${feePeriod.consortiumFeePeriodId}`)}
-                                                            disabled={feePeriod.rawFeePeriodStatus !== 'PENDING'}
-                                                            sx={{padding: '4px', color: feePeriod.rawFeePeriodStatus === 'PENDING' ? '#ff9800' : 'grey', mx: 0.5}}
-                                                            title="Configurar Ajustes"
+                                                            aria-label="download-file"
+                                                            onClick={() => handleDownload(feePeriod.consortiumFeePeriodId, feePeriod.displayPeriodDate)}
+                                                            disabled={wasGenerated || isEditable}
+                                                            sx={{padding: '4px', color: '#007bff'}}
+                                                            title="Descargar PDF"
                                                         >
-                                                            <PaymentIcon fontSize="small"/>
+                                                            <CloudDownloadIcon fontSize="small"/>
                                                         </IconButton>
-                                                        {/*<IconButton*/}
-                                                        {/*    aria-label="delete"*/}
-                                                        {/*    onClick={() => handleClickOpenConfirmDeleteDialog(feePeriod.consortiumFeePeriodId)}*/}
-                                                        {/*    disabled={isEditable}*/}
-                                                        {/*    sx={{color: '#dc3545'}}*/}
-                                                        {/*    title="Eliminar Periodo"*/}
-                                                        {/*>*/}
-                                                        {/*    <DeleteIcon fontSize="small"/>*/}
-                                                        {/*</IconButton>*/}
                                                     </TableCell>
                                                 </TableRow>
                                             );
