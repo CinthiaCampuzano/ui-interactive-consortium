@@ -52,6 +52,7 @@ function AdminMaintenanceFeesPayments(){
         getAConsortiumByIdConsortium,
         consortiumName,
         period,
+        periodStatus,
         getAllMaintenanceFeesByIdConsortium,
         departmentFeeQueryData,
         fetchDepartmentFeeQueryData,
@@ -435,13 +436,13 @@ function AdminMaintenanceFeesPayments(){
                                                                 {/*    <CloudDownloadIcon fontSize="small" sx={{color: (!deptFee.payments || deptFee.payments.length === 0) ? '#B0B0B0' : '#002776' }} />*/}
                                                                 {/*</IconButton>*/}
                                                                 <IconButton
-                                                                    disabled={deptFee.paymentStatus === "PAID"}
+                                                                    disabled={deptFee.paymentStatus === "PAID" || periodStatus === "CLOSED"}
                                                                     aria-label="add-payment"
                                                                     onClick={() => handleEditClick(deptFee)}
                                                                     title="Regsitrar Pago"
                                                                     sx={{ padding: '4px' }}
                                                                 >
-                                                                    <LocalAtmIcon fontSize="small" sx={{ color: deptFee.paymentStatus === "PAID" ? '#B0B0B0' : '#002776' }} />
+                                                                    <LocalAtmIcon fontSize="small" sx={{ color: deptFee.paymentStatus === "PAID" || periodStatus === "CLOSED" ? '#B0B0B0' : '#002776' }} />
                                                                 </IconButton>
                                                             </TableCell>
                                                         </TableRow>

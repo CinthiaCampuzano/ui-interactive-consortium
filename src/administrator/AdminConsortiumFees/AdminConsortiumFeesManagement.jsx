@@ -87,7 +87,8 @@ function AdminConsortiumFeesManagement(){
         updateConsortiumFeePeriod, // Añadido
         deleteConsortiumFeePeriod,
         downloadConsortiumFeePeriod,
-        setPeriod
+        setPeriod,
+        setPeriodStatus
     } = useContext(AdminManageContext);
 
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -163,9 +164,11 @@ function AdminConsortiumFeesManagement(){
         }
     };
 
-    const handleManageClick = (periodDateString) => {
+    const handleManageClick = (periodDateString, periodStatus) => {
         setPeriod(periodDateString);
+        setPeriodStatus(periodStatus);
         localStorage.setItem('period', periodDateString);
+        localStorage.setItem('periodStatus', periodStatus);
         navigate(`/admin/management/expensas/pago`);
     };
 
@@ -508,7 +511,7 @@ function AdminConsortiumFeesManagement(){
                                                         </IconButton>
                                                         <IconButton
                                                             aria-label="manage"
-                                                            onClick={() => handleManageClick(feePeriod.displayPeriodDate)}
+                                                            onClick={() => handleManageClick(feePeriod.displayPeriodDate, feePeriod.rawFeePeriodStatus)}
                                                             disabled={wasGenerated || isEditable}
                                                             sx={{padding: '4px', color: '#28a745', mx: 0.5}}
                                                             title="Gestionar Pagos"

@@ -492,7 +492,7 @@ function AdminConsortiumFeeConcepts() {
                                                 <IconButton 
                                                     onClick={() => handleDeleteClick(concept)} 
                                                     color="error" 
-                                                    disabled={loading}
+                                                    disabled={loading || concept.defaultConcept}
                                                     title="Eliminar"
                                                 >
                                                     <DeleteIcon />

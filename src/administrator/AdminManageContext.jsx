@@ -18,6 +18,7 @@ export function AdminManageContextProvider(props){
     // Cambiado: de allMaintenanceFees a allConsortiumFeePeriods
     const [allConsortiumFeePeriods , setAllConsortiumFeePeriods] = useState([])
     const [period , setPeriod] = useState(null) // Se mantiene por ahora, para la navegación a pagos
+    const [periodStatus , setPeriodStatus] = useState(null) // Se mantiene por ahora, para la navegación a pagos
     //const [allMaintenanceFeesPayment , setAllMaintenanceFeesPayment] = useState([]) // Esto podría necesitar revisión si la lógica de pagos también cambia
     const [departmentFeeQueryData, setDepartmentFeeQueryData] = useState({ content: [], totalElements: 0 });
     const [allClaims , setAllClaims] = useState([])
@@ -729,6 +730,8 @@ export function AdminManageContextProvider(props){
             setAllConsortiumFeePeriods,
             period ,
             setPeriod,
+            periodStatus,
+            setPeriodStatus,
             departmentFeeQueryData, // Nuevo estado
             setDepartmentFeeQueryData,
             allClaims , setAllClaims,
