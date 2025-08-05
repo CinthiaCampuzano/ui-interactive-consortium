@@ -304,7 +304,7 @@ const ReserveSpace = () => {
             setAvailableBookings(responseBookingsAvailable.data);
             setDepartments(filteredDepartments);
 
-            if (filteredDepartments.length === 0 && !department) {
+            if (filteredDepartments.length === 1 && !department) {
                 setDepartment(filteredDepartments[0].departmentId);
             }
 

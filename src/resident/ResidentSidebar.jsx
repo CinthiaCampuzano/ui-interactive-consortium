@@ -58,7 +58,7 @@ const ResidentSidebar = () => {
 
     const menuItems = [
         { title: 'Mis Consorcios', icon: <BusinessIcon />, path: '/resident/management' },
-        // { title: 'Expensas', icon: <ReceiptIcon />, path: '/resident/management/expensas' },
+        { title: 'Expensas', icon: <ReceiptIcon />, path: '/resident/management/expensas' },
         { title: 'Tablón de Anuncios', icon: <AnnouncementIcon />, path: '/resident/management/publicaciones' },
         { title: 'Reclamos', icon: <ReportIcon />, path: '/resident/management/reclamos' },
         { title: 'Reservas', icon: <CalendarTodayIcon />, path: '/resident/management/reservas', role: 'ROLE_RESIDENT' },

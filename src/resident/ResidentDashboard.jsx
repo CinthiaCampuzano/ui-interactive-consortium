@@ -13,7 +13,7 @@ import {jwtDecode} from "jwt-decode";
 
 const options = [
     { title: 'Mis Consorcios', icon: <BusinessIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management' },
-    // { title: 'Expensas', icon: <ReceiptIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/expensas' },
+    { title: 'Expensas', icon: <ReceiptIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/expensas' },
     { title: 'Tablón de Anuncios', icon: <AnnouncementIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/publicaciones'},
     { title: 'Reclamos', icon: <ReportIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/reclamos' },
     { title: 'Reservas', icon: <CalendarTodayIcon style={{ fontSize: 80, color: '#002776' }} />, path: '/resident/management/reservas', role: 'ROLE_RESIDENT' },
