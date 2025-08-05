@@ -128,6 +128,7 @@ function AdminConsortiumFeeConcepts() {
                 feeType: concept.feeType || Object.keys(EConsortiumFeeType)[0],
                 distributionType: concept.distributionType || Object.keys(EDistributionType)[0],
                 active: concept.active !== undefined ? concept.active : true,
+                defaultConcept: concept.defaultConcept || false,
             });
         } else {
             setIsEditing(false);
@@ -519,6 +520,7 @@ function AdminConsortiumFeeConcepts() {
                                 <TextField
                                     autoFocus
                                     required
+                                    disabled={currentConcept.defaultConcept}
                                     margin="dense"
                                     name="name"
                                     label="Nombre del Concepto"
@@ -534,6 +536,7 @@ function AdminConsortiumFeeConcepts() {
                                 <TextField
                                     margin="dense"
                                     name="description"
+                                    disabled={currentConcept.defaultConcept}
                                     label="Descripción"
                                     type="text"
                                     fullWidth
@@ -581,6 +584,7 @@ function AdminConsortiumFeeConcepts() {
                                         labelId="concept-type-label"
                                         name="conceptType"
                                         value={currentConcept.conceptType}
+                                        disabled={currentConcept.defaultConcept}
                                         onChange={handleInputChange}
                                         label="Tipo de Concepto"
                                     >
