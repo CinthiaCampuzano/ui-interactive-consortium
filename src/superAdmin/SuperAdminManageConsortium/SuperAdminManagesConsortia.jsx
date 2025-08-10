@@ -487,8 +487,10 @@ function SuperAdminManagesConsortia(){
                             consortiumId: consortium.consortiumId,
                             name: consortium.name,
                             address: consortium.address,
-                            city: consortium.city.displayName,
-                            province: consortium.province.displayName,
+                            city: consortium.city,
+                            province: consortium.province,
+                            functionalUnits: consortium.functionalUnits,
+                            consortiumType: consortium.consortiumType,
                             administratorId: administrator.administratorId || '',
                             fullName: administrator.name && administrator.lastName
                                 ? `${administrator.name} ${administrator.lastName}`

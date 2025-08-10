@@ -36,7 +36,8 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import EditIcon from "@mui/icons-material/Edit"; // Añadido EditIcon
-import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
+import CalculateIcon from '@mui/icons-material/Calculate';
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote';import AdminGallerySidebar from "../AdminGallerySidebar.jsx";
 import {format as formatDateFns} from 'date-fns';
 import axios from "axios";
 
@@ -65,7 +66,8 @@ const EConsortiumFeePeriodStatusDisplay = {
     PENDING: 'Pendiente',
     GENERATED: 'Generado',
     SENT: 'Enviado',
-    CLOSED: 'Cerrado',
+    IN_PROCESS: "En Proceso",
+    CLOSED: "Cerrado",
     ERROR: 'Error',
     // Añade aquí otros estados que vengan del backend y su visualización
     PENDING_GENERATION: "Pendiente Generación", // Del feePeriodStatusMapping del contexto
@@ -85,7 +87,8 @@ function AdminConsortiumFeesManagement(){
         updateConsortiumFeePeriod, // Añadido
         deleteConsortiumFeePeriod,
         downloadConsortiumFeePeriod,
-        setPeriod
+        setPeriod,
+        setPeriodStatus
     } = useContext(AdminManageContext);
 
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -147,7 +150,7 @@ function AdminConsortiumFeesManagement(){
                     },
                 }
             );
-            setSnackbarMessage('La regeneración de la expensa ha comenzado. El proceso puede tardar unos minutos.');
+            setSnackbarMessage('Los datos para la expensa han sido restablecidos. Por favor, reingrese los valores necesarios para ejecutar el proceso.');
             setSnackbarSeverity('info');
             fetchFeePeriods(page, rowsPerPage); // Recargar datos
         } catch (error) {
@@ -161,9 +164,11 @@ function AdminConsortiumFeesManagement(){
         }
     };
 
-    const handleManageClick = (periodDateString) => {
+    const handleManageClick = (periodDateString, periodStatus) => {
         setPeriod(periodDateString);
+        setPeriodStatus(periodStatus);
         localStorage.setItem('period', periodDateString);
+        localStorage.setItem('periodStatus', periodStatus);
         navigate(`/admin/management/expensas/pago`);
     };
 
@@ -323,6 +328,7 @@ function AdminConsortiumFeesManagement(){
             case 'DRAFT':
             case 'PENDING':
             case 'PENDING_GENERATION':
+            case 'IN_PROCESS':
                 return { label: EConsortiumFeePeriodStatusDisplay[statusKey] || rawPeriodStatus, color: 'info' };
             case 'GENERATED':
                 return { label: EConsortiumFeePeriodStatusDisplay[statusKey] || rawPeriodStatus, color: 'success' };
@@ -360,7 +366,7 @@ function AdminConsortiumFeesManagement(){
     };
 
     // Estados que permiten edición
-    const editableStatuses = ['DRAFT', 'PENDING', 'PENDING_GENERATION']; // Ajusta según los valores reales del backend
+    const editableStatuses = ['DRAFT', 'PENDING', 'PENDING_GENERATION', 'ERROR']; // Ajusta según los valores reales del backend
 
     return(
         <div>
@@ -446,6 +452,8 @@ function AdminConsortiumFeesManagement(){
                                             // Usar rawFeePeriodStatus para la lógica del chip y habilitación del botón
                                             const statusChipProps = getPeriodStatusChipProps(feePeriod.rawFeePeriodStatus);
                                             const isEditable = editableStatuses.includes(feePeriod.rawFeePeriodStatus);
+                                            const closedPeriod = feePeriod.rawFeePeriodStatus === 'CLOSED' || feePeriod.rawFeePeriodStatus === 'IN_PROCESS';
+                                            const wasGenerated = feePeriod.pdfFilePath == null;
 
                                             return (
                                                 <TableRow hover key={feePeriod.consortiumFeePeriodId} sx={tableRowHoverStyles}>
@@ -477,48 +485,48 @@ function AdminConsortiumFeesManagement(){
                                                         <IconButton
                                                             aria-label="edit-fee-period"
                                                             onClick={() => handleConsortiumFeeEdit(feePeriod)}
-                                                            disabled={!isEditable} // Habilitar/deshabilitar botón
+                                                            disabled={closedPeriod || !isEditable} // Habilitar/deshabilitar botón
                                                             sx={{padding: '4px', color: isEditable ? '#1976d2' : 'grey' }} // Cambiar color si está deshabilitado
                                                             title="Editar Periodo"
                                                         >
                                                             <EditIcon fontSize="small"/>
                                                         </IconButton>
                                                         <IconButton
-                                                            aria-label="download-file"
-                                                            onClick={() => handleDownload(feePeriod.consortiumFeePeriodId, feePeriod.displayPeriodDate)}
-                                                            disabled={isEditable}
-                                                            sx={{padding: '4px', color: '#007bff'}}
-                                                            title="Descargar PDF"
-                                                        >
-                                                            <CloudDownloadIcon fontSize="small"/>
-                                                        </IconButton>
-                                                        <IconButton
                                                             aria-label="regenerate"
                                                             onClick={() => handleRegenerateClick(feePeriod.consortiumFeePeriodId)}
-                                                            disabled={isEditable}
+                                                            disabled={closedPeriod || isEditable}
                                                             sx={{padding: '4px', color: '#28a745', mx: 0.5}}
                                                             title="Regenerar Expensa"
                                                         >
                                                             <ReplayIcon fontSize="small"/>
                                                         </IconButton>
                                                         <IconButton
+                                                            aria-label="adjustments"
+                                                            onClick={() => navigate(`/admin/management/expensas/ajustes/${feePeriod.consortiumFeePeriodId}`)}
+                                                            disabled={feePeriod.rawFeePeriodStatus !== 'PENDING' && feePeriod.rawFeePeriodStatus !== 'PENDING_GENERATION'}
+                                                            sx={{padding: '4px', color: feePeriod.rawFeePeriodStatus === 'PENDING' || feePeriod.rawFeePeriodStatus === 'PENDING_GENERATION' ? '#ff9800' : 'grey', mx: 0.5}}
+                                                            title="Configurar Ajustes"
+                                                        >
+                                                            <CalculateIcon fontSize="small"/>
+                                                        </IconButton>
+                                                        <IconButton
                                                             aria-label="manage"
-                                                            onClick={() => handleManageClick(feePeriod.displayPeriodDate)}
-                                                            disabled={isEditable}
+                                                            onClick={() => handleManageClick(feePeriod.displayPeriodDate, feePeriod.rawFeePeriodStatus)}
+                                                            disabled={wasGenerated || isEditable}
                                                             sx={{padding: '4px', color: '#28a745', mx: 0.5}}
                                                             title="Gestionar Pagos"
                                                         >
-                                                            <SettingsIcon fontSize="small"/>
+                                                            <RequestQuoteIcon fontSize="small"/>
                                                         </IconButton>
-                                                        {/*<IconButton*/}
-                                                        {/*    aria-label="delete"*/}
-                                                        {/*    onClick={() => handleClickOpenConfirmDeleteDialog(feePeriod.consortiumFeePeriodId)}*/}
-                                                        {/*    disabled={isEditable}*/}
-                                                        {/*    sx={{color: '#dc3545'}}*/}
-                                                        {/*    title="Eliminar Periodo"*/}
-                                                        {/*>*/}
-                                                        {/*    <DeleteIcon fontSize="small"/>*/}
-                                                        {/*</IconButton>*/}
+                                                        <IconButton
+                                                            aria-label="download-file"
+                                                            onClick={() => handleDownload(feePeriod.consortiumFeePeriodId, feePeriod.displayPeriodDate)}
+                                                            disabled={wasGenerated || isEditable}
+                                                            sx={{padding: '4px', color: '#007bff'}}
+                                                            title="Descargar PDF"
+                                                        >
+                                                            <CloudDownloadIcon fontSize="small"/>
+                                                        </IconButton>
                                                     </TableCell>
                                                 </TableRow>
                                             );

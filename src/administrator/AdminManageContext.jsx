@@ -18,6 +18,7 @@ export function AdminManageContextProvider(props){
     // Cambiado: de allMaintenanceFees a allConsortiumFeePeriods
     const [allConsortiumFeePeriods , setAllConsortiumFeePeriods] = useState([])
     const [period , setPeriod] = useState(null) // Se mantiene por ahora, para la navegación a pagos
+    const [periodStatus , setPeriodStatus] = useState(null) // Se mantiene por ahora, para la navegación a pagos
     //const [allMaintenanceFeesPayment , setAllMaintenanceFeesPayment] = useState([]) // Esto podría necesitar revisión si la lógica de pagos también cambia
     const [departmentFeeQueryData, setDepartmentFeeQueryData] = useState({ content: [], totalElements: 0 });
     const [allClaims , setAllClaims] = useState([])
@@ -49,6 +50,8 @@ export function AdminManageContextProvider(props){
     const feePeriodStatusMapping = {
         PENDING_GENERATION: "Pendiente Generación",
         GENERATED: "Generado",
+        IN_PROCESS: "En Proceso",
+        CLOSED: "Cerrado",
         SENT: "Enviado",
         PARTIALLY_PAID: "Parcialmente Pagado",
         PAID: "Pagado",
@@ -413,7 +416,7 @@ export function AdminManageContextProvider(props){
             return { success: true, message: 'Periodo de expensa actualizado correctamente.' };
         } catch (error) {
             console.error('Error al actualizar el periodo de expensa:', error);
-            return { success: false, message: error.response?.data?.message || 'Error al actualizar el periodo de expensa.' };
+            return { success: false, message: error.response?.data || 'Error al actualizar el periodo de expensa.' };
         }
     };
 
@@ -727,6 +730,8 @@ export function AdminManageContextProvider(props){
             setAllConsortiumFeePeriods,
             period ,
             setPeriod,
+            periodStatus,
+            setPeriodStatus,
             departmentFeeQueryData, // Nuevo estado
             setDepartmentFeeQueryData,
             allClaims , setAllClaims,

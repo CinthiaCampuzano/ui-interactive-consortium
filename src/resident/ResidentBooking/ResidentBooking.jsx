@@ -23,10 +23,18 @@ import {
     Alert,
     Snackbar,
     DialogContentText,
-    Backdrop, CircularProgress, Chip
+    Backdrop, 
+    CircularProgress, 
+    Chip,
+    Pagination,
+    Stack,
+    Paper
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CancelIcon from '@mui/icons-material/Cancel';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ClearIcon from '@mui/icons-material/Clear';
 import {ResidentManageContext} from "../ResidentManageContext.jsx";
 import {jwtDecode} from "jwt-decode";
 import axios from "axios";
@@ -37,7 +45,6 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
-import DeleteIcon from '@mui/icons-material/Delete'
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -76,11 +83,22 @@ const ReserveSpace = () => {
     const [department, setDepartment] = useState('');
     const [departments, setDepartments] = useState([]);
     const [residentDepartmentIds, setResidentDepartmentIds] = useState([]);
-    const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // Estado para controlar si el diálogo de eliminación está abierto
-    const [bookingIdToDelete, setBookingIdToDelete] = useState(null);
+    const [openCancelDialog, setOpenCancelDialog] = useState(false); // Estado para controlar si el diálogo de cancelación está abierto
+    const [bookingIdToCancel, setBookingIdToCancel] = useState(null);
     const [loading, setLoading] = useState(false);
     const [uploadedImages, setUploadedImages] = useState({});
     const [selectedAmenity, setSelectedAmenity] = useState(null);
+    const [availableBookings, setAvailableBookings] = useState([]);
+
+    // Pagination states
+    const [page, setPage] = useState(0);
+    const [size, setSize] = useState(10);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+
+    // Filter states
+    const [filterDate, setFilterDate] = useState('');
+    const [filterStatus, setFilterStatus] = useState('PENDING'); // Pre-selected to PENDING
 
     const sliderSettings = {
         dots: true,
@@ -108,6 +126,37 @@ const ReserveSpace = () => {
             }
         ]
     };
+
+    const departmentOptions = React.useMemo(() => {
+        if (!selectedAmenity || departments.length === 0) {
+            return [];
+        }
+
+        return departments.map(dept => {
+            const bookingInfo = availableBookings.find(
+                b => b.departmentId === dept.departmentId && b.amenityId === selectedAmenity.amenityId
+            );
+
+            if (!bookingInfo) {
+                return {
+                    ...dept,
+                    disabled: true,
+                    label: `${dept.code} (No disponible)`
+                };
+            }
+
+            const remaining = bookingInfo.amenityMaxBooking - bookingInfo.amenityBooking;
+            const isDisabled = remaining <= 0;
+
+            return {
+                ...dept,
+                disabled: isDisabled,
+                label: isDisabled
+                    ? `${dept.code} (LÍMITE ALCANZADO)`
+                    : `${dept.code} (Disponibles: ${remaining})`
+            };
+        }).sort((a, b) => a.code.localeCompare(b.code));
+    }, [selectedAmenity, departments, availableBookings]);
 
     const handleChangeDate = (event) => setDate(event.target.value);
     const handleChangeShift = (event) => setShift(event.target.value);
@@ -143,14 +192,27 @@ const ReserveSpace = () => {
         setDepartment(event.target.value); // Sigue guardando el ID
     };
 
-    const handleOpenDeleteDialog = (bookingId) => {
-        setBookingIdToDelete(bookingId); // Guarda el ID de la reserva que se va a eliminar
-        setOpenDeleteDialog(true); // Abre el diálogo
+    const handlePageChange = (event, newPage) => {
+        setPage(newPage - 1); // MUI Pagination starts at 1, but our API starts at 0
     };
 
-    const handleCloseDeleteDialog = () => {
-        setBookingIdToDelete(null); // Limpia el ID al cerrar
-        setOpenDeleteDialog(false); // Cierra el diálogo
+    const handleFilterChange = (setter) => (event) => {
+        setter(event.target.value);
+    };
+
+    const handleClearFilters = () => {
+        setFilterDate('');
+        setFilterStatus('PENDING'); // Reset to default PENDING
+    };
+
+    const handleOpenCancelDialog = (bookingId) => {
+        setBookingIdToCancel(bookingId);
+        setOpenCancelDialog(true);
+    };
+
+    const handleCloseCancelDialog = () => {
+        setBookingIdToCancel(null);
+        setOpenCancelDialog(false);
     };
 
     const setAmenityPhotos = async () => {
@@ -233,12 +295,18 @@ const ReserveSpace = () => {
                 .filter(dept => residentDepartmentIds.includes(dept.departmentId))
                 .map(dept => ({ departmentId: dept.departmentId, code: dept.code }));
 
+            const responseBookingsAvailable = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/Bookings/consortium/${currentConsortiumId}/available-bookings`,
+                {
+                    headers: { Authorization: `Bearer ${apiToken}` },
+                }
+            );
+            setAvailableBookings(responseBookingsAvailable.data);
             setDepartments(filteredDepartments);
 
-            // Opcional: Si quieres preseleccionar el primer departamento de la lista
-            // if (filteredDepartments.length > 0 && !department) {
-            //    setDepartment(filteredDepartments[0].departmentId);
-            // }
+            if (filteredDepartments.length === 1 && !department) {
+                setDepartment(filteredDepartments[0].departmentId);
+            }
 
         } catch (error) {
             console.error("Error al obtener los detalles de los departamentos del residente:", error);
@@ -251,7 +319,6 @@ const ReserveSpace = () => {
 
     const getAllReservation = async () => {
         try {
-
             if (!consortiumIdState) {
                 return;
             }
@@ -264,14 +331,31 @@ const ReserveSpace = () => {
                 return;
             }
 
+            setLoading(true);
+
+            // Prepare query parameters
+            const params = {
+                page: page,
+                size: size
+            };
+
+            // Add filter parameters if they exist
+            if (filterDate) params.date = filterDate;
+            if (filterStatus) params.status = filterStatus;
+
             const res = await axios.get(
                 `${import.meta.env.VITE_API_BASE_URL}/Bookings/consortium/${consortiumIdState}/ForResident`,
                 {
+                    params: params,
                     headers: {
                         Authorization: `Bearer ${token}`, // Incluye el token en los encabezados
                     },
                 }
             );
+
+            // Extract pagination metadata
+            setTotalPages(res.data.totalPages);
+            setTotalElements(res.data.totalElements);
 
             const reservations = res.data.content;
 
@@ -286,6 +370,8 @@ const ReserveSpace = () => {
                         reserveDate: reservation.startDate,
                         status: reservation.bookingStatus,
                         bookingCost: reservation.bookingCost,
+                        // Store the original object for editing
+                        originalData: reservation
                     };
                 })
             );
@@ -294,17 +380,25 @@ const ReserveSpace = () => {
             setText(error.response?.data?.message || "Hubo un problema al obtener las reservas.");
             setBookingMade(false);
             handleOpenAlert();
+        } finally {
+            setLoading(false);
         }
-
     }
 
     useEffect(() => {
         if (consortiumIdState) {
             getAllAmenitiesByIdConsortium(consortiumIdState);
-            getAllReservation(consortiumIdState);
+            getAllReservation();
             fetchAndSetResidentDepartments(consortiumIdState);
         }
     }, [consortiumIdState, residentDepartmentIds]);
+
+    // Refresh when pagination or filters change
+    useEffect(() => {
+        if (consortiumIdState) {
+            getAllReservation();
+        }
+    }, [page, size, filterDate, filterStatus]);
 
     useEffect(() => {
         if (amenities.length > 0) {
@@ -406,6 +500,7 @@ const ReserveSpace = () => {
             setText('Espacio reservado exitosamente');
             setBookingMade(true);
             getAllReservation(); // Refrescar la lista
+            fetchAndSetResidentDepartments(consortiumIdState); // Actualizar límites
             // Limpiar el formulario después de una reserva exitosa
             setSpace('');
             setDate('');
@@ -438,21 +533,18 @@ const ReserveSpace = () => {
         return timeDifferenceInDays > 1;
     };
 
-    const handleDeleteBooking = async () => {
-        const idToDelete = bookingIdToDelete;
-        // No cerramos el diálogo aquí todavía
-        // handleCloseDeleteDialog();
+    const handleCancelBooking = async () => {
+        const idToCancel = bookingIdToCancel;
 
-        if (!idToDelete) {
-            console.error("No hay ID de reserva para eliminar.");
-            setText("Error: No se seleccionó ninguna reserva para eliminar.");
+        if (!idToCancel) {
+            console.error("No hay ID de reserva para cancelar.");
+            setText("Error: No se seleccionó ninguna reserva para cancelar.");
             setBookingMade(false);
             handleOpenAlert();
-            // setLoading(false); // No es necesario si el diálogo no se cierra
             return;
         }
 
-        setLoading(true); // Inicia la carga
+        setLoading(true);
 
         try {
             const token = localStorage.getItem('token');
@@ -461,31 +553,30 @@ const ReserveSpace = () => {
                 setText("No estás autorizado. Por favor, inicia sesión.");
                 setBookingMade(false);
                 handleOpenAlert();
-                // setLoading(false);
                 return;
             }
 
-            await axios.delete(
-                `${import.meta.env.VITE_API_BASE_URL}/Bookings/${idToDelete}`,
+            await axios.put(
+                `${import.meta.env.VITE_API_BASE_URL}/Bookings/${idToCancel}/cancel`,
+                {},
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
 
-            setText('Reserva eliminada correctamente.');
+            setText('Reserva cancelada correctamente.');
             setBookingMade(true);
-            // handleOpenAlert(); // La alerta se mostrará en el finally
             getAllReservation();
+            fetchAndSetResidentDepartments(consortiumIdState);
 
         } catch (error) {
-            console.error("Error al eliminar la reserva:", error);
-            setText(error.response?.data?.message || 'Error al eliminar la reserva.');
+            console.error("Error al cancelar la reserva:", error);
+            setText(error.response?.data?.message || 'Error al cancelar la reserva.');
             setBookingMade(false);
-            // handleOpenAlert(); // La alerta se mostrará en el finally
         } finally {
-            setLoading(false); // Detiene la carga
-            handleCloseDeleteDialog(); // Cierra el diálogo de eliminación DESPUÉS de que todo termine
-            handleOpenAlert(); // Muestra la alerta (éxito o error)
+            setLoading(false);
+            handleCloseCancelDialog();
+            handleOpenAlert();
         }
     };
 
@@ -615,6 +706,87 @@ const ReserveSpace = () => {
                             </Slider>
                         </Box>
 
+                        <Paper
+                            elevation={2}
+                            sx={{
+                                p: 3,
+                                mb: 3,
+                                width: '100%',
+                                maxWidth: '1100px',
+                                backgroundColor: '#f8f9fa'
+                            }}
+                        >
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    mb: 2,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    color: '#002776'
+                                }}
+                            >
+                                <FilterListIcon sx={{ mr: 1 }} />
+                                Filtros
+                            </Typography>
+
+                            <Grid container spacing={2}>
+                                {/* Date filter */}
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        label="Fecha de Reserva"
+                                        type="date"
+                                        value={filterDate}
+                                        onChange={handleFilterChange(setFilterDate)}
+                                        fullWidth
+                                        size="small"
+                                        InputLabelProps={{ shrink: true }}
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <CalendarTodayIcon fontSize="small" />
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                </Grid>
+
+                                {/* Status filter */}
+                                <Grid item xs={12} sm={6}>
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Estado</InputLabel>
+                                        <Select
+                                            value={filterStatus}
+                                            onChange={handleFilterChange(setFilterStatus)}
+                                            label="Estado"
+                                        >
+                                            {Object.entries(bookingStatusMapping).map(([value, { label }]) => (
+                                                <MenuItem key={value} value={value}>
+                                                    {label}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<ClearIcon />}
+                                    onClick={handleClearFilters}
+                                    sx={{
+                                        borderColor: '#002776',
+                                        color: '#002776',
+                                        '&:hover': {
+                                            borderColor: '#001a4d',
+                                            backgroundColor: 'rgba(0, 39, 118, 0.04)'
+                                        }
+                                    }}
+                                >
+                                    Limpiar Filtros
+                                </Button>
+                            </Box>
+                        </Paper>
 
                         <Box sx={{
                             width: '100%',
@@ -623,6 +795,8 @@ const ReserveSpace = () => {
                         }}>
                             <TableContainer sx={{
                                 maxHeight: 600,
+                                overflowX: 'auto',
+                                overflowY: 'auto',
                                 borderRadius: '10px',
                                 border: '1px solid #002776',
                             }} >
@@ -651,7 +825,7 @@ const ReserveSpace = () => {
                                     </TableHead>
                                     <TableBody>
                                         {reservationsState.map((row, index) => {
-                                            const isDeletable = canDeleteBooking(row.reserveDate) && row.status === 'PENDING';
+                                            const isCancelable = canDeleteBooking(row.reserveDate) && row.status === 'PENDING';
                                             const statusInfo = bookingStatusMapping[row.status] || { label: row.status, color: 'default' };
 
                                             return (
@@ -666,13 +840,13 @@ const ReserveSpace = () => {
                                                             return (
                                                                 <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles, textAlign: 'center' }}>
                                                                     <IconButton
-                                                                        aria-label="delete"
-                                                                        onClick={() => handleOpenDeleteDialog(row.bookingId)}
-                                                                        disabled={!isDeletable}
+                                                                        aria-label="cancel"
+                                                                        onClick={() => handleOpenCancelDialog(row.bookingId)}
+                                                                        disabled={!isCancelable}
                                                                         sx={{ color: '#B2675E' }}
                                                                         size="small"
                                                                     >
-                                                                        <DeleteIcon fontSize="small" />
+                                                                        <CancelIcon fontSize="small" />
                                                                     </IconButton>
                                                                 </TableCell>
                                                             );
@@ -704,6 +878,29 @@ const ReserveSpace = () => {
                                     </TableBody>
                                 </Table>
                             </TableContainer>
+                            
+                            {/* Pagination controls */}
+                            <Stack 
+                                spacing={2} 
+                                sx={{ 
+                                    mt: 2, 
+                                    display: 'flex', 
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <Pagination 
+                                    count={totalPages} 
+                                    page={page + 1} 
+                                    onChange={handlePageChange} 
+                                    color="primary" 
+                                    showFirstButton 
+                                    showLastButton
+                                />
+                                <Typography variant="caption" sx={{ color: '#002776' }}>
+                                    Total de reservas: {totalElements}
+                                </Typography>
+                            </Stack>
                         </Box>
 
                     </Box>
@@ -761,9 +958,9 @@ const ReserveSpace = () => {
                                         label="Departamento"
                                         disabled={departments.length === 0}
                                 >
-                                    {departments.map((dept) => (
-                                        <MenuItem key={dept.departmentId} value={dept.departmentId}>
-                                            {dept.code}
+                                    {departmentOptions.map((dept) => (
+                                        <MenuItem key={dept.departmentId} value={dept.departmentId} disabled={dept.disabled}>
+                                            {dept.label}
                                         </MenuItem>
                                     ))}
                                 </Select>
@@ -793,41 +990,35 @@ const ReserveSpace = () => {
                 )}
             </Dialog>
             <Dialog
-                open={openDeleteDialog}
-                onClose={(event, reason) => {
-                    if (reason && reason !== 'backdropClick') {
-                        handleCloseDeleteDialog();
-                    } else if (reason === 'backdropClick') {
-                        handleCloseDeleteDialog();
-                    }
-                }}
-                aria-labelledby="delete-dialog-title"
-                aria-describedby="delete-dialog-description"
+                open={openCancelDialog}
+                onClose={handleCloseCancelDialog}
+                aria-labelledby="cancel-dialog-title"
+                aria-describedby="cancel-dialog-description"
             >
                 <DialogTitle
-                    id="delete-dialog-title" // Cambiado el ID para que sea único
+                    id="cancel-dialog-title"
                     sx={{
                         backgroundColor: '#E5E5E5',
                         color: '#002776',
                         textAlign: 'center',
                         padding: '20px 30px',
-                        borderBottom: '2px solid #B2675E', // Color de borde relacionado con eliminar
+                        borderBottom: '2px solid #B2675E',
                         fontWeight: 'bold',
                     }}
                 >
-                    {"Confirmar Eliminación de Reserva"} {/* Texto adaptado */}
+                    {"Confirmar Cancelación de Reserva"}
                 </DialogTitle>
-                <DialogContent sx={{ backgroundColor: '#F9F9F9', padding: '20px 30px' }}> {/* Ajustado padding */}
-                    <DialogContentText id="delete-dialog-description"> {/* Cambiado el ID */}
-                        ¿Está seguro de que desea eliminar esta reserva? Esta acción no se puede deshacer.
+                <DialogContent sx={{ backgroundColor: '#F9F9F9', padding: '20px 30px' }}>
+                    <DialogContentText id="cancel-dialog-description">
+                        ¿Está seguro de que desea cancelar esta reserva? Esta acción no se puede deshacer.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
                     <Button
-                        onClick={handleCloseDeleteDialog} // Llama al manejador para cerrar el diálogo de eliminación
+                        onClick={handleCloseCancelDialog}
                         variant="contained"
                         sx={{
-                            backgroundColor: '#B2675E', // Estilo de botón "Cancelar"
+                            backgroundColor: '#B2675E',
                             '&:hover': {
                                 backgroundColor: '#8E5346',
                             },
@@ -850,7 +1041,7 @@ const ReserveSpace = () => {
                             padding: '8px 20px',
                             transition: 'background-color 0.3s ease',
                         }}
-                        onClick={handleDeleteBooking}
+                        onClick={handleCancelBooking}
                         disabled={loading}
                     >
                         Aceptar

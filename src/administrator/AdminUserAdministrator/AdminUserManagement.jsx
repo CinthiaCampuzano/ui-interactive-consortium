@@ -845,6 +845,9 @@ function AdminUserManagement(){
                                         name="mail"
                                         value={personInfo.mail !== undefined ? personInfo.mail : editPersonMail || ''}
                                         onChange={handleChange}
+                                        InputProps={{
+                                            readOnly: true,
+                                        }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 '& fieldset': {
@@ -906,7 +909,7 @@ function AdminUserManagement(){
                                         label="Número de Teléfono"
                                         variant="outlined"
                                         size="small"
-                                        type="text"
+                                        type="number"
                                         name="phoneNumber"
                                         value={personInfo.phoneNumber !== undefined ? personInfo.phoneNumber : editPersonPhoneNumber || ''}
                                         onChange={handleChange}

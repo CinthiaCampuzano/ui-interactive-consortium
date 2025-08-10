@@ -1,16 +1,20 @@
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import {
-    Alert, Card, CardContent, Chip,
+    Chip,
     Dialog,
     DialogActions,
     DialogContent,
-    DialogContentText,
-    DialogTitle, FormControl, Grid, InputLabel, MenuItem, Select, Snackbar,
+    DialogTitle,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Select,
     TablePagination,
     TextField
 } from "@mui/material";
 import React, {useContext, useEffect, useState} from "react";
+import Button from "@mui/material/Button";
 import axios from "axios";
 import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
@@ -19,33 +23,61 @@ import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
 import IconButton from "@mui/material/IconButton";
-import {useNavigate} from "react-router-dom";
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
-import {jwtDecode} from "jwt-decode";
-import { useSnackbar } from 'notistack';
-import {AccessTime, Assessment, Assignment, AttachMoney, Person} from "@mui/icons-material";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LocalAtmIcon from '@mui/icons-material/LocalAtm';
+import {useSnackbar} from 'notistack';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import {format, parse} from 'date-fns';
 import {ResidentManageContext} from "../ResidentManageContext.jsx";
 import ResidentSidebar from "../ResidentSidebar.jsx";
-
+import {LocalizationProvider} from "@mui/x-date-pickers/LocalizationProvider";
+import {AdapterDateFns} from "@mui/x-date-pickers/AdapterDateFns";
+import {DatePicker} from "@mui/x-date-pickers/DatePicker";
+import {es} from "date-fns/locale";
 
 const columns = [
-    { id: 'period', label: 'Periodo', minWidth: 80, align: 'center' }, // Reducido
-    { id: 'code', label: 'Departamento', minWidth: 90, align: 'center' }, // Reducido
-    { id: 'issueDate', label: 'Fecha Emisión', minWidth: 110, align: 'center' }, // Reducido
-    { id: 'dueDate', label: 'Fecha Vencimiento', minWidth: 110, align: 'center' }, // Reducido
-    { id: 'maintenanceFee', label: 'Monto Expensa', minWidth: 120, align: 'center' }, // Ligeramente reducido
-    { id: 'amountDue', label: 'Monto Adeudado', minWidth: 120, align: 'center' }, // Ligeramente reducido
-    { id: 'amountPaid', label: 'Monto Pagado', minWidth: 110, align: 'center' },   // Reducido
-    { id: 'status', label: 'Estado de Pago', minWidth: 110, align: 'center' }, // Reducido
-    { id: 'paymentDate', label: 'Fecha de Pago', minWidth: 110, align: 'center' } // Reducido
+    // { id: 'period', label: 'Periodo', minWidth: 100, align: 'center' },
+    { id: 'departmentCode', label: 'Departamento', minWidth: 100, align: 'center' },
+    { id: 'issueDate', label: 'Fecha Emisión', minWidth: 120, align: 'center' },
+    { id: 'dueDate', label: 'Fecha Vencimiento', minWidth: 120, align: 'center' },
+    { id: 'totalAmount', label: 'Monto Expensa', minWidth: 130, align: 'center' },
+    { id: 'dueAmount', label: 'Monto Adeudado', minWidth: 130, align: 'center' },
+    { id: 'paidAmount', label: 'Monto Pagado', minWidth: 120, align: 'center' },
+    { id: 'paymentStatus', label: 'Estado de Pago', minWidth: 120, align: 'center' },
+    { id: 'paymentDate', label: 'Última Fecha de Pago', minWidth: 120, align: 'center' }
 ];
 
 function ResidentMaintenanceFeePayments(){
-    const {consortiumIdState, getAConsortiumByIdConsortium, consortiumName, getAllMaintenanceFeesPaymentByIdConsortiumAndPerson,
-        allMaintenanceFeesPaymentPerson , setAllMaintenanceFeesPaymentPerson } = useContext(ResidentManageContext)
+    const {
+        consortiumIdState,
+        consortiumName,
+        departmentFeeQueryData,
+        fetchDepartmentFeeQueryData,
+        statusMapping,
+        allConsortiumFeePeriods,
+        period,
+        setPeriod,
+        getAllConsortiumFeePeriodsByIdConsortium
+    } = useContext(ResidentManageContext);
+
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [page, setPage] = React.useState(0);
+
+    const [file, setFile] = useState(null);
+    const [editingFeePayment, setEditingFeePayment] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [tableLoading, setTableLoading] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [totalAmount, setTotalAmount] = useState('');
+    const [fileName, setFileName] = useState('');
     const { enqueueSnackbar } = useSnackbar();
+
+    // useEffect(() => {
+    //     if (consortiumIdState) {
+    //         getAllConsortiumFeePeriodsByIdConsortium();
+    //     }
+    // }, [consortiumIdState]);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -56,114 +88,109 @@ function ResidentMaintenanceFeePayments(){
         setPage(0);
     };
 
-
     useEffect(() => {
-        getAConsortiumByIdConsortium();
-    }, [consortiumIdState]);
+        const loadData = async () => {
+            if (consortiumIdState && period) {
+                setTableLoading(true);
+                await fetchDepartmentFeeQueryData(page, rowsPerPage);
+                setTableLoading(false);
+            }
+        };
+        loadData();
+    }, [consortiumIdState, period, page, rowsPerPage]);
 
+    const handleEditClick = (departmentFee) => {
+        setEditingFeePayment(departmentFee);
+        setTotalAmount('');
+        setFileName('');
+        setFile(null);
+        setEditOpen(true);
+    };
 
-    useEffect(() => {
-        getAllMaintenanceFeesPaymentByIdConsortiumAndPerson();
-    }, [consortiumIdState]);
-
-
-
-    const handleDownload = async (id) => {
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-            alert("No estás autorizado. Por favor, inicia sesión.");
-            return; // Detenemos la ejecución si no hay token
+    const handleFileChange = (event) => {
+        const selectedFile = event.target.files[0];
+        if (selectedFile) {
+            setFileName(selectedFile.name);
+            setFile(selectedFile);
         }
+    };
 
-        // Decodifica el token para verificar el rol
-        const decodedToken = jwtDecode(token);
-        const isResident = decodedToken?.role?.includes('ROLE_RESIDENT') || decodedToken?.role?.includes('ROLE_PROPIETARY');
-        if (!isResident) {
-            alert("No tienes permisos para realizar esta acción.");
-            return; // Detenemos la ejecución si no tiene el rol ROLE_ADMIN
+    const handleInputChange = (event) => {
+        setTotalAmount(event.target.value);
+    };
+
+    const handleSaveChanges = async () => {
+        if (!editingFeePayment || !totalAmount || !file) {
+            enqueueSnackbar('Por favor, complete el monto y seleccione un archivo.', { variant: 'warning' });
+            return;
         }
-
+        setLoading(true);
         try {
-            // Hacer la solicitud fetch al backend para descargar el archivo
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/maintenanceFeePayment/${id}/download`, {
-                method: 'GET',
+            const formData = new FormData();
+            const paymentCreationDto = {
+                departmentFee: {departmentFeeId: editingFeePayment.departmentFeeId},
+                departmentCode: editingFeePayment.departmentCode,
+                period: typeof period === 'string' ? period : period.toISOString().split('T')[0],
+                amount: totalAmount,
+            };
+
+            const jsonBlob = new Blob([JSON.stringify(paymentCreationDto)], { type: 'application/json' });
+            formData.append('paymentDto', jsonBlob, 'paymentDto.json');
+            formData.append('file', file);
+
+            const token = localStorage.getItem('token');
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/payments/inform`, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
 
-            if (!response.ok) {
-                throw new Error('No se pudo descargar el archivo');
-            }
-
-            // Convertir la respuesta en un Blob (archivo binario)
-            const blob = await response.blob();
-
-            // Obtener el encabezado 'Content-Disposition' y extraer el nombre del archivo
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let fileName = 'default.pdf';  // Valor por defecto en caso de que no haya nombre en el encabezado
-
-            if (contentDisposition) {
-                const matches = contentDisposition.match(/filename="(.+)"/);
-                if (matches && matches[1]) {
-                    fileName = matches[1];  // Extrae el nombre del archivo
-                }
-            }
-
-            // Crear una URL de objeto para el archivo
-            const url = window.URL.createObjectURL(blob);
-
-            // Crear un enlace para descargar el archivo
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName); // Asigna el nombre del archivo
-            document.body.appendChild(link);
-            link.click();
-
-            // Limpiar el DOM y la URL del objeto después de la descarga
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-
+            enqueueSnackbar('Pago informado exitosamente', { variant: 'success' });
+            await fetchDepartmentFeeQueryData(page, rowsPerPage);
         } catch (error) {
-            // Manejo de errores
-            enqueueSnackbar('Error al descargar el archivo', { variant: 'error' });
-            console.error('Error de descarga:', error);
+            console.error('Error al informar el pago:', error);
+            enqueueSnackbar(error.response?.data?.message || 'Error al informar el pago.', { variant: 'error' });
+        } finally {
+            setLoading(false);
+            setEditOpen(false);
         }
     };
-    const downloadMaintenanceFee = async (maintenanceFeeId) => {
+
+    const handleDownloadReceipt = async (departmentFeeId) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            enqueueSnackbar("No estás autorizado.", { variant: 'error' });
+            return;
+        }
+
         try {
-            const response = await axios.get(
-                `${import.meta.env.VITE_API_BASE_URL}/maintenanceFee/${maintenanceFeeId}/download`,
-                {
-                    responseType: 'blob', // Indica que esperas un archivo binario
-                }
-            );
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/department-fees/${departmentFeeId}/download-receipt`, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
-            // Extrae el encabezado Content-Disposition
-            const contentDisposition = response.headers['content-disposition'];
-            console.log('Content-Disposition:', contentDisposition);
-
-            // Extrae el nombre del archivo con una expresión regular
-            const fileNameMatch = contentDisposition?.match(/filename="?(.+)"?/);
-            const fileName = fileNameMatch ? fileNameMatch[1] : 'archivo.pdf';
-
-            console.log('Nombre del archivo extraído:', fileName);
-
-            // Crear un objeto Blob y un enlace temporal para descargar el archivo
-            const fileURL = window.URL.createObjectURL(
-                new Blob([response.data], { type: 'application/pdf' })
-            );
-
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'No se pudo descargar el recibo');
+            }
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let downloadFileName = 'recibo.pdf';
+            if (contentDisposition) {
+                const matches = contentDisposition.match(/filename="(.+)"/);
+                if (matches && matches[1]) downloadFileName = matches[1];
+            }
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = fileURL;
-            link.setAttribute('download', fileName); // Asigna el nombre extraído
+            link.href = url;
+            link.setAttribute('download', downloadFileName);
             document.body.appendChild(link);
             link.click();
             link.remove();
+            window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Error al descargar el archivo:', error);
-            alert('Hubo un error al descargar el archivo.');
+            enqueueSnackbar(error.message || 'Error al descargar el recibo', { variant: 'error' });
+            console.error('Error de descarga:', error);
         }
     };
 
@@ -179,205 +206,192 @@ function ResidentMaintenanceFeePayments(){
         padding: '8px',
     };
 
+    const parsePeriod = (periodString) => {
+        if (!periodString) return null;
+        return parse(periodString, 'MM/yyyy', new Date());
+    };
+
+    const handlePeriodChange = (newDate) => {
+        if (newDate) {
+            const formattedPeriod = format(newDate, 'MM/yyyy');
+            setPeriod(formattedPeriod);
+        } else {
+            setPeriod(null);
+        }
+    };
+
     return(
         <div>
-            <Box
-                sx={{
-                    display: 'flex',
-                    minHeight: '100vh', // Asegura que el contenedor ocupe toda la altura de la pantalla
-                }}
-            >
+            <Box sx={{ display: 'flex', minHeight: '100vh' }}>
                 <ResidentSidebar/>
                 <Box
                     component="main"
                     sx={{
-                        flexGrow: 1, // Permite que este componente ocupe el espacio restante
-                        padding: { xs: '16px', sm: '24px' }, // Espaciado variable según el tamaño de la pantalla
-                        marginLeft: { xs: 0, sm: '240px' }, // Evita que el contenido se superponga al SuperAdminSidebar
-                        transition: 'margin-left 0.3s ease', // Suaviza la transición al cambiar de tamaño
-
+                        flexGrow: 1,
+                        padding: { xs: '16px', sm: '24px' },
+                        marginLeft: { xs: 0, sm: '240px' },
+                        transition: 'margin-left 0.3s ease',
                     }}
                 >
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                        }}
-                    >
-                        {/* Título */}
-                        <Typography
-                            variant="h6"
-                            component="h1"
-                            sx={{
-                                fontWeight: 'bold',
-                                color: '#003366',
-                                fontSize: { xs: '1.5rem', md: '2rem' },
-                                marginBottom: '20px',
-                            }}
-                        >
-                            Pago de Expensas de {consortiumName}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <Typography variant="h6" component="h1" sx={{ fontWeight: 'bold', color: '#003366', fontSize: { xs: '1.5rem', md: '2rem' }, marginBottom: '20px' }}>
+                            Mis Expensas de {consortiumName}
                         </Typography>
 
+                        <FormControl sx={{ m: 1, minWidth: 200, mb: 3 }}>
+                            {/*<InputLabel id="period-select-label">Periodo</InputLabel>*/}
+                            {/*<Select*/}
+                            {/*    labelId="period-select-label"*/}
+                            {/*    id="period-select"*/}
+                            {/*    value={period || ''}*/}
+                            {/*    label="Periodo"*/}
+                            {/*    onChange={(e) => setPeriod(e.target.value)}*/}
+                            {/*>*/}
+                            {/*    <MenuItem value="">*/}
+                            {/*        <em>Seleccione un período</em>*/}
+                            {/*    </MenuItem>*/}
+                            {/*    {allConsortiumFeePeriods.map((p) => (*/}
+                            {/*        <MenuItem key={p.consortiumFeePeriodId} value={p.displayPeriodDate}>*/}
+                            {/*            {p.displayPeriodDate}*/}
+                            {/*        </MenuItem>*/}
+                            {/*    ))}*/}
+                            {/*</Select>*/}
+                            <Box sx={{ mt: 2, mb: 2 }}>
+                                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={es}>
+                                    <DatePicker
+                                        label="Periodo"
+                                        views={['year', 'month']}
+                                        inputFormat="MM/yyyy"
+                                        value={parsePeriod(period)}
+                                        onChange={handlePeriodChange}
+                                        renderInput={(params) => <TextField {...params} helperText="Seleccione mes y año" />}
+                                    />
+                                </LocalizationProvider>
+                            </Box>
+                        </FormControl>
 
-
-                        <Box sx={{ width: '100%',  padding: { xs: '16px', sm: '24px' },}}>
-                            <TableContainer  sx={{
-                                maxHeight: 600,
-                                overflowX: 'auto',
-                                borderRadius: '10px', // Redondea solo las esquinas del contenedor
-                                border: '1px solid #002776',
-                            }}
-                            >
-                                <Table
-                                    stickyHeader
-                                    sx={{
-                                        borderCollapse: 'separate',
-                                        borderSpacing: '0', // Evita que las celdas se superpongan
-                                    }}
-                                >
+                        <Box sx={{ width: '100%', maxWidth: '1200px' }}>
+                            <TableContainer sx={{ maxHeight: 600, overflowX: 'auto', borderRadius: '10px', border: '1px solid #002776' }}>
+                                <Table stickyHeader sx={{ borderCollapse: 'separate', borderSpacing: '0' }}>
                                     <TableHead>
                                         <TableRow sx={{ height: '24px' }}>
                                             {columns.map((column , index) => (
                                                 <TableCell
                                                     key={column.id}
                                                     align={column.align}
+                                                    style={{ minWidth: column.minWidth }}
                                                     sx={{
                                                         ...tableHeadCellStyles,
-                                                        ...(index === 0 && {
-                                                            borderTopLeftRadius: '10px', // Redondeo solo en la esquina superior izquierda
-                                                        })
+                                                        ...(index === 0 && { borderTopLeftRadius: '10px' })
                                                     }}
                                                 >
                                                     {column.label}
                                                 </TableCell>
                                             ))}
-                                            <TableCell align="center" sx={{
-                                                ...tableHeadCellStyles,
-                                                borderTopRightRadius: '0px',
-                                            }}>
-                                                Comprobante de pago
-                                            </TableCell>
+                                            {/*<TableCell align="center" sx={{ ...tableHeadCellStyles, borderTopRightRadius: '10px' }}>*/}
+                                            {/*    Acciones*/}
+                                            {/*</TableCell>*/}
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {allMaintenanceFeesPaymentPerson
-                                            // Asumo que querrás ordenar por fecha de emisión o vencimiento ahora
-                                            .sort((a, b) => new Date(b.issueDate || b.period) - new Date(a.issueDate || a.period)) // Ordenar por fecha de emisión o período descendente
-                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                            .map((maintenanceFeePayment) => {
-                                                return (
-                                                    <TableRow
-                                                        hover
-                                                        key={maintenanceFeePayment.maintenanceFeePaymentId || maintenanceFeePayment.id} // Asegúrate de tener un ID único
-                                                        sx={{
-                                                            backgroundColor: '#FFFFFF',
-                                                            '&:hover': { backgroundColor: '#F6EFE5' },
-                                                        }}
-                                                    >
+                                        {tableLoading ? (
+                                            <TableRow>
+                                                <TableCell colSpan={columns.length + 1} align="center">
+                                                    Cargando datos de expensas...
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : !period ? (
+                                            <TableRow>
+                                                <TableCell colSpan={columns.length + 1} align="center">
+                                                    Por favor, seleccione un período para ver las expensas.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : departmentFeeQueryData.content.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={columns.length + 1} align="center">
+                                                    No hay datos disponibles para el período seleccionado.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            departmentFeeQueryData.content
+                                                .map((deptFee) => (
+                                                    <TableRow hover key={deptFee.departmentFeeId} sx={{
+                                                        backgroundColor: '#FFFFFF',
+                                                        '&:hover': { backgroundColor: '#F6EFE5' },
+                                                    }}>
                                                         {columns.map((column) => {
-                                                            const value = maintenanceFeePayment[column.id];
+                                                            let value;
+                                                            switch (column.id) {
+                                                                case 'period': value = period; break;
+                                                                case 'departmentCode': value = deptFee.departmentCode; break;
+                                                                case 'issueDate': value = deptFee.issueDate; break;
+                                                                case 'dueDate': value = deptFee.dueDate; break;
+                                                                case 'totalAmount': value = deptFee.totalAmount; break;
+                                                                case 'dueAmount': value = deptFee.dueAmount; break;
+                                                                case 'paidAmount': value = deptFee.paidAmount; break;
+                                                                case 'paymentStatus': value = deptFee.paymentStatus; break;
+                                                                case 'paymentDate': value = deptFee.lastPaidDate; break;
+                                                                default: value = 'N/A';
+                                                            }
+
                                                             let cellContent = value !== undefined && value !== null ? value : 'N/A';
 
-                                                            if (column.id === 'maintenanceFee') {
-                                                                cellContent = (
-                                                                    <Box display="flex" justifyContent="center" alignItems="center" sx={{ gap: 1 }}>
-                                                                        <Typography>
-                                                                            {/* Formatear como moneda si es necesario */}
-                                                                            {typeof value === 'number' ? `$${value.toFixed(2)}` : value || 'N/A'}
-                                                                        </Typography>
-                                                                        <IconButton
-                                                                            aria-label="download-original-maintenance-fee"
-                                                                            onClick={() =>
-                                                                                downloadMaintenanceFee(
-                                                                                    maintenanceFeePayment.maintenanceFeeId // ID de la expensa original
-                                                                                )
-                                                                            }
-                                                                            // La lógica de disabled podría cambiar según si la expensa original siempre está disponible
-                                                                            // disabled={maintenanceFeePayment.status === 'PENDING'}
-                                                                            sx={{ padding: '4px' }}
-                                                                        >
-                                                                            <CloudDownloadIcon
-                                                                                fontSize="small"
-                                                                                sx={{ color: '#002776' }}
-                                                                            />
-                                                                        </IconButton>
-                                                                    </Box>
-                                                                );
-                                                            } else if (column.id === 'amountDue' || column.id === 'amountPaid') {
-                                                                // Formatear como moneda si es necesario
-                                                                cellContent = typeof value === 'number' ? `$${value.toFixed(2)}` : (value || 'N/A');
-                                                            } else if (column.id === 'status') {
+                                                            if (['totalAmount', 'dueAmount', 'paidAmount'].includes(column.id)) {
+                                                                cellContent = typeof value === 'number' ? `$${Number(value).toFixed(2)}` : (String(value) || 'N/A');
+                                                            } else if (column.id === 'paymentStatus') {
                                                                 cellContent = (
                                                                     <Chip
-                                                                        label={value || 'N/A'}
-                                                                        size="small" // Añadido para consistencia
+                                                                        label={statusMapping[value] || String(value)}
+                                                                        size="small"
                                                                         sx={{
-                                                                            backgroundColor:
-                                                                                value === 'Pagado' ? '#B0F2C2' // Verde para Pagado
-                                                                                    : value === 'PENDING' ? '#FFDDAA' // Amarillo para Pendiente (ejemplo)
-                                                                                        : value === 'Vencido' ? '#FFBABA' // Rojo para Vencido (ejemplo)
-                                                                                            : '#BCE7FD', // Azul por defecto
-                                                                            color: '#002776',
-                                                                            fontWeight: 'bold',
+                                                                            backgroundColor: value === 'PAID' ? '#B0F2C2'
+                                                                                : value === 'PENDING' ? '#FFDDAA'
+                                                                                    : value === 'PARTIALLY_PAID' ? '#ADD8E6'
+                                                                                        : value === 'OVERDUE' ? '#FFBABA'
+                                                                                            : '#BCE7FD',
+                                                                            color: '#002776', fontWeight: 'bold',
                                                                         }}
                                                                     />
                                                                 );
-                                                            } else if (column.id === 'issueDate' || column.id === 'dueDate' || column.id === 'paymentDate') {
-                                                                // Formatear fechas si vienen como string ISO y quieres un formato específico
-                                                                cellContent = value ? new Date(value).toLocaleDateString() : 'N/A';
+                                                            } else if (['issueDate', 'dueDate', 'paymentDate'].includes(column.id) && value && value !== 'N/A') {
+                                                                const dateValue = String(value).includes('T') ? value : `${value}T00:00:00`;
+                                                                cellContent = format(new Date(dateValue), 'dd/MM/yyyy');
                                                             }
-
                                                             return (
-                                                                <TableCell
-                                                                    key={column.id}
-                                                                    align={column.align || "center"} // Usar alineación de la columna o centrado por defecto
-                                                                    sx={{ ...tableCellStyles, textAlign: column.align || 'center' }}
-                                                                >
+                                                                <TableCell key={column.id} align={column.align} sx={{ ...tableCellStyles }}>
                                                                     {cellContent}
                                                                 </TableCell>
                                                             );
                                                         })}
-                                                        {/* Columna para el Comprobante de Pago */}
-                                                        <TableCell align="center" sx={{ ...tableCellStyles, textAlign: 'center' }}>
-                                                            <IconButton
-                                                                aria-label="download-payment-receipt"
-                                                                onClick={() =>
-                                                                    handleDownload(maintenanceFeePayment.maintenanceFeePaymentId) // ID del pago
-                                                                }
-                                                                disabled={
-                                                                    maintenanceFeePayment.status !== 'Pagado' || // Solo habilitado si está pagado
-                                                                    !maintenanceFeePayment.paymentDate // y tiene fecha de pago
-                                                                }
-                                                                sx={{
-                                                                    padding: '4px',
-                                                                    '&.Mui-disabled': {
-                                                                        color: '#B0B0B0',
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <CloudDownloadIcon
-                                                                    fontSize="small"
-                                                                    sx={{
-                                                                        color:
-                                                                            maintenanceFeePayment.status !== 'Pagado' ||
-                                                                            !maintenanceFeePayment.paymentDate
-                                                                                ? '#B0B0B0'
-                                                                                : '#002776',
-                                                                    }}
-                                                                />
-                                                            </IconButton>
-                                                        </TableCell>
+                                                        {/*<TableCell align="center" sx={tableCellStyles}>*/}
+                                                        {/*    <IconButton*/}
+                                                        {/*        disabled={deptFee.paymentStatus === "PAID"}*/}
+                                                        {/*        aria-label="report-payment"*/}
+                                                        {/*        onClick={() => handleEditClick(deptFee)}*/}
+                                                        {/*        title="Informar Pago"*/}
+                                                        {/*        sx={{ padding: '4px' }}*/}
+                                                        {/*    >*/}
+                                                        {/*        <LocalAtmIcon fontSize="small" sx={{ color: deptFee.paymentStatus === "PAID" ? '#B0B0B0' : '#002776' }} />*/}
+                                                        {/*    </IconButton>*/}
+                                                        {/*    <IconButton*/}
+                                                        {/*        aria-label="download-receipt"*/}
+                                                        {/*        onClick={() => handleDownloadReceipt(deptFee.departmentFeeId)}*/}
+                                                        {/*        title="Descargar Recibo de Expensa"*/}
+                                                        {/*        sx={{ padding: '4px' }}*/}
+                                                        {/*    >*/}
+                                                        {/*        <CloudDownloadIcon fontSize="small" sx={{color: '#002776' }} />*/}
+                                                        {/*    </IconButton>*/}
+                                                        {/*</TableCell>*/}
                                                     </TableRow>
-                                                );
-                                            })}
+                                                ))
+                                        )}
                                     </TableBody>
                                 </Table>
                             </TableContainer>
                             <TablePagination
                                 rowsPerPageOptions={[10, 20, 50]}
                                 component="div"
-                                count={allMaintenanceFeesPaymentPerson.length}
+                                count={departmentFeeQueryData.totalElements}
                                 rowsPerPage={rowsPerPage}
                                 page={page}
                                 onPageChange={handleChangePage}
@@ -388,7 +402,56 @@ function ResidentMaintenanceFeePayments(){
                     </Box>
                 </Box>
             </Box>
+
+            <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Informar Pago para Departamento: {editingFeePayment?.departmentCode}</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" gutterBottom>
+                        Expensa del período: {period}
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                        Monto Total de Expensa: ${Number(editingFeePayment?.totalAmount || 0).toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                        Monto Adeudado Actual: ${Number(editingFeePayment?.dueAmount || 0).toFixed(2)}
+                    </Typography>
+                    <Box component="form" sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <TextField
+                            label="Monto a Pagar"
+                            variant="outlined"
+                            type="number"
+                            value={totalAmount}
+                            onChange={handleInputChange}
+                            sx={{ marginBottom: '20px', width: '100%' }}
+                            InputProps={{
+                                startAdornment: <Typography sx={{ mr: 0.5 }}>$</Typography>,
+                            }}
+                        />
+                        <Button
+                            variant="outlined"
+                            component="label"
+                            fullWidth
+                            sx={{ mb: 1, borderColor: '#002776', color: '#002776', '&:hover': { borderColor: '#001B5E', backgroundColor: 'rgba(0, 39, 118, 0.04)'} }}
+                        >
+                            <CloudUploadIcon sx={{ marginRight: 1 }} />
+                            Subir Comprobante de Pago
+                            <input type="file" hidden onChange={handleFileChange} accept="application/pdf,image/*" />
+                        </Button>
+                        {fileName && (
+                            <Typography variant="body2" sx={{ color: 'green', mt: 1, display: 'flex', alignItems: 'center' }}>
+                                <CheckCircleIcon sx={{ marginRight: 1 }} /> {fileName}
+                            </Typography>
+                        )}
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ padding: '16px 24px' }}>
+                    <Button onClick={() => setEditOpen(false)} variant="outlined" >Cancelar</Button>
+                    <Button onClick={handleSaveChanges} variant="contained" color="primary" disabled={loading}>
+                        {loading ? 'Informando...' : 'Informar Pago'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </div>
     )
 }
-export default ResidentMaintenanceFeePayments
+export default ResidentMaintenanceFeePayments;
