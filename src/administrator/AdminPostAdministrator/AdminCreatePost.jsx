@@ -13,6 +13,7 @@ function AdminCreateAmenity(){
     const [text, setText] = useState('')
     const [postInfo, setPostInfo] = useState({})
     const [postCreated, setPostCreated] = useState(true);
+    const [postRequestSend, setPostRequestSend] = useState(false);
     const [openAlert, setOpenAlert] = useState(false)
 
 
@@ -51,6 +52,7 @@ function AdminCreateAmenity(){
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setPostRequestSend(true)
 
         // Obtén el token del almacenamiento local
         const token = localStorage.getItem('token');
@@ -97,6 +99,7 @@ function AdminCreateAmenity(){
         } finally {
             handleOpenAlert();
             getAllPostsByIdConsortium();
+            setPostRequestSend(false);
         }
     };
 
@@ -208,7 +211,7 @@ function AdminCreateAmenity(){
                     </Paper>
                 </DialogContent>
                 <DialogActions sx={{ backgroundColor: '#F9F9F9', padding: '10px 20px' }}>
-                    <Button onClick={handleClose} variant="contained"  sx={{
+                    <Button onClick={handleClose} disabled={postRequestSend} variant="contained"  sx={{
                         backgroundColor: '#B2675E',
                         '&:hover': {
                             backgroundColor: '#8E5346',
@@ -219,7 +222,7 @@ function AdminCreateAmenity(){
                     }}>
                         Cancelar
                     </Button>
-                    <Button type="submit" onClick={handleSubmit} variant="contained"  sx={{
+                    <Button type="submit" onClick={handleSubmit} variant="contained"  disabled={postRequestSend} sx={{
                         backgroundColor: '#028484',
                         '&:hover': {
                             backgroundColor: '#026F6B',
